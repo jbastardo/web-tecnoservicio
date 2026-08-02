@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TuTecnoServicio | Integrador Multi-ERP & Conectores de Base de Datos</title>
+  <meta name="description" content="Integración de cualquier ERP o Sistema Administrativo (Odoo, Profit, Saint, A2, SAP, BDs a medida). Conectores de Base de Datos, APIs REST y sustitución de Excel por Webapps.">
+  <meta name="author" content="Juan Carlos">
+  <meta property="og:title" content="TuTecnoServicio | Arquitecto de Soluciones & Conectores Multi-ERP">
+  <meta property="og:description" content="Conectamos cualquier sistema administrativo, ERP o base de datos con tus herramientas de negocio.">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="logo.png">
+
+  <!-- Fonts & FontAwesome Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- TOP BAR ECOSYSTEM SWITCHER -->
+  <div class="top-bar">
+    <div class="container top-bar-container">
+      <div class="ecosystem-switcher">
+        <span style="font-size: 0.75rem; color: #94a3b8;">Ecosistema de Soluciones:</span>
+        <a href="https://tutecnoservicio.com" class="switcher-item active">
+          <i class="fa-solid fa-code-merge"></i> TuTecnoServicio (Servicios & APIs)
+        </a>
+        <a href="https://tutecnotienda.com" target="_blank" class="switcher-item">
+          <i class="fa-solid fa-cart-shopping"></i> TuTecnoTienda (Equipos & Hardware)
+        </a>
+      </div>
+      <div style="font-size: 0.75rem; color: #cbd5e1;">
+        <i class="fa-solid fa-headset"></i> Soporte & Consultoría Directa
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <div class="container nav-container">
+      <!-- Logo preserving original White background -->
+      <a href="#hero" class="logo-box" id="nav-logo">
+        <img src="logo.png" alt="TecnoServicio Logo" id="logo-img">
+      </a>
+
+      <button class="mobile-toggle" id="mobile-menu-toggle" aria-label="Abrir menú">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+
+      <ul class="nav-menu" id="nav-menu">
+        <li><a href="#servicios" class="nav-link" id="link-servicios">Servicios Multi-ERP</a></li>
+        <li><a href="#ecosistema" class="nav-link" id="link-ecosistema">Ecosistema TecnoTienda</a></li>
+        <li><a href="#casos" class="nav-link" id="link-casos">Casos Reales</a></li>
+        <li><a href="#nosotros" class="nav-link" id="link-nosotros">Sobre Mí</a></li>
+        <li><a href="#contacto" class="btn btn-orange" id="btn-nav-cta"><i class="fa-solid fa-comments"></i> Diagnóstico Gratuito</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- HERO SECTION -->
+  <section class="hero" id="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <i class="fa-solid fa-network-wired text-orange"></i> Conectividad Universal Multi-Sistema & BD
+        </div>
+
+        <h1 class="hero-title">
+          Conectamos <span class="text-navy">cualquier ERP o Sistema Administrativo</span> con tu operación
+        </h1>
+
+        <p class="hero-description">
+          Desarrollamos herramientas de conexión entre Bases de Datos (SQL Server, MySQL, Postgres, Oracle), APIs REST y Webapps a medida para <strong>Odoo, Profit Plus, Saint, A2, SAP, Galac</strong> y cualquier software propietario.
+        </p>
+
+        <div class="hero-actions">
+          <a href="#contacto" class="btn btn-navy" id="btn-hero-primary">
+            <i class="fa-solid fa-paper-plane"></i> Evaluar Mi Sistema
+          </a>
+          <a href="#ecosistema" class="btn btn-outline-navy" id="btn-hero-secondary">
+            <i class="fa-solid fa-store"></i> Ver Ecosistema TecnoTienda
+          </a>
+        </div>
+      </div>
+
+      <!-- Multi-ERP Interactive Diagram Box -->
+      <div class="erp-diagram-box">
+        <div class="diagram-title">
+          <i class="fa-solid fa-database text-orange"></i> Sistemas & BDs Compatibles
+        </div>
+
+        <div class="erp-badges-grid">
+          <div class="erp-pill">Odoo ERP</div>
+          <div class="erp-pill">Profit Plus</div>
+          <div class="erp-pill">Saint Enterprise</div>
+          <div class="erp-pill">A2 Softway</div>
+          <div class="erp-pill">SAP / Business One</div>
+          <div class="erp-pill">Galac Software</div>
+          <div class="erp-pill">MS SQL Server</div>
+          <div class="erp-pill">PostgreSQL / MySQL</div>
+          <div class="erp-pill">APIs & Webhooks</div>
+        </div>
+
+        <div class="integration-core">
+          <h4><i class="fa-solid fa-bolt"></i> Motor de Integración TuTecnoServicio</h4>
+          <p>Conexión directa entre bases de datos ➔ Transformación de datos ➔ Sincronización en tiempo real</p>
+        </div>
+
+        <div style="text-align: center; font-size: 0.85rem; color: var(--text-muted);">
+          <i class="fa-solid fa-shield-check text-navy"></i> Cero duplicación manual de datos entre plataformas
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICIOS DE INTEGRACIÓN MULTI-SISTEMA -->
+  <section class="section-padding" id="servicios">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-subtitle">Capacidad Técnica Incondicional</p>
+        <h2 class="section-title">Integraciones entre Cualquier Tecnología</h2>
+        <p class="section-description">
+          No estamos amarrados a un único software. Si tu empresa usa un ERP comercial o un sistema hecho a medida, construimos el puente tecnológico exacto.
+        </p>
+      </div>
+
+      <div class="services-grid">
+        <!-- Servicio 1 -->
+        <div class="service-card" id="card-service-1">
+          <div class="service-icon-box"><i class="fa-solid fa-server"></i></div>
+          <h3 class="service-title">Conectores de Base de Datos Directos</h3>
+          <p class="service-text">
+            Extracción, transformación y lectura directa entre bases de datos (SQL Server, MySQL, Postgres, Oracle, Access) para sincronizar inventarios, ventas y clientes.
+          </p>
+        </div>
+
+        <!-- Servicio 2 -->
+        <div class="service-card" id="card-service-2">
+          <div class="service-icon-box"><i class="fa-solid fa-code"></i></div>
+          <h3 class="service-title">Desarrollo de APIs REST & Webhooks</h3>
+          <p class="service-text">
+            Construcción de capas intermedias (APIs en Python/JS) para permitir que sistemas antiguos sin interfaz web se comuniquen con e-commerce o apps móviles.
+          </p>
+        </div>
+
+        <!-- Servicio 3 -->
+        <div class="service-card" id="card-service-3">
+          <div class="service-icon-box"><i class="fa-solid fa-table-cells"></i></div>
+          <h3 class="service-title">Webapps a Medida (Reemplazo de Excel)</h3>
+          <p class="service-text">
+            Interfaces sencillas para la carga de cuadres de caja, conteos de inventario y auditorías de tienda, validados antes de insertar en tu ERP.
+          </p>
+        </div>
+
+        <!-- Servicio 4 -->
+        <div class="service-card" id="card-service-4">
+          <div class="service-icon-box"><i class="fa-solid fa-tags"></i></div>
+          <h3 class="service-title">Etiquetas Electrónicas (ESL Waythcan)</h3>
+          <p class="service-text">
+            Integración de hardware ESL en anaqueles para que los precios exhibidos en tienda física cambien automáticamente al modificar el sistema administrativo.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHOWCASE ECOSISTEMA TECNOSERVICIO + TECNOTIENDA -->
+  <section class="container" id="ecosistema">
+    <div class="ecosystem-section">
+      <div style="text-align: center; max-width: 700px; margin: 0 auto 3rem auto;">
+        <span style="background: rgba(245, 158, 11, 0.2); color: var(--brand-orange); padding: 0.3rem 0.8rem; border-radius: 99px; font-size: 0.8rem; font-weight: 700;">SOLUCIÓN INTEGRAL DE EXTREMO A EXTREMO</span>
+        <h2 style="color: white; font-size: 2.25rem; margin-top: 0.75rem;">TuTecnoServicio + TuTecnoTienda</h2>
+        <p style="color: #94a3b8;">La combinación perfecta entre la arquitectura de software e integración de procesos, y el suministro del hardware que tu empresa necesita.</p>
+      </div>
+
+      <div class="ecosystem-grid">
+        <!-- TecnoServicio Card -->
+        <div class="ecosystem-card servicios">
+          <div style="font-size: 2rem; color: var(--brand-orange); margin-bottom: 1rem;"><i class="fa-solid fa-gears"></i></div>
+          <h3>TuTecnoServicio.com</h3>
+          <p><strong>El cerebro y la integración:</strong> Desarrollamos la lógica, conectamos tus sistemas de base de datos, configuramos tus servidores Proxmox/Coolify y automatizamos los flujos de trabajo.</p>
+          <a href="#contacto" class="btn btn-orange"><i class="fa-solid fa-wrench"></i> Solicitar Integración</a>
+        </div>
+
+        <!-- TecnoTienda Card -->
+        <div class="ecosystem-card tienda">
+          <div style="font-size: 2rem; color: #38bdf8; margin-bottom: 1rem;"><i class="fa-solid fa-store"></i></div>
+          <h3>TuTecnoTienda.com</h3>
+          <p><strong>El hardware y equipamiento:</strong> Adquiere equipos probados y garantizados para tu empresa (Etiquetas ESL, Lectores de Código de Barras, Puntos de Venta POS y Servidores).</p>
+          <a href="https://tutecnotienda.com" target="_blank" class="btn btn-navy" style="background: #0284c7;"><i class="fa-solid fa-cart-shopping"></i> Visitar TecnoTienda.com</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CASOS REALES -->
+  <section class="section-padding" id="casos">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-subtitle">Impacto Medible</p>
+        <h2 class="section-title">Casos de Transformación Digital</h2>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+        <div style="background: white; border: 1px solid var(--border-color); padding: 2rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+          <span style="color: var(--brand-orange); font-weight: 700; font-size: 0.85rem;">ERP + E-COMMERCE</span>
+          <h3 style="margin: 0.5rem 0 1rem 0;">Sincronización de Inventarios en Tiempo Real</h3>
+          <p style="color: var(--text-secondary); font-size: 0.95rem;">Conexión directa entre la base de datos del sistema administrativo de la empresa y la plataforma e-commerce para evitar ventas de artículos sin stock.</p>
+        </div>
+
+        <div style="background: white; border: 1px solid var(--border-color); padding: 2rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+          <span style="color: var(--brand-navy); font-weight: 700; font-size: 0.85rem;">ETIQUETAS ESL WAYTHCAN</span>
+          <h3 style="margin: 0.5rem 0 1rem 0;">Precios de Anaquel Automatizados</h3>
+          <p style="color: var(--text-secondary); font-size: 0.95rem;">Actualización instantánea de precios en miles de etiquetas electrónicas instaladas en tienda física directamente al modificar la base de datos principal.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORMULARIO DE CONTACTO -->
+  <section class="section-padding" id="contacto" style="background: var(--bg-tertiary);">
+    <div class="container">
+      <div class="section-header">
+        <p class="section-subtitle">Evaluación Técnica Sin Compromiso</p>
+        <h2 class="section-title">Diagnóstico de Tus Sistemas</h2>
+        <p class="section-description">
+          Cuéntame qué software o base de datos utiliza tu empresa y qué proceso necesitas automatizar.
+        </p>
+      </div>
+
+      <div class="contact-card" style="max-width: 750px; margin: 0 auto;">
+        <form id="contact-form">
+          <div class="form-group">
+            <label class="form-label" for="form-name">Nombre Completo *</label>
+            <input type="text" id="form-name" class="form-input" placeholder="Ej. Juan Pérez" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-email">Correo Corporativo *</label>
+            <input type="email" id="form-email" class="form-input" placeholder="juan@empresa.com" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-service">¿Qué sistemas/BDs utiliza tu empresa actualmente?</label>
+            <select id="form-service" class="form-select">
+              <option value="Odoo ERP">Odoo ERP</option>
+              <option value="Profit Plus / Profit Admin">Profit Plus / Profit Admin</option>
+              <option value="Saint Enterprise">Saint Enterprise</option>
+              <option value="A2 Softway">A2 Softway</option>
+              <option value="SAP / Business One">SAP / Business One</option>
+              <option value="Base de Datos SQL Server / Postgres / MySQL">Base de Datos (SQL Server, Postgres, MySQL)</option>
+              <option value="Sistema Propietario / Otro">Sistema Propietario / Hecho a medida</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-message">Describe el problema o la integración que necesitas *</label>
+            <textarea id="form-message" class="form-textarea" placeholder="Ej. Necesitamos conectar nuestra base de datos SQL de Profit con una webapp para cuadres de caja y etiquetas electrónicas ESL..." required></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-navy" style="width: 100%; font-size: 1rem;" id="btn-form-submit">
+            <i class="fa-solid fa-paper-plane"></i> Enviar Consulta Técnica
+          </button>
+
+          <div id="form-feedback" style="display: none;"></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <p>© 2026 TuTecnoServicio.com — Arquitectura Tecnológica & Integración Multi-ERP.</p>
+      <p style="margin-top: 0.5rem;">Sinergia oficial con <a href="https://tutecnotienda.com" target="_blank">TuTecnoTienda.com</a> | Alojado en Proxmox & Coolify.</p>
+    </div>
+  </footer>
+
+  <!-- App JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>
