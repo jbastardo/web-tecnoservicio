@@ -591,3 +591,162 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 2.25rem;
   }
 }
+
+/* ==========================================================================
+   MOBILE FIRST OPTIMIZATIONS (Smartphones 6.3"+ : 390px - 480px Viewports)
+   ========================================================================== */
+
+/* Bottom Floating Action Bar for Thumb Zone Ergonomics */
+.mobile-bottom-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(11, 60, 123, 0.15);
+  padding: 0.65rem 1rem calc(0.65rem + env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.mobile-bottom-bar-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.mobile-bottom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  text-align: center;
+  transition: transform 0.15s ease;
+  min-height: 48px;
+}
+
+.mobile-bottom-btn:active {
+  transform: scale(0.96);
+}
+
+.mobile-bottom-btn.wa {
+  background: #25d366;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25);
+}
+
+.mobile-bottom-btn.cta {
+  background: var(--brand-navy);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(11, 60, 123, 0.25);
+}
+
+.mobile-bottom-bar.hidden {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  body {
+    padding-bottom: 72px; /* Extra space for thumb bar */
+  }
+
+  .mobile-bottom-bar {
+    display: block;
+  }
+
+  .container {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .hero {
+    padding: 2.5rem 0 2rem 0;
+  }
+
+  .hero-title {
+    font-size: 1.8rem;
+    line-height: 1.25;
+  }
+
+  .hero-description {
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .hero-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.9rem 1rem;
+    font-size: 0.95rem;
+    min-height: 48px;
+  }
+
+  .section-padding {
+    padding: 3rem 0;
+  }
+
+  .section-title {
+    font-size: 1.6rem;
+  }
+
+  .section-subtitle {
+    font-size: 0.75rem;
+  }
+
+  .section-description {
+    font-size: 0.9rem;
+  }
+
+  /* Touch Card Enhancements */
+  .service-card, .contact-card {
+    padding: 1.5rem;
+    transition: transform 0.2s ease;
+  }
+
+  .service-card:active {
+    transform: scale(0.98);
+  }
+
+  /* About section mobile stacked layout */
+  #nosotros .container > div {
+    grid-template-columns: 1fr !important;
+    padding: 2rem 1.25rem !important;
+    gap: 1.5rem !important;
+    text-align: center;
+  }
+
+  #nosotros h3 {
+    font-size: 1.45rem !important;
+  }
+
+  /* Form Touch & iOS Zoom Prevention (16px base font) */
+  .form-input, .form-select, .form-textarea {
+    font-size: 16px !important;
+    padding: 0.85rem 1rem;
+    min-height: 48px;
+  }
+
+  .btn-orange, .btn-navy {
+    min-height: 48px;
+  }
+}
+

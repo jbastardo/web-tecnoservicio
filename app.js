@@ -127,4 +127,19 @@ document.addEventListener('DOMContentLoaded', () => {
       formFeedback.style.border = '1px solid rgba(239, 68, 68, 0.3)';
     }
   }
+
+  // 5. Mobile Bottom Bar Intelligent Hide on Contact Section
+  const mobileBottomBar = document.getElementById('mobile-bottom-bar');
+  const contactoSection = document.getElementById('contacto');
+
+  if (mobileBottomBar && contactoSection) {
+    window.addEventListener('scroll', () => {
+      const rect = contactoSection.getBoundingClientRect();
+      if (rect.top <= window.innerHeight - 100) {
+        mobileBottomBar.classList.add('hidden');
+      } else {
+        mobileBottomBar.classList.remove('hidden');
+      }
+    });
+  }
 });

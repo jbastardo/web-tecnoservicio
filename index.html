@@ -291,12 +291,12 @@
         <form id="contact-form">
           <div class="form-group">
             <label class="form-label" for="form-name">Nombre Completo *</label>
-            <input type="text" id="form-name" class="form-input" placeholder="Ej. Carlos Mendoza" required>
+            <input type="text" id="form-name" class="form-input" placeholder="Ej. Carlos Mendoza" inputmode="text" required>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="form-email">Correo Corporativo / Empresa *</label>
-            <input type="email" id="form-email" class="form-input" placeholder="carlos@miempresa.com" required>
+            <input type="email" id="form-email" class="form-input" placeholder="carlos@miempresa.com" inputmode="email" required>
           </div>
 
           <div class="form-group">
@@ -332,6 +332,18 @@
       <p style="margin-top: 0.5rem;">Sinergia oficial con <a href="https://tutecnotienda.com" target="_blank">TuTecnoTienda.com</a> | Alojado en Proxmox & Coolify.</p>
     </div>
   </footer>
+
+  <!-- MOBILE FLOATING BOTTOM BAR (THUMB ZONE ERGONOMICS FOR 6.3"+ SMARTPHONES) -->
+  <div class="mobile-bottom-bar" id="mobile-bottom-bar">
+    <div class="mobile-bottom-bar-grid">
+      <a href="https://wa.me/584120000000?text=Hola%20Juan%20Carlos%20Bastardo,%20quisiera%20consultar%20sobre%20una%20solución%20para%20mi%20empresa" target="_blank" class="mobile-bottom-btn wa">
+        <i class="fa-brands fa-whatsapp"></i> WhatsApp
+      </a>
+      <a href="#contacto" class="mobile-bottom-btn cta">
+        <i class="fa-solid fa-comments"></i> Diagnóstico
+      </a>
+    </div>
+  </div>
 
   <!-- App JavaScript -->
   <script src="app.js"></script>
