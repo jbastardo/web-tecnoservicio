@@ -458,28 +458,23 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ECOSYSTEM TECNOSERVICIO + TECNOTIENDA SHOWCASE */
-.ecosystem-section {
-  background: var(--brand-navy-dark);
-  color: white;
-  border-radius: var(--radius-lg);
-  padding: 4rem 3rem;
-  margin: 4rem 0;
-  position: relative;
-  overflow: hidden;
-}
-
 .ecosystem-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  align-items: center;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  align-items: stretch;
+  width: 100%;
 }
 
 .ecosystem-card {
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-md);
-  padding: 2rem;
+  padding: 2.25rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .ecosystem-card h3 {
