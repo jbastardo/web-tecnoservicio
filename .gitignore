@@ -2,3 +2,6 @@ scratch/
 .system_generated/
 *.log
 .DS_Store
+secrets.env
+*.env
+
