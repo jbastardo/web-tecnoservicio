@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Format WhatsApp Message
-      const waText = `¡Hola Juan Carlos! Mi nombre es ${name} (${email}). Estoy interesado en: ${service}. Detalle: ${message}`;
+      const waText = `¡Hola Juan Carlos Bastardo! Mi nombre es ${name} (${email}). Estoy interesado en: ${service}. Detalle: ${message}`;
       const waUrl = `https://wa.me/584120000000?text=${encodeURIComponent(waText)}`; // Placeholder WA link, customizable
 
       // Open WhatsApp in new tab
