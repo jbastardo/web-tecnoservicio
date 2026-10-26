@@ -26,6 +26,7 @@ RUN mkdir -p /app/public
 # Variables de entorno en tiempo de compilación (si aplican)
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Ejecutar el build de Next.js
 RUN npm run build
