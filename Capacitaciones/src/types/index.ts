@@ -52,12 +52,17 @@ export interface Participant {
   id: number;
   name: string;
   docType: "V" | "E" | "J" | "G" | "P";
-  docNumber: string; // Cédula o RIF
+  docNumber?: string | null; // Cédula o RIF
   phone: string; // WhatsApp
   email: string;
   hasStorePurchases: boolean; // Historial de compras en tienda Onprotec
   storePurchasesAmount: number; // Monto acumulado en tienda ($)
   company?: string | null;
+  cargo?: string | null;
+  city?: string | null;
+  experienceLevel?: string | null;
+  referralSource?: string | null;
+  allowsContact?: boolean;
   notes?: string | null;
   createdAt?: string;
   updatedAt?: string;
@@ -73,13 +78,17 @@ export interface Registration {
   currency: PaymentCurrency;
   isPaid: boolean; // Cobrado (Sí / No)
   paymentDate: string | null;
-  paymentMethod: string | null; // Pabilo, Transferencia, Pago Móvil, Efectivo
+  paymentMethod: string | null; // Pabilo, Binance USDT, Transferencia, Pago Móvil, Efectivo
   paymentReference: string | null;
   pabiloTransactionId: string | null;
   pabiloStatus: PabiloStatus;
   invoiceNumber: string | null; // Control de Factura o Nota de Entrega
   paymentProofUrl: string | null;
-  specialNotes: string | null;
+  paymentNotes?: string | null;
+  specialNotes?: string | null;
+  experienceLevel?: string | null;
+  originalFormName?: string | null;
+  formSubmittedAt?: string | null;
   reminderSentAt: string | null;
   surveySentAt: string | null;
   checkInAt: string | null;
@@ -89,6 +98,26 @@ export interface Registration {
   // Relaciones pobladas (Joins)
   training?: Training;
   participant?: Participant;
+}
+
+export interface Survey {
+  id: number;
+  trainingId: number;
+  participantId?: number | null;
+  participantName?: string | null;
+  company?: string | null;
+  cargo?: string | null;
+  ratingInstructor?: number | null;
+  ratingContent?: number | null;
+  ratingFacilities?: number | null;
+  recommendationScore?: number | null;
+  feedback?: string | null;
+  mostLiked?: string | null;
+  suggestions?: string | null;
+  wantsFutureCertifications?: string | null;
+  hasActiveProjects?: string | null;
+  submittedAt?: string | null;
+  createdAt?: string;
 }
 
 export interface OdooProduct {

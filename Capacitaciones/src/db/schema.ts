@@ -55,12 +55,17 @@ export const participants = pgTable(
     id: serial("id").primaryKey(),
     name: varchar("name", { length: 255 }).notNull(),
     docType: varchar("doc_type", { length: 10 }).default("V").notNull(), // V, E, J, G, P
-    docNumber: varchar("doc_number", { length: 50 }).notNull().unique(), // Cédula/RIF
+    docNumber: varchar("doc_number", { length: 50 }), // Cédula/RIF (opcional en algunos formularios)
     phone: varchar("phone", { length: 50 }).notNull(), // WhatsApp normalizado (+58...)
     email: varchar("email", { length: 255 }).notNull(),
     hasStorePurchases: boolean("has_store_purchases").default(false).notNull(), // Booleano compra previa
     storePurchasesAmount: numeric("store_purchases_amount", { precision: 12, scale: 2 }).default("0.00").notNull(), // Monto $
     company: varchar("company", { length: 255 }),
+    cargo: varchar("cargo", { length: 150 }), // Cargo / Rol profesional
+    city: varchar("city", { length: 150 }), // Estado / Ciudad
+    experienceLevel: varchar("experience_level", { length: 150 }), // Nivel de experiencia técnica
+    referralSource: varchar("referral_source", { length: 150 }), // ¿Cómo se enteró de la capacitación?
+    allowsContact: boolean("allows_contact").default(true).notNull(), // Autorización contacto WhatsApp/Email
     notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -68,6 +73,7 @@ export const participants = pgTable(
   (table) => ({
     docNumberIdx: index("idx_participants_doc_number").on(table.docNumber),
     phoneIdx: index("idx_participants_phone").on(table.phone),
+    emailIdx: index("idx_participants_email").on(table.email),
   })
 );
 
@@ -90,13 +96,17 @@ export const registrations = pgTable(
     currency: varchar("currency", { length: 10 }).default("USD").notNull(), // BS o $
     isPaid: boolean("is_paid").default(false).notNull(), // Cobrado: Sí / No
     paymentDate: timestamp("payment_date", { withTimezone: true }),
-    paymentMethod: varchar("payment_method", { length: 50 }), // Pabilo, Transferencia, Pago Móvil, Efectivo
+    paymentMethod: varchar("payment_method", { length: 50 }), // Pabilo, Binance USDT, Transferencia, Pago Móvil, Efectivo
     paymentReference: varchar("payment_reference", { length: 100 }),
     pabiloTransactionId: varchar("pabilo_transaction_id", { length: 100 }),
     pabiloStatus: varchar("pabilo_status", { length: 50 }).default("pending").notNull(), // pending, approved, rejected, manual
     invoiceNumber: varchar("invoice_number", { length: 100 }), // Control Factura / Nota de Entrega
     paymentProofUrl: text("payment_proof_url"),
+    paymentNotes: text("payment_notes"),
     specialNotes: text("special_notes"),
+    experienceLevel: varchar("experience_level", { length: 150 }),
+    originalFormName: varchar("original_form_name", { length: 255 }),
+    formSubmittedAt: timestamp("form_submitted_at", { withTimezone: true }),
     reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
     surveySentAt: timestamp("survey_sent_at", { withTimezone: true }),
     checkInAt: timestamp("check_in_at", { withTimezone: true }),
@@ -144,11 +154,19 @@ export const surveys = pgTable(
     participantId: integer("participant_id").references(() => participants.id, {
       onDelete: "set null",
     }),
-    ratingInstructor: integer("rating_instructor").notNull(), // 1 - 5
-    ratingContent: integer("rating_content").notNull(), // 1 - 5
-    ratingFacilities: integer("rating_facilities").notNull(), // 1 - 5 (Sala Onprotec)
-    recommendationScore: integer("recommendation_score").notNull(), // NPS 1 - 10
+    participantName: varchar("participant_name", { length: 255 }),
+    company: varchar("company", { length: 255 }),
+    cargo: varchar("cargo", { length: 150 }),
+    ratingInstructor: integer("rating_instructor").default(5), // 1 - 5
+    ratingContent: integer("rating_content").default(5), // 1 - 5
+    ratingFacilities: integer("rating_facilities").default(5), // 1 - 5 (Sala Onprotec)
+    recommendationScore: integer("recommendation_score").default(10), // NPS 1 - 10
     feedback: text("feedback"),
+    mostLiked: text("most_liked"),
+    suggestions: text("suggestions"),
+    wantsFutureCertifications: text("wants_future_certifications"),
+    hasActiveProjects: text("has_active_projects"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({

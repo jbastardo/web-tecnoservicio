@@ -1,38 +1,16 @@
-import { Training, Participant, Registration, OdooProduct, DashboardMetrics } from "@/types";
+import { Training, Participant, Registration, OdooProduct, DashboardMetrics, Survey } from "@/types";
+import realForms from "./realFormsData.json";
+import realOdooProducts from "./odooSampleProducts.json";
 
 // =============================================================================
-// DATOS REALES LIMPIOS (Eliminados datos de muestra ficticios)
+// DATOS REALES EXTRAÍDOS DE FORMULARIOS GOOGLE Y ODOO (ONPROTEC)
 // =============================================================================
 
-// La única capacitación cobrada realizada hasta la fecha es "De Cero a UniFi"
-export const initialTrainings: Training[] = [
-  {
-    id: 1,
-    name: "De Cero a UniFi: Redes Inalámbricas y Routing Corporativo",
-    code: "CAP-UNIFI-01",
-    type: "Curso",
-    instructor: "Ing. Especialista Onprotec",
-    eventDate: "2026-10-15T13:00:00.000Z", // Hora de referencia local Caracas
-    adStartDate: null,
-    adCosts: 0.0,
-    associatedCosts: 0.0,
-    maxCapacity: 18,
-    instructorCapacity: 1,
-    relatedSkus: ["UACC-G4-INS", "U6-PLUS", "USW-24-POE"],
-    price: 35.0, // Capacitación cobrada
-    currency: "USD",
-    status: "Finalizado",
-    surveyUrl: "https://capacitacion.tutecnoservicio.com/encuesta/1",
-    surveyQrCode: null,
-    description: "Configuración integral de controladores UniFi Network, adopción de APs, switches PoE, VLANs y portales cautivos.",
-  },
-];
-
-export const initialParticipants: Participant[] = [];
-
-export const initialRegistrations: Registration[] = [];
-
-export const initialOdooSkus: OdooProduct[] = [];
+export const initialTrainings: Training[] = (realForms.trainings as any[]) || [];
+export const initialParticipants: Participant[] = (realForms.participants as any[]) || [];
+export const initialRegistrations: Registration[] = (realForms.registrations as any[]) || [];
+export const initialSurveys: Survey[] = (realForms.surveys as any[]) || [];
+export const initialOdooSkus: OdooProduct[] = (realOdooProducts as any[]) || [];
 
 export const emptyDashboardMetrics: DashboardMetrics = {
   attendanceRate: {

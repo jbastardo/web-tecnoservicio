@@ -29,9 +29,12 @@ export default function ParticipantesAdminPage() {
   const filtered = participants.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.docNumber.includes(search) ||
-      p.phone.includes(search) ||
-      p.email.toLowerCase().includes(search.toLowerCase());
+      (p.docNumber || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.phone || "").includes(search) ||
+      (p.email || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.company || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.cargo || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.city || "").toLowerCase().includes(search.toLowerCase());
 
     if (!matchesSearch) return false;
     if (filterType === "store_clients") return p.hasStorePurchases;
@@ -49,7 +52,7 @@ export default function ParticipantesAdminPage() {
             <span>Directorio de Participantes & Clientes (CRM)</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Cruce de asistentes a la sala de capacitaciones con historial de compras de hardware en Onprotec.
+            Cruce de asistentes reales a la sala de capacitaciones con historial de compras de hardware en Onprotec ({participants.length} participantes únicos).
           </p>
         </div>
 
@@ -58,10 +61,10 @@ export default function ParticipantesAdminPage() {
             <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-3" />
             <input
               type="text"
-              placeholder="Buscar por nombre, cédula o teléfono..."
+              placeholder="Buscar por nombre, cédula, empresa o ciudad..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 w-64"
+              className="bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 w-72"
             />
           </div>
 
@@ -105,16 +108,17 @@ export default function ParticipantesAdminPage() {
             <thead className="bg-slate-950 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
               <tr>
                 <th className="py-3.5 px-4">Participante</th>
-                <th className="py-3.5 px-4">Documento (Cédula/RIF)</th>
-                <th className="py-3.5 px-4">Contacto (WhatsApp / Email)</th>
-                <th className="py-3.5 px-4">Empresa</th>
-                <th className="py-3.5 px-4">Historial en Tienda Onprotec</th>
+                <th className="py-3.5 px-4">Documento</th>
+                <th className="py-3.5 px-4">Contacto</th>
+                <th className="py-3.5 px-4">Empresa / Rol</th>
+                <th className="py-3.5 px-4">Ciudad / Nivel</th>
+                <th className="py-3.5 px-4">Historial Tienda</th>
                 <th className="py-3.5 px-4">Monto Comprado</th>
                 <th className="py-3.5 px-4 text-right">Potencial Comercial</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80">
-              {filtered.map((p) => {
+              {filtered.slice(0, 100).map((p) => {
                 return (
                   <tr key={p.id} className="hover:bg-slate-800/40 transition">
                     <td className="py-3.5 px-4 font-bold text-white">
@@ -122,16 +126,26 @@ export default function ParticipantesAdminPage() {
                     </td>
 
                     <td className="py-3.5 px-4 font-mono text-slate-400">
-                      {p.docType}-{p.docNumber}
+                      {p.docNumber || "S/D"}
                     </td>
 
                     <td className="py-3.5 px-4">
                       <span className="block text-cyan-300 font-mono font-medium">{p.phone}</span>
-                      <span className="block text-slate-500 text-[11px]">{p.email}</span>
+                      <span className="block text-slate-500 text-[11px] truncate max-w-[180px]">{p.email}</span>
                     </td>
 
                     <td className="py-3.5 px-4 text-slate-300">
-                      {p.company || "Particular / Independiente"}
+                      <span className="block font-semibold text-slate-200">{p.company || "Independiente"}</span>
+                      {p.cargo && <span className="block text-[11px] text-slate-400">{p.cargo}</span>}
+                    </td>
+
+                    <td className="py-3.5 px-4 text-slate-300">
+                      <span className="block text-slate-300">{p.city || "Caracas"}</span>
+                      {p.experienceLevel && (
+                        <span className="block text-[10px] text-amber-400/90 truncate max-w-[150px]">
+                          {p.experienceLevel}
+                        </span>
+                      )}
                     </td>
 
                     <td className="py-3.5 px-4">

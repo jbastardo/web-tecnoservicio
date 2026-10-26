@@ -23,6 +23,8 @@ export default function InscripcionesAdminPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [trainingFilter, setTrainingFilter] = useState("all");
+  const [trainings, setTrainings] = useState<any[]>([]);
 
   const fetchRegistrations = () => {
     setLoading(true);
@@ -33,6 +35,13 @@ export default function InscripcionesAdminPage() {
       })
       .catch((e) => console.error(e))
       .finally(() => setLoading(false));
+
+    fetch("/api/capacitaciones")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setTrainings(d.data);
+      })
+      .catch((e) => console.error(e));
   };
 
   useEffect(() => {
@@ -71,7 +80,7 @@ export default function InscripcionesAdminPage() {
 
   const filtered = registrations.filter((r) => {
     const pName = r.participant?.name?.toLowerCase() || "";
-    const pDoc = r.participant?.docNumber?.toLowerCase() || "";
+    const pDoc = (r.participant?.docNumber || "").toLowerCase();
     const tName = r.training?.name?.toLowerCase() || "";
     const matchesSearch =
       pName.includes(search.toLowerCase()) ||
@@ -79,24 +88,25 @@ export default function InscripcionesAdminPage() {
       tName.includes(search.toLowerCase());
 
     const matchesStatus = statusFilter === "all" || r.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesTraining = trainingFilter === "all" || String(r.trainingId) === trainingFilter;
+    return matchesSearch && matchesStatus && matchesTraining;
   });
 
   return (
     <div className="space-y-6">
       {/* Cintillo Widescreen de Cabecera y Filtros */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800">
         <div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
             <ClipboardList className="w-6 h-6 text-brand-400" />
             <span>Matriz de Inscripciones, Pagos & Facturación</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Aprobación de pagos Pabilo, control de Factura/Nota de Entrega y gestión de lista de espera.
+            Control integral de {registrations.length} inscripciones reales en la sala de capacitaciones Onprotec.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-3" />
             <input
@@ -104,9 +114,22 @@ export default function InscripcionesAdminPage() {
               placeholder="Buscar participante, cédula o curso..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 w-64"
+              className="bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 w-52"
             />
           </div>
+
+          <select
+            value={trainingFilter}
+            onChange={(e) => setTrainingFilter(e.target.value)}
+            className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500 max-w-[220px] truncate"
+          >
+            <option value="all">Todas las Capacitaciones ({trainings.length})</option>
+            {trainings.map((t) => (
+              <option key={t.id} value={String(t.id)}>
+                {t.name}
+              </option>
+            ))}
+          </select>
 
           <select
             value={statusFilter}
@@ -121,9 +144,14 @@ export default function InscripcionesAdminPage() {
             <option value="Lista de Espera">Lista de Espera</option>
           </select>
 
+          <span className="text-[11px] font-mono text-cyan-300 bg-slate-900 border border-slate-700 px-2.5 py-1.5 rounded-xl">
+            {filtered.length} reg.
+          </span>
+
           <button
             onClick={fetchRegistrations}
             className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl text-xs"
+            title="Recargar"
           >
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
@@ -139,7 +167,7 @@ export default function InscripcionesAdminPage() {
                 <th className="py-3.5 px-4">Participante</th>
                 <th className="py-3.5 px-4">Capacitación</th>
                 <th className="py-3.5 px-4">Monto / Pago</th>
-                <th className="py-3.5 px-4">Validación Pabilo</th>
+                <th className="py-3.5 px-4">Validación Pabilo / Comprobante</th>
                 <th className="py-3.5 px-4">Factura / Nota de Entrega</th>
                 <th className="py-3.5 px-4">Estado</th>
                 <th className="py-3.5 px-4 text-right">Acciones</th>
@@ -159,7 +187,7 @@ export default function InscripcionesAdminPage() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((r) => {
+                filtered.slice(0, 100).map((r) => {
                   return (
                     <tr key={r.id} className="hover:bg-slate-800/40 transition">
                       <td className="py-3.5 px-4">
@@ -167,7 +195,7 @@ export default function InscripcionesAdminPage() {
                           {r.participant?.name || "Sin Nombre"}
                         </span>
                         <span className="text-[11px] text-slate-400 block font-mono">
-                          {r.participant?.docType}-{r.participant?.docNumber} | {r.participant?.phone}
+                          {r.participant?.docNumber || "S/D"} | {r.participant?.phone}
                         </span>
                       </td>
 
@@ -198,12 +226,21 @@ export default function InscripcionesAdminPage() {
                           </button>
                         </div>
                         <span className="text-[10px] text-slate-500 block mt-0.5 font-mono">
-                          {r.paymentMethod} {r.paymentReference ? `| Ref: ${r.paymentReference}` : ""}
+                          {r.paymentMethod || "Gratuito"} {r.paymentReference ? `| Ref: ${r.paymentReference}` : ""}
                         </span>
                       </td>
 
                       <td className="py-3.5 px-4">
-                        {r.pabiloStatus === "approved" ? (
+                        {r.paymentProofUrl ? (
+                          <a
+                            href={r.paymentProofUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-300 bg-brand-950/60 border border-brand-800/60 px-2 py-0.5 rounded hover:underline"
+                          >
+                            📎 Comprobante Drive
+                          </a>
+                        ) : r.pabiloStatus === "approved" ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-300 bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded-full">
                             <CheckCircle className="w-3 h-3 text-cyan-400" />
                             Pabilo Aprobado
@@ -213,7 +250,9 @@ export default function InscripcionesAdminPage() {
                             Rechazado
                           </span>
                         ) : (
-                          <span className="text-[11px] text-slate-400">Manual / Pendiente</span>
+                          <span className="text-[11px] text-slate-400">
+                            {r.amount > 0 ? "Manual / Pendiente" : "No aplica (Gratis)"}
+                          </span>
                         )}
                       </td>
 

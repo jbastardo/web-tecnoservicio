@@ -24,3 +24,12 @@
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Large Form Assets & Archives
+Formularios/
+import_forms/
+*.zip
+*.MOV
+*.mp4
+*.ai
+

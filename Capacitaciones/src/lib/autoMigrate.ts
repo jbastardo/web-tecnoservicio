@@ -63,6 +63,12 @@ const ddlStatements = [
   `ALTER TABLE "participants" ADD COLUMN IF NOT EXISTS "has_store_purchases" BOOLEAN DEFAULT FALSE;`,
   `ALTER TABLE "participants" ADD COLUMN IF NOT EXISTS "store_purchases_amount" NUMERIC(12, 2) DEFAULT 0.00;`,
   `ALTER TABLE "participants" ADD COLUMN IF NOT EXISTS "company" VARCHAR(255);`,
+  `ALTER TABLE "participants" ADD COLUMN IF NOT EXISTS "cargo" VARCHAR(150);`,
+  `ALTER TABLE "participants" ADD COLUMN IF NOT EXISTS "city" VARCHAR(150);`,
+  `ALTER TABLE "participants" ADD COLUMN IF NOT EXISTS "experience_level" VARCHAR(150);`,
+  `ALTER TABLE "participants" ADD COLUMN IF NOT EXISTS "referral_source" VARCHAR(150);`,
+  `ALTER TABLE "participants" ADD COLUMN IF NOT EXISTS "allows_contact" BOOLEAN DEFAULT TRUE;`,
+  `ALTER TABLE "participants" ALTER COLUMN "doc_number" DROP NOT NULL;`,
 
   // 3. Tabla: Registrations (Inscripciones)
   `CREATE TABLE IF NOT EXISTS "registrations" (
@@ -93,6 +99,10 @@ const ddlStatements = [
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "pabilo_transaction_id" VARCHAR(100);`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "pabilo_status" VARCHAR(50) DEFAULT 'pending';`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "invoice_number" VARCHAR(100);`,
+  `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "payment_notes" TEXT;`,
+  `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "experience_level" VARCHAR(150);`,
+  `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "original_form_name" VARCHAR(255);`,
+  `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "form_submitted_at" TIMESTAMP WITH TIME ZONE;`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "check_in_at" TIMESTAMP WITH TIME ZONE;`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "reminder_sent_at" TIMESTAMP WITH TIME ZONE;`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "survey_sent_at" TIMESTAMP WITH TIME ZONE;`,
@@ -114,13 +124,27 @@ const ddlStatements = [
     "id" SERIAL PRIMARY KEY,
     "training_id" INTEGER NOT NULL REFERENCES "trainings"("id") ON DELETE CASCADE,
     "participant_id" INTEGER REFERENCES "participants"("id") ON DELETE SET NULL,
-    "rating_instructor" INTEGER NOT NULL,
-    "rating_content" INTEGER NOT NULL,
-    "rating_facilities" INTEGER NOT NULL,
-    "recommendation_score" INTEGER NOT NULL,
+    "rating_instructor" INTEGER NOT NULL DEFAULT 5,
+    "rating_content" INTEGER NOT NULL DEFAULT 5,
+    "rating_facilities" INTEGER NOT NULL DEFAULT 5,
+    "recommendation_score" INTEGER NOT NULL DEFAULT 10,
     "feedback" TEXT,
     "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
   );`,
+
+  // Columnas preventivas en Surveys
+  `ALTER TABLE "surveys" ADD COLUMN IF NOT EXISTS "participant_name" VARCHAR(255);`,
+  `ALTER TABLE "surveys" ADD COLUMN IF NOT EXISTS "company" VARCHAR(255);`,
+  `ALTER TABLE "surveys" ADD COLUMN IF NOT EXISTS "cargo" VARCHAR(150);`,
+  `ALTER TABLE "surveys" ADD COLUMN IF NOT EXISTS "most_liked" TEXT;`,
+  `ALTER TABLE "surveys" ADD COLUMN IF NOT EXISTS "suggestions" TEXT;`,
+  `ALTER TABLE "surveys" ADD COLUMN IF NOT EXISTS "wants_future_certifications" TEXT;`,
+  `ALTER TABLE "surveys" ADD COLUMN IF NOT EXISTS "has_active_projects" TEXT;`,
+  `ALTER TABLE "surveys" ADD COLUMN IF NOT EXISTS "submitted_at" TIMESTAMP WITH TIME ZONE;`,
+  `ALTER TABLE "surveys" ALTER COLUMN "rating_instructor" DROP NOT NULL;`,
+  `ALTER TABLE "surveys" ALTER COLUMN "rating_content" DROP NOT NULL;`,
+  `ALTER TABLE "surveys" ALTER COLUMN "rating_facilities" DROP NOT NULL;`,
+  `ALTER TABLE "surveys" ALTER COLUMN "recommendation_score" DROP NOT NULL;`,
 
   // 6. Tabla: Integration Logs
   `CREATE TABLE IF NOT EXISTS "integration_logs" (
@@ -139,6 +163,7 @@ const ddlStatements = [
   `CREATE INDEX IF NOT EXISTS "idx_trainings_event_date" ON "trainings"("event_date");`,
   `CREATE INDEX IF NOT EXISTS "idx_participants_doc_number" ON "participants"("doc_number");`,
   `CREATE INDEX IF NOT EXISTS "idx_participants_phone" ON "participants"("phone");`,
+  `CREATE INDEX IF NOT EXISTS "idx_participants_email" ON "participants"("email");`,
   `CREATE INDEX IF NOT EXISTS "idx_registrations_training_id" ON "registrations"("training_id");`,
   `CREATE INDEX IF NOT EXISTS "idx_registrations_participant_id" ON "registrations"("participant_id");`,
   `CREATE INDEX IF NOT EXISTS "idx_registrations_status" ON "registrations"("status");`,
