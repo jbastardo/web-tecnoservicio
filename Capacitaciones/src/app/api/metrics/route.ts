@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { initialTrainings, initialParticipants, initialRegistrations, mockDashboardMetrics } from "@/lib/mockData";
+import { initialTrainings, initialParticipants, initialRegistrations, emptyDashboardMetrics } from "@/lib/mockData";
 
 export async function GET() {
   try {
@@ -10,8 +10,8 @@ export async function GET() {
     const totalNoShow = initialRegistrations.filter((r) => r.status === "No Asistió").length;
 
     const noShowBase = totalAttended + totalNoShow;
-    const noShowRatePercent = noShowBase > 0 ? (totalNoShow / noShowBase) * 100 : 20.0;
-    const attendanceRatePercent = noShowBase > 0 ? (totalAttended / noShowBase) * 100 : 80.0;
+    const noShowRatePercent = noShowBase > 0 ? (totalNoShow / noShowBase) * 100 : 0;
+    const attendanceRatePercent = noShowBase > 0 ? (totalAttended / noShowBase) * 100 : 0;
 
     // 2. ROI de Capacitación
     const totalRevenue = initialRegistrations
@@ -31,7 +31,6 @@ export async function GET() {
     const prospectConversionOpportunityPercent =
       totalParticipants > 0 ? (prospectsCount / totalParticipants) * 100 : 0;
 
-    // Recurrentes (asociados a más de una inscripción)
     const participantRegistrationCounts = new Map<number, number>();
     initialRegistrations.forEach((r) => {
       participantRegistrationCounts.set(
@@ -53,7 +52,7 @@ export async function GET() {
     });
 
     const recurringWithoutPurchasesPercent =
-      recurringCount > 0 ? (recurringWithoutPurchases / recurringCount) * 100 : 28.57;
+      recurringCount > 0 ? (recurringWithoutPurchases / recurringCount) * 100 : 0;
 
     // 4. Estado de Pagos
     const totalBilledExpected = initialRegistrations.reduce((acc, r) => acc + (r.amount || 0), 0);
@@ -72,15 +71,15 @@ export async function GET() {
 
     const metrics = {
       attendanceRate: {
-        totalRegistered: Math.max(totalRegistered, mockDashboardMetrics.attendanceRate.totalRegistered),
-        totalConfirmed: Math.max(totalConfirmed, mockDashboardMetrics.attendanceRate.totalConfirmed),
-        totalAttended: Math.max(totalAttended, mockDashboardMetrics.attendanceRate.totalAttended),
-        totalNoShow: Math.max(totalNoShow, mockDashboardMetrics.attendanceRate.totalNoShow),
+        totalRegistered,
+        totalConfirmed,
+        totalAttended,
+        totalNoShow,
         noShowRatePercent,
         attendanceRatePercent,
       },
       roiMetrics: {
-        totalRevenue: Math.max(totalRevenue, mockDashboardMetrics.roiMetrics.totalRevenue),
+        totalRevenue,
         totalAdCosts,
         totalAssociatedCosts,
         totalCosts,
@@ -88,20 +87,20 @@ export async function GET() {
         roiPercent,
       },
       fidelizationMap: {
-        totalParticipants: Math.max(totalParticipants, mockDashboardMetrics.fidelizationMap.totalParticipants),
-        storeClientsCount: Math.max(storeClientsCount, mockDashboardMetrics.fidelizationMap.storeClientsCount),
-        prospectsCount: Math.max(prospectsCount, mockDashboardMetrics.fidelizationMap.prospectsCount),
+        totalParticipants,
+        storeClientsCount,
+        prospectsCount,
         prospectConversionOpportunityPercent,
-        recurringParticipantsCount: Math.max(recurringCount, mockDashboardMetrics.fidelizationMap.recurringParticipantsCount),
+        recurringParticipantsCount: recurringCount,
         recurringWithoutPurchasesPercent,
       },
       paymentStatus: {
-        totalBilledExpected: Math.max(totalBilledExpected, mockDashboardMetrics.paymentStatus.totalBilledExpected),
-        totalCollectedPabilo: Math.max(totalCollectedPabilo, mockDashboardMetrics.paymentStatus.totalCollectedPabilo),
-        totalCollectedManual: Math.max(totalCollectedManual, mockDashboardMetrics.paymentStatus.totalCollectedManual),
-        totalPending: Math.max(totalPending, mockDashboardMetrics.paymentStatus.totalPending),
-        pabiloApprovedCount: Math.max(pabiloApprovedCount, mockDashboardMetrics.paymentStatus.pabiloApprovedCount),
-        pendingCount: Math.max(pendingCount, mockDashboardMetrics.paymentStatus.pendingCount),
+        totalBilledExpected,
+        totalCollectedPabilo,
+        totalCollectedManual,
+        totalPending,
+        pabiloApprovedCount,
+        pendingCount,
       },
     };
 

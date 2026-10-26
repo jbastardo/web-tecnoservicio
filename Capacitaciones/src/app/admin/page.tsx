@@ -18,10 +18,10 @@ import {
 } from "lucide-react";
 import { DashboardMetrics } from "@/types";
 import { formatCurrency } from "@/utils/formatUtils";
-import { mockDashboardMetrics } from "@/lib/mockData";
+import { emptyDashboardMetrics } from "@/lib/mockData";
 
 export default function AdminDashboardPage() {
-  const [metrics, setMetrics] = useState<DashboardMetrics>(mockDashboardMetrics);
+  const [metrics, setMetrics] = useState<DashboardMetrics>(emptyDashboardMetrics);
   const [loading, setLoading] = useState(false);
 
   const fetchMetrics = () => {
