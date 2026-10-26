@@ -1,0 +1,86 @@
+version: "3.8"
+
+services:
+  # ----------------------------------------------------------------------------
+  # Aplicación Web: Onprotec Capacitaciones
+  # ----------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: onprotec/capacitaciones:latest
+    container_name: onprotec_capacitaciones_app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-onprotec_secure_pwd}@db:5432/${DB_NAME:-onprotec_capacitaciones}?sslmode=disable
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://capacitaciones.onprotec.com}
+      - NEXT_PUBLIC_ROOM_MAX_CAPACITY=18
+      - NEXT_PUBLIC_INSTRUCTOR_CAPACITY=1
+      - PABILO_API_URL=${PABILO_API_URL}
+      - PABILO_API_KEY=${PABILO_API_KEY}
+      - PABILO_WEBHOOK_SECRET=${PABILO_WEBHOOK_SECRET}
+      - ODOO_URL=${ODOO_URL}
+      - ODOO_DB=${ODOO_DB}
+      - ODOO_USERNAME=${ODOO_USERNAME}
+      - ODOO_PASSWORD=${ODOO_PASSWORD}
+      - WHATSAPP_PROVIDER=${WHATSAPP_PROVIDER:-meta}
+      - WHATSAPP_API_TOKEN=${WHATSAPP_API_TOKEN}
+      - WHATSAPP_PHONE_NUMBER_ID=${WHATSAPP_PHONE_NUMBER_ID}
+      - ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY:-onprotec_super_secret_2026}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - onprotec_net
+
+  # ----------------------------------------------------------------------------
+  # Base de Datos: PostgreSQL 16
+  # ----------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: onprotec_capacitaciones_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-onprotec_secure_pwd}
+      POSTGRES_DB: ${DB_NAME:-onprotec_capacitaciones}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-onprotec_capacitaciones}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - onprotec_net
+
+  # ----------------------------------------------------------------------------
+  # Opcional: Túnel de Cloudflare integrado (si se despliega directamente con token)
+  # ----------------------------------------------------------------------------
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: onprotec_cloudflare_tunnel
+    restart: always
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    depends_on:
+      - app
+    networks:
+      - onprotec_net
+    profiles:
+      - with-tunnel
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  onprotec_net:
+    driver: bridge

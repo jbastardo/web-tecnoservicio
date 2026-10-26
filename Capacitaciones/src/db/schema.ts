@@ -1,0 +1,178 @@
+import {
+  pgTable,
+  serial,
+  varchar,
+  text,
+  integer,
+  numeric,
+  boolean,
+  timestamp,
+  jsonb,
+  index,
+} from "drizzle-orm/pg-core";
+
+// =============================================================================
+// TABLA 1: CAPACITACIONES / EVENTOS
+// Aforo Máximo Estricto: 18 participantes + 1 instructor
+// =============================================================================
+export const trainings = pgTable(
+  "trainings",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    code: varchar("code", { length: 50 }).notNull().unique(),
+    type: varchar("type", { length: 50 }).notNull(), // 'Curso', 'Workshop', 'Certificación', 'Interno', 'Otros'
+    instructor: varchar("instructor", { length: 255 }).notNull(),
+    eventDate: timestamp("event_date", { withTimezone: true }).notNull(),
+    adStartDate: timestamp("ad_start_date", { withTimezone: true }),
+    adCosts: numeric("ad_costs", { precision: 12, scale: 2 }).default("0.00").notNull(),
+    associatedCosts: numeric("associated_costs", { precision: 12, scale: 2 }).default("0.00").notNull(), // Refrigerios, logística, materiales
+    maxCapacity: integer("max_capacity").default(18).notNull(), // Sala Onprotec: 18 cupos
+    instructorCapacity: integer("instructor_capacity").default(1).notNull(),
+    relatedSkus: jsonb("related_skus").$type<string[]>().default([]).notNull(), // SKUs de Odoo
+    price: numeric("price", { precision: 12, scale: 2 }).default("0.00").notNull(),
+    currency: varchar("currency", { length: 10 }).default("USD").notNull(), // 'USD' o 'BS'
+    status: varchar("status", { length: 50 }).default("Planificado").notNull(),
+    surveyUrl: text("survey_url"),
+    surveyQrCode: text("survey_qr_code"),
+    description: text("description"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    statusIdx: index("idx_trainings_status").on(table.status),
+    eventDateIdx: index("idx_trainings_event_date").on(table.eventDate),
+  })
+);
+
+// =============================================================================
+// TABLA 2: PARTICIPANTES (CLIENTES / PROSPECTOS)
+// Historial de compras en tienda y datos de contacto
+// =============================================================================
+export const participants = pgTable(
+  "participants",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    docType: varchar("doc_type", { length: 10 }).default("V").notNull(), // V, E, J, G, P
+    docNumber: varchar("doc_number", { length: 50 }).notNull().unique(), // Cédula/RIF
+    phone: varchar("phone", { length: 50 }).notNull(), // WhatsApp normalizado (+58...)
+    email: varchar("email", { length: 255 }).notNull(),
+    hasStorePurchases: boolean("has_store_purchases").default(false).notNull(), // Booleano compra previa
+    storePurchasesAmount: numeric("store_purchases_amount", { precision: 12, scale: 2 }).default("0.00").notNull(), // Monto $
+    company: varchar("company", { length: 255 }),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    docNumberIdx: index("idx_participants_doc_number").on(table.docNumber),
+    phoneIdx: index("idx_participants_phone").on(table.phone),
+  })
+);
+
+// =============================================================================
+// TABLA 3: INSCRIPCIONES (TABLA PIVOTE CON CONTROL FINANCIERO Y ASISTENCIA)
+// =============================================================================
+export const registrations = pgTable(
+  "registrations",
+  {
+    id: serial("id").primaryKey(),
+    trainingId: integer("training_id")
+      .references(() => trainings.id, { onDelete: "cascade" })
+      .notNull(),
+    participantId: integer("participant_id")
+      .references(() => participants.id, { onDelete: "cascade" })
+      .notNull(),
+    status: varchar("status", { length: 50 }).default("Inscrito").notNull(), // 'Inscrito', 'Confirmado', 'Asistió', 'No Asistió', 'Lista de Espera', 'Cancelado'
+    confirmationDate: timestamp("confirmation_date", { withTimezone: true }), // ~24h antes
+    amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+    currency: varchar("currency", { length: 10 }).default("USD").notNull(), // BS o $
+    isPaid: boolean("is_paid").default(false).notNull(), // Cobrado: Sí / No
+    paymentDate: timestamp("payment_date", { withTimezone: true }),
+    paymentMethod: varchar("payment_method", { length: 50 }), // Pabilo, Transferencia, Pago Móvil, Efectivo
+    paymentReference: varchar("payment_reference", { length: 100 }),
+    pabiloTransactionId: varchar("pabilo_transaction_id", { length: 100 }),
+    pabiloStatus: varchar("pabilo_status", { length: 50 }).default("pending").notNull(), // pending, approved, rejected, manual
+    invoiceNumber: varchar("invoice_number", { length: 100 }), // Control Factura / Nota de Entrega
+    paymentProofUrl: text("payment_proof_url"),
+    specialNotes: text("special_notes"),
+    reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
+    surveySentAt: timestamp("survey_sent_at", { withTimezone: true }),
+    checkInAt: timestamp("check_in_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    trainingIdIdx: index("idx_registrations_training_id").on(table.trainingId),
+    participantIdIdx: index("idx_registrations_participant_id").on(table.participantId),
+    statusIdx: index("idx_registrations_status").on(table.status),
+    pabiloTxIdx: index("idx_registrations_pabilo_tx").on(table.pabiloTransactionId),
+  })
+);
+
+// =============================================================================
+// TABLA 4: CATÁLOGO DE PRODUCTOS / SKUS DE ODOO (CACHE)
+// =============================================================================
+export const odooProducts = pgTable(
+  "odoo_products",
+  {
+    id: serial("id").primaryKey(),
+    odooId: integer("odoo_id").unique().notNull(),
+    sku: varchar("sku", { length: 100 }).unique().notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    listPrice: numeric("list_price", { precision: 12, scale: 2 }).default("0.00").notNull(),
+    qtyAvailable: numeric("qty_available", { precision: 12, scale: 2 }).default("0.00").notNull(),
+    category: varchar("category", { length: 100 }),
+    lastSyncAt: timestamp("last_sync_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    skuIdx: index("idx_odoo_products_sku").on(table.sku),
+  })
+);
+
+// =============================================================================
+// TABLA 5: ENCUESTAS DE SATISFACCIÓN (POST-EVENTO / QR)
+// =============================================================================
+export const surveys = pgTable(
+  "surveys",
+  {
+    id: serial("id").primaryKey(),
+    trainingId: integer("training_id")
+      .references(() => trainings.id, { onDelete: "cascade" })
+      .notNull(),
+    participantId: integer("participant_id").references(() => participants.id, {
+      onDelete: "set null",
+    }),
+    ratingInstructor: integer("rating_instructor").notNull(), // 1 - 5
+    ratingContent: integer("rating_content").notNull(), // 1 - 5
+    ratingFacilities: integer("rating_facilities").notNull(), // 1 - 5 (Sala Onprotec)
+    recommendationScore: integer("recommendation_score").notNull(), // NPS 1 - 10
+    feedback: text("feedback"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    trainingSurveyIdx: index("idx_surveys_training_id").on(table.trainingId),
+  })
+);
+
+// =============================================================================
+// TABLA 6: BITÁCORA DE INTEGRACIONES (LOGS AUDITABLES)
+// =============================================================================
+export const integrationLogs = pgTable(
+  "integration_logs",
+  {
+    id: serial("id").primaryKey(),
+    service: varchar("service", { length: 50 }).notNull(), // 'Odoo', 'Pabilo', 'WhatsApp', 'Cloudflare'
+    action: varchar("action", { length: 100 }).notNull(),
+    status: varchar("status", { length: 20 }).notNull(), // 'success', 'failed', 'pending'
+    payload: jsonb("payload"),
+    response: jsonb("response"),
+    errorMessage: text("error_message"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    serviceIdx: index("idx_integration_logs_service").on(table.service),
+    createdAtIdx: index("idx_integration_logs_created_at").on(table.createdAt),
+  })
+);
