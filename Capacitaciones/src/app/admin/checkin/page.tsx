@@ -177,7 +177,7 @@ export default function CheckinAdminPage() {
           </div>
 
           <p className="mt-4 text-xs font-mono text-cyan-300">
-            {currentTraining?.surveyUrl || "https://capacitaciones.onprotec.com/encuesta/1"}
+            {currentTraining?.surveyUrl || "https://capacitacion.tutecnoservicio.com/encuesta/1"}
           </p>
         </div>
       )}

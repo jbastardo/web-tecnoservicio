@@ -22,7 +22,7 @@ flowchart TD
     end
 
     subgraph Core [Aplicación Web Next.js 15 - Widescreen First]
-        AppServer["Next.js Server / Standalone Runner (Puerto 3000)"]
+        AppServer["Next.js Server / Standalone Runner (Puerto Host 6008 -> 3000)"]
         AutoMigrate["AutoMigrate DDL Idempotente"]
         FormatUtils["FormatUtils (America/Caracas UTC-4)"]
         
@@ -43,8 +43,8 @@ flowchart TD
 
     subgraph Database [Persistencia & Despliegue]
         PostgresDB[(PostgreSQL 16 Alpine)]
-        Coolify["Coolify PaaS (Despliegue Dockerizado)"]
-        CloudflareTunnel["Cloudflare Tunnel (cloudflared)"]
+        Coolify["Coolify PaaS (Puerto Host: 6008)"]
+        CloudflareTunnel["Cloudflare Tunnel (capacitacion.tutecnoservicio.com -> 192.168.1.32:6008)"]
     end
 
     Landing -->|POST /api/inscripciones| AppServer
@@ -136,12 +136,13 @@ flowchart TD
 ---
 
 ## 5. Instrucciones de Despliegue en Coolify & Cloudflare Tunnel
-
-1. **Creación en Coolify:**
-   * Tipo: **Application from Git Repository** o **Docker Compose**.
-   * Puerto expuesto: **3000**.
-   * Variables de entorno: Importar desde `.env.example`.
-2. **Base de Datos PostgreSQL:**
-   * Utilizar el servicio `db` de `docker-compose.yml` o el servicio gestionado de PostgreSQL en Coolify.
-3. **Cloudflare Tunnel:**
-   * Configurar `cloudflared` apuntando a `http://app:3000` con el dominio público deseado (ej. `capacitaciones.onprotec.com`).
+ 
+ 1. **Creación en Coolify:**
+    * Tipo: **Application from Git Repository** o **Docker Compose**.
+    * Puerto expuesto / Mapeo de puertos: **`6008:3000`** (Host Port 6008 apuntando al contenedor 3000).
+    * Dominio FQDN: **`https://capacitacion.tutecnoservicio.com`**.
+    * Variables de entorno: Importar desde `.env.example`.
+ 2. **Base de Datos PostgreSQL:**
+    * Utilizar el servicio `db` de `docker-compose.yml` o el servicio gestionado de PostgreSQL en Coolify.
+ 3. **Cloudflare Tunnel:**
+    * Configurar ruta: `capacitacion.tutecnoservicio.com` $\rightarrow$ `http://192.168.1.32:6008`.

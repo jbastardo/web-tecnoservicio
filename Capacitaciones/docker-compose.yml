@@ -3,6 +3,7 @@ version: "3.8"
 services:
   # ----------------------------------------------------------------------------
   # Aplicación Web: Onprotec Capacitaciones
+  # Mapeo de Puerto Host: 6008 -> 3000 (Cloudflare Tunnel: 192.168.1.32:6008)
   # ----------------------------------------------------------------------------
   app:
     build:
@@ -12,12 +13,12 @@ services:
     container_name: onprotec_capacitaciones_app
     restart: always
     ports:
-      - "3000:3000"
+      - "6008:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
       - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-onprotec_secure_pwd}@db:5432/${DB_NAME:-onprotec_capacitaciones}?sslmode=disable
-      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://capacitaciones.onprotec.com}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://capacitacion.tutecnoservicio.com}
       - NEXT_PUBLIC_ROOM_MAX_CAPACITY=18
       - NEXT_PUBLIC_INSTRUCTOR_CAPACITY=1
       - PABILO_API_URL=${PABILO_API_URL}
@@ -59,23 +60,6 @@ services:
       retries: 5
     networks:
       - onprotec_net
-
-  # ----------------------------------------------------------------------------
-  # Opcional: Túnel de Cloudflare integrado (si se despliega directamente con token)
-  # ----------------------------------------------------------------------------
-  tunnel:
-    image: cloudflare/cloudflared:latest
-    container_name: onprotec_cloudflare_tunnel
-    restart: always
-    command: tunnel run
-    environment:
-      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
-    depends_on:
-      - app
-    networks:
-      - onprotec_net
-    profiles:
-      - with-tunnel
 
 volumes:
   postgres_data:

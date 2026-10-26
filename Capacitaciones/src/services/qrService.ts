@@ -43,7 +43,7 @@ export class QrService {
    * Genera la URL pública de la encuesta para un evento
    */
   buildSurveyUrl(trainingId: number): string {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capacitaciones.onprotec.com";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://capacitacion.tutecnoservicio.com";
     return `${baseUrl}/encuesta/${trainingId}`;
   }
 }
