@@ -21,6 +21,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN mkdir -p /app/public
 
 # Variables de entorno en tiempo de compilación (si aplican)
 ENV NEXT_TELEMETRY_DISABLED=1
