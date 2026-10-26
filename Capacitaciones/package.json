@@ -8,10 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "db:migrate": "tsx src/db/migrate.ts",
-    "gdrive:extract": "tsx scripts/extract_gdrive_forms.ts"
+    "gdrive:extract": "tsx scripts/extract_gdrive_forms.ts",
+    "forms:import": "tsx scripts/import_local_forms.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "csv-parse": "^7.0.3",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.39.3",
     "googleapis": "^188.0.0",
@@ -21,7 +23,8 @@
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwind-merge": "^3.0.1"
+    "tailwind-merge": "^3.0.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^22.13.4",
