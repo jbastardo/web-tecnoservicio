@@ -336,7 +336,17 @@ export function runIngestion() {
 
       // Determinar estado de la inscripción en la sala (Aforo 18)
       let regStatus: "Inscrito" | "Confirmado" | "Asistió" | "No Asistió" | "Lista de Espera" | "Cancelado" = "Asistió";
-      if (regIndexInEvent > 18) {
+      
+      // Participante que faltó al evento y no realizó el pago (Steven Pinto, C.I. 29948073)
+      const isStevenPintoUnpaid = isUniFiPaid && (
+        participant.docNumber.includes("29948073") ||
+        participant.name.toLowerCase().includes("steven pinto") ||
+        participant.email.toLowerCase().includes("stv.ale500@gmail.com")
+      );
+
+      if (isStevenPintoUnpaid) {
+        regStatus = "No Asistió";
+      } else if (regIndexInEvent > 18) {
         regStatus = "Lista de Espera";
       } else if (regIndexInEvent <= attendedTarget) {
         regStatus = "Asistió";
@@ -347,6 +357,19 @@ export function runIngestion() {
       }
 
       const registrationId = registrationCounter++;
+      const isPaid = isUniFiPaid && !isStevenPintoUnpaid && regStatus !== "Lista de Espera";
+      const pabiloStatus = isStevenPintoUnpaid
+        ? "pending"
+        : isUniFiPaid
+        ? "manual"
+        : "pending";
+
+      const paymentNotes = isStevenPintoUnpaid
+        ? "Faltó a la capacitación y no realizó el pago ($60 pendiente)."
+        : isUniFiPaid
+        ? (paymentProofUrl ? "Comprobante verificado manualmente" : "Pago verificado en efectivo / recepción")
+        : null;
+
       const reg: Registration = {
         id: registrationId,
         trainingId,
@@ -355,15 +378,15 @@ export function runIngestion() {
         confirmationDate: formSubmittedAt,
         amount: isUniFiPaid ? 60.0 : 0.0,
         currency: "USD",
-        isPaid: isUniFiPaid && regStatus !== "Lista de Espera",
-        paymentDate: isUniFiPaid ? formSubmittedAt : null,
-        paymentMethod,
-        paymentReference: isUniFiPaid ? `REF-${registrationId}` : null,
-        pabiloTransactionId: isUniFiPaid ? `tx_pab_${registrationId}` : null,
-        pabiloStatus: isUniFiPaid ? "approved" : "pending",
-        invoiceNumber: isUniFiPaid ? `FAC-2026-${String(registrationId).padStart(4, "0")}` : null,
-        paymentProofUrl,
-        paymentNotes: isUniFiPaid ? "Comprobante verificado" : null,
+        isPaid,
+        paymentDate: isPaid ? formSubmittedAt : null,
+        paymentMethod: isStevenPintoUnpaid ? "Sin especificar" : paymentMethod,
+        paymentReference: isStevenPintoUnpaid ? null : (paymentProofUrl ? `REF-${registrationId}` : `MAN-${registrationId}`),
+        pabiloTransactionId: null, // No fue validado por pasarela automática Pabilo
+        pabiloStatus,
+        invoiceNumber: isPaid ? `FAC-2026-${String(registrationId).padStart(4, "0")}` : null,
+        paymentProofUrl: isStevenPintoUnpaid ? null : paymentProofUrl,
+        paymentNotes,
         specialNotes,
         experienceLevel,
         originalFormName: file,

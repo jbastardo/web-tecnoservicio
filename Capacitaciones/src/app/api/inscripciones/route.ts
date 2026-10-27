@@ -159,7 +159,19 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { id, status, isPaid, checkInAt, invoiceNumber } = body;
+    const {
+      id,
+      status,
+      isPaid,
+      amount,
+      pabiloStatus,
+      paymentMethod,
+      paymentReference,
+      paymentNotes,
+      paymentDate,
+      checkInAt,
+      invoiceNumber,
+    } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -181,12 +193,38 @@ export async function PATCH(request: Request) {
       ...current,
       ...(status !== undefined && { status }),
       ...(isPaid !== undefined && { isPaid }),
+      ...(amount !== undefined && { amount: parseFloat(amount) }),
+      ...(pabiloStatus !== undefined && { pabiloStatus }),
+      ...(paymentMethod !== undefined && { paymentMethod }),
+      ...(paymentReference !== undefined && { paymentReference }),
+      ...(paymentNotes !== undefined && { paymentNotes }),
+      ...(paymentDate !== undefined && { paymentDate }),
       ...(checkInAt !== undefined && { checkInAt }),
       ...(invoiceNumber !== undefined && { invoiceNumber }),
       updatedAt: new Date().toISOString(),
     };
 
     initialRegistrations[regIndex] = updated;
+
+    // Sincronizar con archivo local realFormsData.json si está disponible
+    try {
+      const fs = await import("fs");
+      const path = await import("path");
+      const filePath = path.join(process.cwd(), "src", "lib", "realFormsData.json");
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, "utf-8");
+        const parsed = JSON.parse(raw);
+        if (parsed.registrations) {
+          const fileIndex = parsed.registrations.findIndex((r: any) => r.id === parseInt(id));
+          if (fileIndex !== -1) {
+            parsed.registrations[fileIndex] = updated;
+            fs.writeFileSync(filePath, JSON.stringify(parsed, null, 2));
+          }
+        }
+      }
+    } catch (fsErr) {
+      console.warn("No se pudo escribir en realFormsData.json (modo solo lectura o serverless):", fsErr);
+    }
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {

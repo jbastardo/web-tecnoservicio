@@ -18,7 +18,7 @@ export class PabiloService {
   private webhookSecret: string;
 
   constructor() {
-    this.apiUrl = process.env.PABILO_API_URL || "https://api.pabilo.com/v1";
+    this.apiUrl = process.env.PABILO_API_URL || "https://api.pabilo.app";
     this.apiKey = process.env.PABILO_API_KEY || "";
     this.webhookSecret = process.env.PABILO_WEBHOOK_SECRET || "";
   }

@@ -137,24 +137,25 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* KPI 4: Validación Pabilo Pay */}
+        {/* KPI 4: Validación y Recaudación de Pagos */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Cobrado vía Pabilo Pay</span>
-            <div className="w-8 h-8 rounded-lg bg-brand-500/10 text-brand-400 flex items-center justify-center">
+            <span className="text-xs font-medium text-slate-400">Total Recaudado (Cursos)</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
               <CreditCard className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-black text-white">
-              {formatCurrency(paymentStatus.totalCollectedPabilo)}
+              {formatCurrency(paymentStatus.totalCollectedManual + paymentStatus.totalCollectedPabilo)}
             </span>
             <span className="text-xs text-slate-400">
-              ({paymentStatus.pabiloApprovedCount} pagos auto)
+              ({paymentStatus.totalCollectedManual > 0 ? "Manual + Pabilo" : "Pabilo auto"})
             </span>
           </div>
-          <div className="mt-2 text-[11px] text-amber-400">
-            Pendiente por cobrar: {formatCurrency(paymentStatus.totalPending)}
+          <div className="mt-2 text-[11px] flex items-center justify-between">
+            <span className="text-amber-400">Pendiente: {formatCurrency(paymentStatus.totalPending)}</span>
+            <span className="text-slate-500 font-mono">Pabilo: {formatCurrency(paymentStatus.totalCollectedPabilo)}</span>
           </div>
         </div>
       </div>
