@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { initialTrainings, initialRegistrations } from "@/lib/mockData";
 import { qrService } from "@/services/qrService";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const order = searchParams.get("order") || "desc"; // "desc" (más recientes primero) o "asc" (cronológico)
+
     // Calculamos el aforo actual para cada capacitación
     const trainingsWithStats = initialTrainings.map((t) => {
       const regs = initialRegistrations.filter((r) => r.trainingId === t.id);
@@ -27,6 +30,13 @@ export async function GET() {
           isFull,
         },
       };
+    });
+
+    // Ordenar explícitamente por fecha del evento
+    trainingsWithStats.sort((a, b) => {
+      const timeA = new Date(a.eventDate || 0).getTime();
+      const timeB = new Date(b.eventDate || 0).getTime();
+      return order === "asc" ? timeA - timeB : timeB - timeA;
     });
 
     return NextResponse.json({ success: true, data: trainingsWithStats });

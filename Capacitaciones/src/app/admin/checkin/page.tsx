@@ -12,12 +12,15 @@ import {
   Minimize2,
   Sparkles,
 } from "lucide-react";
-import { fmtLocalTime } from "@/utils/formatUtils";
+import { fmtLocalTime, fmtLocalDate } from "@/utils/formatUtils";
 import { initialTrainings, initialRegistrations } from "@/lib/mockData";
 
 export default function CheckinAdminPage() {
-  const [trainings, setTrainings] = useState<any[]>(initialTrainings);
-  const [selectedTrainingId, setSelectedTrainingId] = useState<number>(initialTrainings[0]?.id || 1);
+  const sortedInitial = [...initialTrainings].sort(
+    (a, b) => new Date(b.eventDate || 0).getTime() - new Date(a.eventDate || 0).getTime()
+  );
+  const [trainings, setTrainings] = useState<any[]>(sortedInitial);
+  const [selectedTrainingId, setSelectedTrainingId] = useState<number>(sortedInitial[0]?.id || 1);
   const [registrations, setRegistrations] = useState<any[]>(initialRegistrations);
   const [kioskMode, setKioskMode] = useState(false);
 
@@ -110,11 +113,11 @@ export default function CheckinAdminPage() {
           <select
             value={selectedTrainingId}
             onChange={(e) => setSelectedTrainingId(parseInt(e.target.value))}
-            className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 font-semibold"
+            className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 font-semibold max-w-sm truncate"
           >
             {trainings.map((t) => (
               <option key={t.id} value={t.id}>
-                {t.code} - {t.name}
+                [{fmtLocalDate(t.eventDate)}] {t.code} - {t.name}
               </option>
             ))}
           </select>

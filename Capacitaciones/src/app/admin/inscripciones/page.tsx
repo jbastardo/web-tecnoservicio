@@ -213,13 +213,16 @@ export default function InscripcionesAdminPage() {
           <select
             value={trainingFilter}
             onChange={(e) => setTrainingFilter(e.target.value)}
-            className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500 max-w-[220px] truncate"
+            className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500 max-w-[260px] truncate"
           >
             <option value="all">Todas las Capacitaciones ({trainings.length})</option>
-            {trainings.map((t) => (
-              <option key={t.id} value={String(t.id)}>
-                {t.name}
-              </option>
+            {trainings
+              .slice()
+              .sort((a, b) => new Date(b.eventDate || 0).getTime() - new Date(a.eventDate || 0).getTime())
+              .map((t) => (
+                <option key={t.id} value={String(t.id)}>
+                  [{fmtLocalDate(t.eventDate)}] {t.name}
+                </option>
             ))}
           </select>
 

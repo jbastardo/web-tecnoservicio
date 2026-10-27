@@ -12,6 +12,8 @@ import {
   RefreshCw,
   X,
   Check,
+  Search,
+  ArrowUpDown,
 } from "lucide-react";
 import { Training } from "@/types";
 import { fmtLocalDate, fmtLocalHour, formatCurrency } from "@/utils/formatUtils";
@@ -22,6 +24,8 @@ export default function CapacitacionesAdminPage() {
   const [loading, setLoading] = useState(true);
   const [odooSkus, setOdooSkus] = useState<any[]>([]);
   const [syncingOdoo, setSyncingOdoo] = useState(false);
+  const [search, setSearch] = useState("");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
 
   // Modal Crear
   const [showModal, setShowModal] = useState(false);
@@ -46,7 +50,7 @@ export default function CapacitacionesAdminPage() {
 
   const fetchTrainings = () => {
     setLoading(true);
-    fetch("/api/capacitaciones")
+    fetch(`/api/capacitaciones?order=${sortOrder}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.success) setTrainings(d.data);
@@ -58,7 +62,7 @@ export default function CapacitacionesAdminPage() {
   useEffect(() => {
     fetchTrainings();
     setOdooSkus(initialOdooSkus);
-  }, []);
+  }, [sortOrder]);
 
   const handleSyncOdoo = async () => {
     setSyncingOdoo(true);
@@ -96,21 +100,58 @@ export default function CapacitacionesAdminPage() {
     }
   };
 
+  // Filtrado y ordenamiento cronológico
+  const filteredTrainings = trainings
+    .filter((t) => {
+      const matchSearch =
+        t.name?.toLowerCase().includes(search.toLowerCase()) ||
+        t.code?.toLowerCase().includes(search.toLowerCase()) ||
+        t.instructor?.toLowerCase().includes(search.toLowerCase());
+      return matchSearch;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.eventDate || 0).getTime();
+      const dateB = new Date(b.eventDate || 0).getTime();
+      return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+    });
+
   return (
     <div className="space-y-6">
       {/* Cintillo Widescreen de Cabecera y Acciones */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800">
         <div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
             <CalendarCheck className="w-6 h-6 text-brand-400" />
             <span>Gestión de Capacitaciones & Costos</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Control de eventos, aforo estricto (18 participantes + 1 instructor) y vinculación de SKUs Odoo.
+            {filteredTrainings.length} eventos ordenados cronológicamente ({sortOrder === "desc" ? "más recientes primero" : "más antiguos primero"}).
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Barra de Búsqueda */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-3" />
+            <input
+              type="text"
+              placeholder="Buscar evento o instructor..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 w-52"
+            />
+          </div>
+
+          {/* Botón de Ordenamiento por Fecha */}
+          <button
+            onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-200 rounded-xl transition shadow-sm"
+            title="Hacer clic para cambiar orden por fecha"
+          >
+            <ArrowUpDown className="w-3.5 h-3.5 text-cyan-400" />
+            <span>{sortOrder === "desc" ? "📅 Más recientes primero" : "📅 Más antiguos primero"}</span>
+          </button>
+
           <button
             onClick={handleSyncOdoo}
             disabled={syncingOdoo}
@@ -138,7 +179,19 @@ export default function CapacitacionesAdminPage() {
               <tr>
                 <th className="py-3.5 px-4">Código / Evento</th>
                 <th className="py-3.5 px-4">Tipo & Instructor</th>
-                <th className="py-3.5 px-4">Fecha (Caracas)</th>
+                <th
+                  onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+                  className="py-3.5 px-4 cursor-pointer hover:text-white select-none transition"
+                  title="Clic para cambiar orden cronológico"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Fecha (Caracas)</span>
+                    <ArrowUpDown className="w-3 h-3 text-cyan-400" />
+                    <span className="text-[9px] text-cyan-400 font-mono">
+                      ({sortOrder === "desc" ? "↓ Recientes" : "↑ Antiguos"})
+                    </span>
+                  </div>
+                </th>
                 <th className="py-3.5 px-4">Aforo Sala (Máx 18)</th>
                 <th className="py-3.5 px-4">Inversión / Costos</th>
                 <th className="py-3.5 px-4">SKUs Odoo</th>
@@ -153,14 +206,14 @@ export default function CapacitacionesAdminPage() {
                     Cargando capacitaciones...
                   </td>
                 </tr>
-              ) : trainings.length === 0 ? (
+              ) : filteredTrainings.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-500">
-                    No hay capacitaciones registradas.
+                    No se encontraron capacitaciones coincidentes.
                   </td>
                 </tr>
               ) : (
-                trainings.map((t) => {
+                filteredTrainings.map((t) => {
                   const stats = t.stats || { totalOccupied: 16, availableSeats: 2, isFull: false };
                   const isFull = stats.totalOccupied >= 18;
 

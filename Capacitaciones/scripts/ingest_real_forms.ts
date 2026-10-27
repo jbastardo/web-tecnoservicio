@@ -483,7 +483,10 @@ export function runIngestion() {
     }
   }
 
-  const trainingsList = Array.from(trainingsMap.values());
+  // Ordenar capacitaciones por fecha del evento (más recientes primero)
+  const trainingsList = Array.from(trainingsMap.values()).sort(
+    (a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime()
+  );
   const participantsList = Array.from(participantsMap.values());
 
   console.log("\n==================================================================");
