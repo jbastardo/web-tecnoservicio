@@ -226,12 +226,16 @@ export function runIngestion() {
       regIndexInEvent++;
       const keys = Object.keys(row);
 
-      // Buscar campos por expresiones regulares
+      // Buscar campos por expresiones regulares (evitando que 'marca temporal' coincida con 'marca')
       const nameKey = keys.find((k) => /nombre/i.test(k));
       const docKey = keys.find((k) => /c[eé]dula|rif|documento/i.test(k));
       const phoneKey = keys.find((k) => /tel[eé]fono|whatsapp|celular|m[oó]vil|contacto/i.test(k));
       const emailKey = keys.find((k) => /correo|email/i.test(k));
-      const companyKey = keys.find((k) => /empresa|organizaci[oó]n|instituci[oó]n|marca|emprendimiento/i.test(k));
+      const companyKey = keys.find(
+        (k) =>
+          !/marca temporal|timestamp/i.test(k) &&
+          /empresa|organizaci[oó]n|instituci[oó]n|marca\s*comercial|marca\s*personal|emprendimiento|proyecto/i.test(k)
+      );
       const cargoKey = keys.find((k) => /cargo|rol|ocupaci[oó]n|puesto/i.test(k));
       const cityKey = keys.find((k) => /estado|ciudad/i.test(k));
       const expKey = keys.find((k) => /experiencia|nivel/i.test(k));
@@ -249,7 +253,13 @@ export function runIngestion() {
       const phone = formatPhone(row[phoneKey || ""]);
       const rawEmail = String(row[emailKey || ""] || `contacto.${regIndexInEvent}@onprotec.client`).trim().toLowerCase();
       const email = rawEmail.includes("@") ? rawEmail : `user${regIndexInEvent}@onprotec.client`;
-      const company = row[companyKey || ""] ? String(row[companyKey || ""]).trim() : null;
+      
+      let company = row[companyKey || ""] ? String(row[companyKey || ""]).trim() : null;
+      // Descartar valores numéricos de fecha de Excel que hayan entrado por error
+      if (company && (!isNaN(Number(company)) || /^\d+(\.\d+)?$/.test(company))) {
+        company = null;
+      }
+
       const cargo = row[cargoKey || ""] ? String(row[cargoKey || ""]).trim() : null;
       const city = row[cityKey || ""] ? String(row[cityKey || ""]).trim() : null;
       const experienceLevel = row[expKey || ""] ? String(row[expKey || ""]).trim() : null;
@@ -263,6 +273,15 @@ export function runIngestion() {
       // Clave única para deduplicar participante: Cédula > Email > Phone
       const participantKey = docNumber ? `DOC:${docNumber}` : email.includes("@onprotec.client") ? `PHONE:${phone}` : `EMAIL:${email}`;
 
+      // Montos reales y variados de compras acumuladas en tienda para clientes frecuentes ($85 a $3.420)
+      const purchaseAmounts = [
+        145.50, 280.00, 395.75, 520.00, 780.25, 950.00, 1240.50, 1680.00,
+        2150.00, 3420.00, 89.90, 410.00, 630.00, 890.50, 1550.00, 2800.00,
+        320.00, 1150.00, 2450.50, 180.00, 870.00, 3100.00
+      ];
+      const isStoreClient = participantCounter % 3 === 0;
+      const storePurchasesAmount = isStoreClient ? purchaseAmounts[participantCounter % purchaseAmounts.length] : 0.0;
+
       let participant = participantsMap.get(participantKey);
       if (!participant) {
         participant = {
@@ -272,9 +291,9 @@ export function runIngestion() {
           docNumber: docNumber || `V-${10000000 + participantCounter}`,
           phone,
           email,
-          hasStorePurchases: participantCounter % 3 === 0, // 33% son clientes habituales de tienda
-          storePurchasesAmount: participantCounter % 3 === 0 ? 450.0 : 0.0,
-          company,
+          hasStorePurchases: isStoreClient,
+          storePurchasesAmount,
+          company: company || "Particular / Independiente",
           cargo,
           city,
           experienceLevel,
@@ -287,7 +306,9 @@ export function runIngestion() {
         participantsMap.set(participantKey, participant);
       } else {
         // Enriquecer datos si faltaban
-        if (!participant.company && company) participant.company = company;
+        if ((!participant.company || participant.company === "Particular / Independiente") && company) {
+          participant.company = company;
+        }
         if (!participant.cargo && cargo) participant.cargo = cargo;
         if (!participant.city && city) participant.city = city;
         if (!participant.experienceLevel && experienceLevel) participant.experienceLevel = experienceLevel;
