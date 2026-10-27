@@ -16,14 +16,37 @@ import { fmtLocalTime } from "@/utils/formatUtils";
 import { initialTrainings, initialRegistrations } from "@/lib/mockData";
 
 export default function CheckinAdminPage() {
-  const [trainings, setTrainings] = useState<any[]>([]);
-  const [selectedTrainingId, setSelectedTrainingId] = useState<number>(1);
-  const [registrations, setRegistrations] = useState<any[]>([]);
+  const [trainings, setTrainings] = useState<any[]>(initialTrainings);
+  const [selectedTrainingId, setSelectedTrainingId] = useState<number>(initialTrainings[0]?.id || 1);
+  const [registrations, setRegistrations] = useState<any[]>(initialRegistrations);
   const [kioskMode, setKioskMode] = useState(false);
 
+  const fetchRegistrations = async () => {
+    try {
+      const res = await fetch("/api/inscripciones");
+      const data = await res.json();
+      if (data.success && data.data?.length > 0) {
+        setRegistrations(data.data);
+      }
+    } catch (err) {
+      console.error("Error cargando inscripciones:", err);
+    }
+  };
+
   useEffect(() => {
-    setTrainings(initialTrainings);
-    setRegistrations(initialRegistrations);
+    fetch("/api/capacitaciones")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success && d.data?.length > 0) {
+          setTrainings(d.data);
+          if (!selectedTrainingId) {
+            setSelectedTrainingId(d.data[0].id);
+          }
+        }
+      })
+      .catch((e) => console.error("Error cargando capacitaciones:", e));
+
+    fetchRegistrations();
   }, []);
 
   const currentTraining = trainings.find((t) => t.id === selectedTrainingId) || trainings[0];
@@ -33,20 +56,40 @@ export default function CheckinAdminPage() {
   const confirmedCount = trainingRegs.filter((r) => r.status === "Confirmado").length;
   const maxCapacity = 18;
 
-  const handleCheckIn = (regId: number) => {
+  const handleCheckIn = async (regId: number) => {
+    const reg = registrations.find((r) => r.id === regId);
+    if (!reg) return;
+
+    const nextStatus = reg.status === "Asistió" ? "Confirmado" : "Asistió";
+    const nextCheckInAt = nextStatus === "Asistió" ? new Date().toISOString() : null;
+
+    // Actualización optimista inmediata en la UI
     setRegistrations((prev) =>
-      prev.map((r) => {
-        if (r.id === regId) {
-          const nextStatus = r.status === "Asistió" ? "Confirmado" : "Asistió";
-          return {
-            ...r,
-            status: nextStatus,
-            checkInAt: nextStatus === "Asistió" ? new Date().toISOString() : null,
-          };
-        }
-        return r;
-      })
+      prev.map((r) =>
+        r.id === regId
+          ? {
+              ...r,
+              status: nextStatus,
+              checkInAt: nextCheckInAt,
+            }
+          : r
+      )
     );
+
+    // Persistir estado en el servidor
+    try {
+      await fetch("/api/inscripciones", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: regId,
+          status: nextStatus,
+          checkInAt: nextCheckInAt,
+        }),
+      });
+    } catch (err) {
+      console.error("Error persistiendo check-in:", err);
+    }
   };
 
   return (

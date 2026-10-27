@@ -155,3 +155,42 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, status, isPaid, checkInAt, invoiceNumber } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "ID de inscripción requerido." },
+        { status: 400 }
+      );
+    }
+
+    const regIndex = initialRegistrations.findIndex((r) => r.id === parseInt(id));
+    if (regIndex === -1) {
+      return NextResponse.json(
+        { success: false, error: "Inscripción no encontrada." },
+        { status: 404 }
+      );
+    }
+
+    const current = initialRegistrations[regIndex];
+    const updated = {
+      ...current,
+      ...(status !== undefined && { status }),
+      ...(isPaid !== undefined && { isPaid }),
+      ...(checkInAt !== undefined && { checkInAt }),
+      ...(invoiceNumber !== undefined && { invoiceNumber }),
+      updatedAt: new Date().toISOString(),
+    };
+
+    initialRegistrations[regIndex] = updated;
+
+    return NextResponse.json({ success: true, data: updated });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+

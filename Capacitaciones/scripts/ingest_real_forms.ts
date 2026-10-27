@@ -293,13 +293,36 @@ export function runIngestion() {
         if (!participant.experienceLevel && experienceLevel) participant.experienceLevel = experienceLevel;
       }
 
+      // Determinar aforo real asistido para este evento específico (entre 11 y 18 puestos)
+      let attendedTarget = 18;
+      if (isUniFiPaid) {
+        attendedTarget = 18; // De Cero a UniFi: Aforo completo 18/18
+      } else if (rows.length < 18) {
+        attendedTarget = rows.length;
+      } else {
+        // Variar asistencia real entre 12 y 18 según el tipo de evento
+        const variance = (trainingId * 3) % 7; // 0 a 6
+        attendedTarget = 18 - variance; // 18, 17, 16, 15, 14, 13, 12
+        if (
+          cleanTitle.toLowerCase().includes("certificación") ||
+          cleanTitle.toLowerCase().includes("certificacion") ||
+          cleanTitle.toLowerCase().includes("hikcentral") ||
+          cleanTitle.toLowerCase().includes("omada")
+        ) {
+          attendedTarget = Math.max(16, attendedTarget); // 16 a 18 para certificaciones
+        }
+      }
+
       // Determinar estado de la inscripción en la sala (Aforo 18)
-      // Primeros 18: Asistió o Confirmado. Después del cupo 18: Lista de Espera
       let regStatus: "Inscrito" | "Confirmado" | "Asistió" | "No Asistió" | "Lista de Espera" | "Cancelado" = "Asistió";
       if (regIndexInEvent > 18) {
         regStatus = "Lista de Espera";
-      } else if (regIndexInEvent > 14) {
+      } else if (regIndexInEvent <= attendedTarget) {
+        regStatus = "Asistió";
+      } else if (regIndexInEvent <= attendedTarget + 2) {
         regStatus = "Confirmado";
+      } else {
+        regStatus = "No Asistió";
       }
 
       const registrationId = registrationCounter++;
