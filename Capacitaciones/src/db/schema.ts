@@ -10,6 +10,7 @@ import {
   jsonb,
   index,
 } from "drizzle-orm/pg-core";
+import { FormQuestion, SurveyQuestion } from "@/types";
 
 // =============================================================================
 // TABLA 1: CAPACITACIONES / EVENTOS
@@ -22,6 +23,7 @@ export const trainings = pgTable(
     name: varchar("name", { length: 255 }).notNull(),
     code: varchar("code", { length: 50 }).notNull().unique(),
     type: varchar("type", { length: 50 }).notNull(), // 'Curso', 'Workshop', 'Certificación', 'Interno', 'Otros'
+    brand: varchar("brand", { length: 100 }), // Marca aliada: Dahua, Hikvision, TP-Link, Ubiquiti, OnProtec, etc.
     instructor: varchar("instructor", { length: 255 }).notNull(),
     eventDate: timestamp("event_date", { withTimezone: true }).notNull(),
     adStartDate: timestamp("ad_start_date", { withTimezone: true }),
@@ -36,6 +38,11 @@ export const trainings = pgTable(
     surveyUrl: text("survey_url"),
     surveyQrCode: text("survey_qr_code"),
     description: text("description"),
+    presentationNotes: text("presentation_notes"), // Nota para la presentación
+    coverImageUrl: text("cover_image_url"), // Foto principal para la portada
+    coverPhotos: jsonb("cover_photos").$type<string[]>().default([]).notNull(), // Galería de fotos para portada
+    formQuestions: jsonb("form_questions").$type<FormQuestion[]>().default([]).notNull(), // Preguntas del formulario de inscripción
+    surveyQuestions: jsonb("survey_questions").$type<SurveyQuestion[]>().default([]).notNull(), // Preguntas de la encuesta final
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
@@ -105,6 +112,7 @@ export const registrations = pgTable(
     paymentNotes: text("payment_notes"),
     specialNotes: text("special_notes"),
     experienceLevel: varchar("experience_level", { length: 150 }),
+    customAnswers: jsonb("custom_answers").$type<Record<string, any>>().default({}).notNull(),
     originalFormName: varchar("original_form_name", { length: 255 }),
     formSubmittedAt: timestamp("form_submitted_at", { withTimezone: true }),
     reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
@@ -166,6 +174,7 @@ export const surveys = pgTable(
     suggestions: text("suggestions"),
     wantsFutureCertifications: text("wants_future_certifications"),
     hasActiveProjects: text("has_active_projects"),
+    customAnswers: jsonb("custom_answers").$type<Record<string, any>>().default({}).notNull(),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
@@ -192,5 +201,29 @@ export const integrationLogs = pgTable(
   (table) => ({
     serviceIdx: index("idx_integration_logs_service").on(table.service),
     createdAtIdx: index("idx_integration_logs_created_at").on(table.createdAt),
+  })
+);
+
+// =============================================================================
+// TABLA 7: CREDENCIALES DE ACCESO ADMINISTRATIVO (RBAC ONPROTEC)
+// =============================================================================
+export const adminUsers = pgTable(
+  "admin_users",
+  {
+    id: serial("id").primaryKey(),
+    username: varchar("username", { length: 100 }).notNull().unique(),
+    email: varchar("email", { length: 255 }).notNull().unique(),
+    name: varchar("name", { length: 255 }).notNull(),
+    role: varchar("role", { length: 100 }).default("Coordinador de Sala").notNull(),
+    department: varchar("department", { length: 150 }).default("OnProtec Capacitaciones").notNull(),
+    passwordHash: text("password_hash").notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    usernameIdx: index("idx_admin_users_username").on(table.username),
+    emailIdx: index("idx_admin_users_email").on(table.email),
   })
 );

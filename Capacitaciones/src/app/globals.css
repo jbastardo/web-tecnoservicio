@@ -3,37 +3,158 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 15, 23, 42;
+  color-scheme: light dark;
+  --onprotec-navy: #1a1b4b;
+  --onprotec-orange: #e07b29;
+  --foreground-rgb: 241, 245, 249;
+  --background-start-rgb: 2, 6, 23;
+  --background-end-rgb: 15, 23, 42;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --foreground-rgb: 26, 27, 75;
   --background-start-rgb: 248, 250, 252;
   --background-end-rgb: 241, 245, 249;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: rgb(var(--background-start-rgb));
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Glassmorphism & Modern Card Styling */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+/* ==========================================================================
+   SISTEMA DE TEMA CLARO / OSCURO CORPORATIVO ONPROTEC (#1a1b4b & #e07b29)
+   Adapta todas las vistas Widescreen automáticamente en Modo Claro
+   ========================================================================== */
+
+html[data-theme="light"] body,
+html[data-theme="light"] .bg-slate-950 {
+  background-color: #f4f6fb !important;
+  color: #1e293b !important;
 }
 
-.glass-panel-dark {
-  background: rgba(12, 21, 36, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(30, 41, 59, 0.8);
+html[data-theme="light"] .bg-slate-950\/80,
+html[data-theme="light"] .bg-slate-950\/90 {
+  background-color: #eef2f9 !important;
+  color: #1e293b !important;
+}
+
+html[data-theme="light"] .bg-slate-900,
+html[data-theme="light"] .bg-slate-900\/95,
+html[data-theme="light"] .bg-slate-900\/90,
+html[data-theme="light"] .bg-slate-900\/60 {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+  box-shadow: 0 2px 12px rgba(26, 27, 75, 0.06);
+}
+
+html[data-theme="light"] .bg-slate-800,
+html[data-theme="light"] .bg-slate-800\/80,
+html[data-theme="light"] .bg-slate-800\/60,
+html[data-theme="light"] .hover\:bg-slate-800:hover,
+html[data-theme="light"] .hover\:bg-slate-800\/40:hover {
+  background-color: #f1f5f9 !important;
+  color: #1a1b4b !important;
+}
+
+html[data-theme="light"] .border-slate-800,
+html[data-theme="light"] .border-slate-800\/80,
+html[data-theme="light"] .border-slate-700 {
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme="light"] .divide-slate-800\/80 > :not([hidden]) ~ :not([hidden]),
+html[data-theme="light"] .divide-slate-800 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+html[data-theme="light"] .text-white:not(.keep-white),
+html[data-theme="light"] .text-slate-100:not(.keep-white),
+html[data-theme="light"] .text-slate-200:not(.keep-white) {
+  color: #1a1b4b !important;
+}
+
+/* Mantener texto blanco en botones primarios sólidos */
+html[data-theme="light"] .bg-brand-600,
+html[data-theme="light"] .bg-brand-500,
+html[data-theme="light"] .bg-emerald-600,
+html[data-theme="light"] .bg-cyan-600,
+html[data-theme="light"] .bg-amber-600,
+html[data-theme="light"] .bg-red-600,
+html[data-theme="light"] .from-brand-600,
+html[data-theme="light"] .onprotec-btn-primary {
+  color: #ffffff !important;
+}
+
+html[data-theme="light"] .bg-brand-600 *,
+html[data-theme="light"] .bg-emerald-600 *,
+html[data-theme="light"] .from-brand-600 *,
+html[data-theme="light"] .onprotec-btn-primary * {
+  color: #ffffff !important;
+}
+
+html[data-theme="light"] .text-slate-300 {
+  color: #334155 !important;
+}
+
+html[data-theme="light"] .text-slate-400,
+html[data-theme="light"] .text-slate-500 {
+  color: #475569 !important;
+}
+
+html[data-theme="light"] .text-brand-300,
+html[data-theme="light"] .text-brand-400 {
+  color: #0e5cd7 !important;
+}
+
+html[data-theme="light"] .text-cyan-300,
+html[data-theme="light"] .text-cyan-400 {
+  color: #0284c7 !important;
+}
+
+html[data-theme="light"] .text-emerald-300,
+html[data-theme="light"] .text-emerald-400 {
+  color: #047857 !important;
+}
+
+html[data-theme="light"] .text-amber-200,
+html[data-theme="light"] .text-amber-300,
+html[data-theme="light"] .text-amber-400 {
+  color: #b45309 !important;
+}
+
+html[data-theme="light"] .text-red-200,
+html[data-theme="light"] .text-red-300,
+html[data-theme="light"] .text-red-400 {
+  color: #b91c1c !important;
+}
+
+html[data-theme="light"] .from-slate-900 {
+  --tw-gradient-from: #eef2ff !important;
+  --tw-gradient-to: #ffffff !important;
+  --tw-gradient-stops: var(--tw-gradient-from), #f8fafc, var(--tw-gradient-to) !important;
+}
+
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder {
+  color: #94a3b8 !important;
 }
 
 /* Horizontal Scrollbars for Widescreen Data Views */
@@ -43,14 +164,14 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #64748b;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #475569;
 }

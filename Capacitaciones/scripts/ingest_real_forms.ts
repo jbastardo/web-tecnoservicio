@@ -339,7 +339,7 @@ export function runIngestion() {
       
       // Participante que faltó al evento y no realizó el pago (Steven Pinto, C.I. 29948073)
       const isStevenPintoUnpaid = isUniFiPaid && (
-        participant.docNumber.includes("29948073") ||
+        (participant.docNumber || "").includes("29948073") ||
         participant.name.toLowerCase().includes("steven pinto") ||
         participant.email.toLowerCase().includes("stv.ale500@gmail.com")
       );

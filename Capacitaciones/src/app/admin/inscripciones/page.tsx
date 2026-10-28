@@ -32,6 +32,8 @@ export default function InscripcionesAdminPage() {
 
   // Estado para el Modal de Validación Manual de Pagos
   const [modalReg, setModalReg] = useState<any | null>(null);
+  // Estado para ver en qué capacitaciones ha participado un inscrito
+  const [historyParticipant, setHistoryParticipant] = useState<any | null>(null);
   const [modalForm, setModalForm] = useState({
     isPaid: false,
     amount: 0,
@@ -294,6 +296,19 @@ export default function InscripcionesAdminPage() {
                         <span className="text-[11px] text-slate-400 block font-mono">
                           {r.participant?.docNumber || "S/D"} | {r.participant?.phone}
                         </span>
+                        {r.participant?.participations && (
+                          <button
+                            type="button"
+                            onClick={() => setHistoryParticipant(r.participant)}
+                            className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#e07b29]/15 text-[#e07b29] border border-[#e07b29]/30 hover:bg-[#e07b29]/25 transition"
+                            title="Ver todas las capacitaciones donde ha participado este inscrito"
+                          >
+                            <span>
+                              📚 Participó en {r.participant.participations.length}{" "}
+                              {r.participant.participations.length === 1 ? "curso" : "cursos"}
+                            </span>
+                          </button>
+                        )}
                       </td>
 
                       {/* Capacitación */}
@@ -454,6 +469,63 @@ export default function InscripcionesAdminPage() {
           </table>
         </div>
       </div>
+
+      {/* Modal de Historial de Participación del Inscrito */}
+      {historyParticipant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative">
+            <button
+              onClick={() => setHistoryParticipant(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="pb-3 mb-4 border-b border-slate-800">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#e07b29]">
+                Historial de Participación en OnProtec
+              </span>
+              <h3 className="text-lg font-extrabold text-white">{historyParticipant.name}</h3>
+              <p className="text-xs text-slate-400">
+                {historyParticipant.docNumber || "S/D"} · {historyParticipant.phone} ·{" "}
+                {historyParticipant.company || "Independiente"}
+              </p>
+            </div>
+
+            <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+              {(historyParticipant.participations || []).map((part: any) => (
+                <div
+                  key={part.registrationId}
+                  className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3 text-xs"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-brand-300">
+                        {part.trainingCode}
+                      </span>
+                      <span className="text-slate-400">{fmtLocalDate(part.eventDate)}</span>
+                    </div>
+                    <p className="font-bold text-white mt-0.5">{part.trainingName}</p>
+                  </div>
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+                      part.status === "Asistió"
+                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                        : part.status === "Confirmado"
+                        ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                        : part.status === "Lista de Espera"
+                        ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                        : "bg-slate-800 text-slate-300 border-slate-700"
+                    }`}
+                  >
+                    {part.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Validación Manual de Pagos */}
       {modalReg && (

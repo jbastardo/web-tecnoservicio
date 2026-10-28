@@ -3,9 +3,12 @@ import "./globals.css";
 import { runAutoMigrate } from "@/lib/autoMigrate";
 
 export const metadata: Metadata = {
-  title: "Onprotec | Gestión de Sala de Capacitaciones",
+  title: "OnProtec® | Sala de Capacitaciones — La Tienda del Instalador",
   description:
-    "Sistema integral para la gestión y control de la sala de capacitaciones (Aforo: 18 participantes) de Onprotec C.A.",
+    "Centro de formación técnica y práctica en Seguridad Electrónica, CCTV, Control de Acceso, Redes y Telecomunicaciones de OnProtec C.A. (www.onprotec.com). Aforo exclusivo: 18 participantes.",
+  icons: {
+    icon: "/brand/onprotec-icon.png",
+  },
 };
 
 export default async function RootLayout({
@@ -21,7 +24,22 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="es">
+    <html lang="es" data-theme="dark" suppressHydrationWarning>
+      <head>
+        <meta name="color-scheme" content="light dark" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var savedTheme = localStorage.getItem('onprotec-theme') || 'dark';
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                var m = document.querySelector('meta[name="color-scheme"]');
+                if (m) m.setAttribute('content', savedTheme);
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body className="antialiased selection:bg-brand-500 selection:text-white">
         {children}
       </body>

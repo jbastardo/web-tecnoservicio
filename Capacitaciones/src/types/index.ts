@@ -25,11 +25,44 @@ export type PaymentCurrency = "USD" | "BS";
 
 export type PabiloStatus = "pending" | "approved" | "rejected" | "manual";
 
+export type QuestionFieldType = "text" | "textarea" | "select" | "radio" | "checkbox" | "rating" | "nps";
+
+export interface FormQuestion {
+  id: string;
+  label: string;
+  placeholder?: string;
+  type: "text" | "textarea" | "select" | "radio" | "checkbox";
+  options?: string[]; // Para select / radio
+  required: boolean;
+}
+
+export interface SurveyQuestion {
+  id: string;
+  label: string;
+  type: "rating" | "nps" | "text" | "textarea" | "select" | "radio";
+  options?: string[];
+  required: boolean;
+}
+
+export interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  name: string;
+  role: "Super Admin" | "Gerencia General" | "Coordinador de Sala" | "Finanzas y Pagos" | "Recepción Check-in";
+  department: string;
+  password?: string;
+  isActive: boolean;
+  lastLoginAt?: string | null;
+  createdAt?: string;
+}
+
 export interface Training {
   id: number;
   name: string;
   code: string;
   type: TrainingType;
+  brand?: string | null;
   instructor: string;
   eventDate: string; // ISO String (America/Caracas presentation)
   adStartDate: string | null;
@@ -44,8 +77,26 @@ export interface Training {
   surveyUrl: string | null;
   surveyQrCode: string | null;
   description?: string | null;
+  presentationNotes?: string | null; // Nota para la presentación / portada
+  coverImageUrl?: string | null; // Foto principal de portada
+  coverPhotos?: string[]; // Galería de fotos para la portada
+  formQuestions?: FormQuestion[]; // Preguntas redactadas del formulario de inscripción
+  surveyQuestions?: SurveyQuestion[]; // Preguntas de la encuesta al final del curso
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface ParticipantParticipation {
+  registrationId: number;
+  trainingId: number;
+  trainingCode: string;
+  trainingName: string;
+  trainingType: string;
+  eventDate: string;
+  status: RegistrationStatus;
+  isPaid: boolean;
+  amount: number;
+  checkInAt?: string | null;
 }
 
 export interface Participant {
@@ -66,6 +117,8 @@ export interface Participant {
   notes?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  // Historial de cursos donde ha participado
+  participations?: ParticipantParticipation[];
 }
 
 export interface Registration {
@@ -87,6 +140,7 @@ export interface Registration {
   paymentNotes?: string | null;
   specialNotes?: string | null;
   experienceLevel?: string | null;
+  customAnswers?: Record<string, any>; // Respuestas a preguntas personalizadas del formulario
   originalFormName?: string | null;
   formSubmittedAt?: string | null;
   reminderSentAt: string | null;
@@ -116,6 +170,7 @@ export interface Survey {
   suggestions?: string | null;
   wantsFutureCertifications?: string | null;
   hasActiveProjects?: string | null;
+  customAnswers?: Record<string, any>;
   submittedAt?: string | null;
   createdAt?: string;
 }

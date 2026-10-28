@@ -16,6 +16,7 @@ const ddlStatements = [
     "name" VARCHAR(255) NOT NULL,
     "code" VARCHAR(50) NOT NULL UNIQUE,
     "type" VARCHAR(50) NOT NULL,
+    "brand" VARCHAR(100),
     "instructor" VARCHAR(255) NOT NULL,
     "event_date" TIMESTAMP WITH TIME ZONE NOT NULL,
     "ad_start_date" TIMESTAMP WITH TIME ZONE,
@@ -30,18 +31,29 @@ const ddlStatements = [
     "survey_url" TEXT,
     "survey_qr_code" TEXT,
     "description" TEXT,
+    "presentation_notes" TEXT,
+    "cover_image_url" TEXT,
+    "cover_photos" JSONB NOT NULL DEFAULT '[]'::jsonb,
+    "form_questions" JSONB NOT NULL DEFAULT '[]'::jsonb,
+    "survey_questions" JSONB NOT NULL DEFAULT '[]'::jsonb,
     "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
   );`,
 
   // Columnas preventivas en Trainings
   `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "code" VARCHAR(50);`,
+  `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "brand" VARCHAR(100);`,
   `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "ad_costs" NUMERIC(12, 2) DEFAULT 0.00;`,
   `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "associated_costs" NUMERIC(12, 2) DEFAULT 0.00;`,
   `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "max_capacity" INTEGER DEFAULT 18;`,
   `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "instructor_capacity" INTEGER DEFAULT 1;`,
   `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "related_skus" JSONB DEFAULT '[]'::jsonb;`,
   `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "survey_qr_code" TEXT;`,
+  `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "presentation_notes" TEXT;`,
+  `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "cover_image_url" TEXT;`,
+  `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "cover_photos" JSONB DEFAULT '[]'::jsonb;`,
+  `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "form_questions" JSONB DEFAULT '[]'::jsonb;`,
+  `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "survey_questions" JSONB DEFAULT '[]'::jsonb;`,
 
   // 2. Tabla: Participants (Participantes)
   `CREATE TABLE IF NOT EXISTS "participants" (
@@ -88,6 +100,7 @@ const ddlStatements = [
     "invoice_number" VARCHAR(100),
     "payment_proof_url" TEXT,
     "special_notes" TEXT,
+    "custom_answers" JSONB NOT NULL DEFAULT '{}'::jsonb,
     "reminder_sent_at" TIMESTAMP WITH TIME ZONE,
     "survey_sent_at" TIMESTAMP WITH TIME ZONE,
     "check_in_at" TIMESTAMP WITH TIME ZONE,
@@ -101,6 +114,7 @@ const ddlStatements = [
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "invoice_number" VARCHAR(100);`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "payment_notes" TEXT;`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "experience_level" VARCHAR(150);`,
+  `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "custom_answers" JSONB DEFAULT '{}'::jsonb;`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "original_form_name" VARCHAR(255);`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "form_submitted_at" TIMESTAMP WITH TIME ZONE;`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "check_in_at" TIMESTAMP WITH TIME ZONE;`,
@@ -129,6 +143,7 @@ const ddlStatements = [
     "rating_facilities" INTEGER NOT NULL DEFAULT 5,
     "recommendation_score" INTEGER NOT NULL DEFAULT 10,
     "feedback" TEXT,
+    "custom_answers" JSONB NOT NULL DEFAULT '{}'::jsonb,
     "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
   );`,
 
@@ -140,6 +155,7 @@ const ddlStatements = [
   `ALTER TABLE "surveys" ADD COLUMN IF NOT EXISTS "suggestions" TEXT;`,
   `ALTER TABLE "surveys" ADD COLUMN IF NOT EXISTS "wants_future_certifications" TEXT;`,
   `ALTER TABLE "surveys" ADD COLUMN IF NOT EXISTS "has_active_projects" TEXT;`,
+  `ALTER TABLE "surveys" ADD COLUMN IF NOT EXISTS "custom_answers" JSONB DEFAULT '{}'::jsonb;`,
   `ALTER TABLE "surveys" ADD COLUMN IF NOT EXISTS "submitted_at" TIMESTAMP WITH TIME ZONE;`,
   `ALTER TABLE "surveys" ALTER COLUMN "rating_instructor" DROP NOT NULL;`,
   `ALTER TABLE "surveys" ALTER COLUMN "rating_content" DROP NOT NULL;`,
@@ -158,6 +174,26 @@ const ddlStatements = [
     "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
   );`,
 
+  // 7. Tabla: Admin Users (Credenciales Administrativas OnProtec)
+  `CREATE TABLE IF NOT EXISTS "admin_users" (
+    "id" SERIAL PRIMARY KEY,
+    "username" VARCHAR(100) NOT NULL UNIQUE,
+    "email" VARCHAR(255) NOT NULL UNIQUE,
+    "name" VARCHAR(255) NOT NULL,
+    "role" VARCHAR(100) NOT NULL DEFAULT 'Coordinador de Sala',
+    "department" VARCHAR(150) NOT NULL DEFAULT 'OnProtec Capacitaciones',
+    "password_hash" TEXT NOT NULL,
+    "is_active" BOOLEAN NOT NULL DEFAULT TRUE,
+    "last_login_at" TIMESTAMP WITH TIME ZONE,
+    "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+  );`,
+
+  // Columnas preventivas en Admin Users
+  `ALTER TABLE "admin_users" ADD COLUMN IF NOT EXISTS "department" VARCHAR(150) DEFAULT 'OnProtec Capacitaciones';`,
+  `ALTER TABLE "admin_users" ADD COLUMN IF NOT EXISTS "is_active" BOOLEAN DEFAULT TRUE;`,
+  `ALTER TABLE "admin_users" ADD COLUMN IF NOT EXISTS "last_login_at" TIMESTAMP WITH TIME ZONE;`,
+
   // Índices para máximo rendimiento
   `CREATE INDEX IF NOT EXISTS "idx_trainings_status" ON "trainings"("status");`,
   `CREATE INDEX IF NOT EXISTS "idx_trainings_event_date" ON "trainings"("event_date");`,
@@ -171,7 +207,9 @@ const ddlStatements = [
   `CREATE INDEX IF NOT EXISTS "idx_odoo_products_sku" ON "odoo_products"("sku");`,
   `CREATE INDEX IF NOT EXISTS "idx_surveys_training_id" ON "surveys"("training_id");`,
   `CREATE INDEX IF NOT EXISTS "idx_integration_logs_service" ON "integration_logs"("service");`,
-  `CREATE INDEX IF NOT EXISTS "idx_integration_logs_created_at" ON "integration_logs"("created_at");`
+  `CREATE INDEX IF NOT EXISTS "idx_integration_logs_created_at" ON "integration_logs"("created_at");`,
+  `CREATE INDEX IF NOT EXISTS "idx_admin_users_username" ON "admin_users"("username");`,
+  `CREATE INDEX IF NOT EXISTS "idx_admin_users_email" ON "admin_users"("email");`
 ];
 
 let migrationDone = false;
