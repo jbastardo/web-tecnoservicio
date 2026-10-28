@@ -4,11 +4,17 @@
 
 :root {
   color-scheme: light dark;
-  --onprotec-navy: #1a1b4b;
-  --onprotec-orange: #e07b29;
-  --foreground-rgb: 241, 245, 249;
-  --background-start-rgb: 2, 6, 23;
-  --background-end-rgb: 15, 23, 42;
+  --bs-primary: #f4730a;
+  --bs-secondary: #f4730a;
+  --theme-title-color: #29275c;
+  --theme-btn-primary-bg: #f4730a;
+  --onprotec-navy: #2a285c;
+  --onprotec-navy-dark: #1a1b4b;
+  --onprotec-orange: #f4730a;
+  --onprotec-orange-hover: #ef7922;
+  --cashea-yellow: #fdff00;
+  --theme-headings-font-family: "Montserrat", "Mont", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --bs-body-font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 :root[data-theme="dark"] {
@@ -17,34 +23,146 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --foreground-rgb: 26, 27, 75;
-  --background-start-rgb: 248, 250, 252;
-  --background-end-rgb: 241, 245, 249;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
+  font-family: var(--bs-body-font-family);
   min-height: 100vh;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   overflow-x: hidden;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+h1, h2, h3, h4, .font-mont {
+  font-family: var(--theme-headings-font-family);
+}
+
+/* Textura geométrica hexagonal sutil inspirada en el Hero de www.onprotec.com */
+.onprotec-hex-bg {
+  background-color: #ffffff;
+  background-image: radial-gradient(#e5e7eb 1.25px, transparent 1.25px), radial-gradient(#f1f5f9 1.25px, #ffffff 1.25px);
+  background-size: 40px 40px;
+  background-position: 0 0, 20px 20px;
+}
+
+html[data-theme="dark"] .onprotec-hex-bg {
+  background-color: #090d16;
+  background-image: radial-gradient(rgba(244, 115, 10, 0.12) 1px, transparent 1px), radial-gradient(rgba(42, 40, 92, 0.25) 1px, #090d16 1px);
+  background-size: 40px 40px;
+  background-position: 0 0, 20px 20px;
+}
+
+/* Tipografía Contorneada Estilo "La tienda del INSTALADOR" de www.onprotec.com */
+.text-stroke-orange {
+  -webkit-text-stroke: 2px #f4730a;
+  color: transparent;
+}
+
+html[data-theme="dark"] .text-stroke-orange {
+  -webkit-text-stroke: 2px #ff8524;
+  color: transparent;
+}
+
+/* Subrayado punteado naranja oficial OnProtec */
+.onprotec-dotted-underline {
+  background-image: radial-gradient(circle, #f4730a 2.5px, transparent 2.5px);
+  background-position: bottom;
+  background-size: 12px 6px;
+  background-repeat: repeat-x;
+  padding-bottom: 10px;
+}
+
+/* Cintillo Compra con Cashea Oficial extraído de www.onprotec.com */
+.cashea-banner {
+  width: 100%;
+  background-color: #fdff00;
+  padding: 14px 0;
+  text-align: center;
+  font-family: "Montserrat", "Mont", sans-serif;
+  font-weight: 700;
+  border-top: 0px solid #fff;
+  border-bottom: 12px solid #fff;
+}
+
+html[data-theme="dark"] .cashea-banner {
+  border-bottom-color: #090d16;
+}
+
+.cashea-banner-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #000000 !important;
+  font-size: 16px;
+  line-height: 24px;
+  vertical-align: middle;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.cashea-banner-link:hover {
+  color: #2a285c !important;
+  transform: translateY(-1px);
+}
+
+.cashea-banner-icon {
+  width: 26px;
+  height: 26px;
+  vertical-align: middle;
+  margin-right: 10px;
+  object-fit: contain;
+}
+
+.cashea-banner-text {
+  color: #000000 !important;
+}
+
+.cashea-banner-text strong {
+  font-weight: 900;
+  font-size: 18px;
+  color: #000000 !important;
+}
+
+/* Botón Flotante Oficial WhatsApp de www.onprotec.com */
+.float-wa {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 58px;
+  height: 58px;
+  background-color: #25d366;
+  color: #fff !important;
+  border-radius: 50%;
+  text-align: center;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+
+.float-wa:hover,
+.float-wa:focus,
+.float-wa:active {
+  background-color: #ef7922;
+  box-shadow: 0 10px 28px rgba(239, 121, 34, 0.45);
+  transform: scale(1.06);
 }
 
 /* ==========================================================================
-   SISTEMA DE TEMA CLARO / OSCURO CORPORATIVO ONPROTEC (#1a1b4b & #e07b29)
-   Adapta todas las vistas Widescreen automáticamente en Modo Claro
+   ADAPTACIÓN AUTOMÁTICA MODO CLARO / OSCURO PARA VISTAS ADMINISTRATIVAS Y LANDING
    ========================================================================== */
 
 html[data-theme="light"] body,
 html[data-theme="light"] .bg-slate-950 {
-  background-color: #f4f6fb !important;
+  background-color: #f8f9fc !important;
   color: #1e293b !important;
 }
 
 html[data-theme="light"] .bg-slate-950\/80,
 html[data-theme="light"] .bg-slate-950\/90 {
-  background-color: #eef2f9 !important;
+  background-color: #f1f4f9 !important;
   color: #1e293b !important;
 }
 
@@ -54,7 +172,7 @@ html[data-theme="light"] .bg-slate-900\/90,
 html[data-theme="light"] .bg-slate-900\/60 {
   background-color: #ffffff !important;
   color: #1e293b !important;
-  box-shadow: 0 2px 12px rgba(26, 27, 75, 0.06);
+  box-shadow: 0 4px 20px rgba(42, 40, 92, 0.05);
 }
 
 html[data-theme="light"] .bg-slate-800,
@@ -63,13 +181,13 @@ html[data-theme="light"] .bg-slate-800\/60,
 html[data-theme="light"] .hover\:bg-slate-800:hover,
 html[data-theme="light"] .hover\:bg-slate-800\/40:hover {
   background-color: #f1f5f9 !important;
-  color: #1a1b4b !important;
+  color: #2a285c !important;
 }
 
 html[data-theme="light"] .border-slate-800,
 html[data-theme="light"] .border-slate-800\/80,
 html[data-theme="light"] .border-slate-700 {
-  border-color: #cbd5e1 !important;
+  border-color: #e2e8f0 !important;
 }
 
 html[data-theme="light"] .divide-slate-800\/80 > :not([hidden]) ~ :not([hidden]),
@@ -80,10 +198,9 @@ html[data-theme="light"] .divide-slate-800 > :not([hidden]) ~ :not([hidden]) {
 html[data-theme="light"] .text-white:not(.keep-white),
 html[data-theme="light"] .text-slate-100:not(.keep-white),
 html[data-theme="light"] .text-slate-200:not(.keep-white) {
-  color: #1a1b4b !important;
+  color: #2a285c !important;
 }
 
-/* Mantener texto blanco en botones primarios sólidos */
 html[data-theme="light"] .bg-brand-600,
 html[data-theme="light"] .bg-brand-500,
 html[data-theme="light"] .bg-emerald-600,
@@ -91,14 +208,16 @@ html[data-theme="light"] .bg-cyan-600,
 html[data-theme="light"] .bg-amber-600,
 html[data-theme="light"] .bg-red-600,
 html[data-theme="light"] .from-brand-600,
-html[data-theme="light"] .onprotec-btn-primary {
+html[data-theme="light"] .onprotec-btn-primary,
+html[data-theme="light"] .keep-white {
   color: #ffffff !important;
 }
 
 html[data-theme="light"] .bg-brand-600 *,
 html[data-theme="light"] .bg-emerald-600 *,
 html[data-theme="light"] .from-brand-600 *,
-html[data-theme="light"] .onprotec-btn-primary * {
+html[data-theme="light"] .onprotec-btn-primary *,
+html[data-theme="light"] .keep-white * {
   color: #ffffff !important;
 }
 
@@ -108,7 +227,7 @@ html[data-theme="light"] .text-slate-300 {
 
 html[data-theme="light"] .text-slate-400,
 html[data-theme="light"] .text-slate-500 {
-  color: #475569 !important;
+  color: #64748b !important;
 }
 
 html[data-theme="light"] .text-brand-300,
@@ -129,35 +248,24 @@ html[data-theme="light"] .text-emerald-400 {
 html[data-theme="light"] .text-amber-200,
 html[data-theme="light"] .text-amber-300,
 html[data-theme="light"] .text-amber-400 {
-  color: #b45309 !important;
+  color: #d97706 !important;
 }
 
 html[data-theme="light"] .text-red-200,
 html[data-theme="light"] .text-red-300,
 html[data-theme="light"] .text-red-400 {
-  color: #b91c1c !important;
-}
-
-html[data-theme="light"] .from-slate-900 {
-  --tw-gradient-from: #eef2ff !important;
-  --tw-gradient-to: #ffffff !important;
-  --tw-gradient-stops: var(--tw-gradient-from), #f8fafc, var(--tw-gradient-to) !important;
+  color: #dc2626 !important;
 }
 
 html[data-theme="light"] input,
 html[data-theme="light"] select,
 html[data-theme="light"] textarea {
   background-color: #ffffff !important;
-  color: #0f172a !important;
+  color: #1e293b !important;
   border-color: #cbd5e1 !important;
 }
 
-html[data-theme="light"] input::placeholder,
-html[data-theme="light"] textarea::placeholder {
-  color: #94a3b8 !important;
-}
-
-/* Horizontal Scrollbars for Widescreen Data Views */
+/* Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -168,10 +276,10 @@ html[data-theme="light"] textarea::placeholder {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #64748b;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #94a3b8;
 }

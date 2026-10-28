@@ -200,3 +200,26 @@ A partir del volcado real de Google Forms (hojas de cálculo `.xlsx`) y exportac
 * **Protección de `/admin`:** Pantalla de inicio de sesión corporativa en `src/app/admin/layout.tsx` respaldada por cookies de sesión HTTP-only (`onprotec_admin_session`) y la tabla `admin_users` (sincronizada en `src/db/schema.ts` y `src/lib/autoMigrate.ts`).
 * **Módulo `/admin/credenciales`:** Gestión de usuarios administrativos, roles (`Super Admin`, `Gerencia General`, `Coordinador de Sala`, `Finanzas y Pagos`, `Recepción Check-in`), cambio de contraseñas y activación/desactivación de cuentas.
 
+---
+
+## 9. Reestructuración Arquitectónica UX/UI & CRO de Alta Conversión (`src/app/page.tsx`)
+
+Se reconstruyó desde cero la página principal de **"OnProtec® | Sala de Capacitaciones — La Tienda del Instalador"** aplicando principios de Optimización de Tasa de Conversión (CRO) y extrayendo el sistema de diseño exacto de `https://onprotec.com/lp/onprotec`:
+
+1. **Identidad Visual Extraída de `www.onprotec.com`:**
+   * **Paleta Oficial:** Naranja Vibrante Primario (`#f4730a` / hover `#ef7922`), Azul Marino Corporativo (`#2a285c` / `#29275c`), Amarillo Cashea (`#fdff00`), Verde WhatsApp (`#25d366`) y fondo limpio con espacio en blanco generoso (`#f8f9fc` / `#ffffff`) por defecto en Modo Claro (`data-theme="light"`), manteniendo soporte completo para Modo Oscuro (`<ThemeToggle />`).
+   * **Tipografía y Lenguaje Gráfico:** Fuente geométrica `'Montserrat'` / `'Mont'` (pesos 400 a 900), titular icónico **"La tienda del INSTALADOR"** con texto contorneado (`.text-stroke-orange`), línea punteada naranja (`.onprotec-dotted-line`), patrón hexagonal de fondo (`.onprotec-hex-bg`) y píldoras naranjas de categorías (`REDES`, `CCTV`, `SEGURIDAD`, `COMPUTACIÓN`).
+2. **Hero Section (Impacto, Exclusividad y Enganche):**
+   * Cintillo superior naranja oficial + Header blanco con buscador en vivo, navegación rápida y acceso administrativo.
+   * Propuesta de valor inmediata destacando la exclusividad del laboratorio (**18 puestos técnicos + 1 especialista**), CTA de alto contraste (*"Asegura tu cupo ahora"*) y tarjeta interactiva del evento destacado con galería de fotos de portada (`coverPhotos`), nota de presentación (`presentationNotes`) y barra de escasez de cupos en tiempo real.
+3. **Sección de Propuesta de Valor (Grid Empresarial de 4 Pilares):**
+   * Tarjetas con íconos modernos y alto respiro visual que destacan: (1) Equipos Energizados en Vivo, (2) Aforo VIP Estricto 18+1, (3) Acreditación Oficial QR y (4) Rentabilidad Comercial & Cashea.
+4. **Organización Visual de la Información (Insignias y Línea de Tiempo):**
+   * Catálogo filtrable por vertical tecnológica, marca o búsqueda de texto con insignias escaneables (fecha y hora en `America/Caracas`, inversión y barra de ocupación).
+   * **Línea de Tiempo (Timeline) de 4 Etapas:** Acreditación QR (08:30 AM) $\rightarrow$ Arquitectura & Dimensionamiento (09:00 AM) $\rightarrow$ Laboratorio Hands-On en Vivo (10:45 AM) $\rightarrow$ Evaluación QR & Beneficios (12:00 PM).
+5. **Fricción Cero en el Registro (`#registro-express`):**
+   * Formulario corporativo sticky agrupado lógicamente (1. Identificación del Instalador, 2. Contacto & Empresa Integradora, 3. Perfil Técnico / Preguntas Dinámicas `formQuestions`, 4. Reporte de Pago condicional) utilizando **etiquetas flotantes (`peer` Floating Labels)** y botón ancho de confirmación.
+6. **Prueba Social, Autoridad y Cintillo Oficial Cashea:**
+   * Tarjetas interactivas de marcas certificadas (`Hikvision`, `Dahua Technology`, `TP-Link / Omada`, `Ubiquiti UniFi`, `WatchGuard`, `EZVIZ`, `Marsriva`), cintillo oficial `.cashea-banner` (`#fdff00` con `/brand/icono-cashea.png`) y botón flotante `.float-wa` de WhatsApp (`http://wa.me/584129635648`).
+
+

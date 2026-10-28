@@ -24,14 +24,20 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="es" data-theme="dark" suppressHydrationWarning>
+    <html lang="es" data-theme="light" suppressHydrationWarning>
       <head>
         <meta name="color-scheme" content="light dark" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,500&display=swap"
+          rel="stylesheet"
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                var savedTheme = localStorage.getItem('onprotec-theme') || 'dark';
+                var savedTheme = localStorage.getItem('onprotec-theme') || 'light';
                 document.documentElement.setAttribute('data-theme', savedTheme);
                 var m = document.querySelector('meta[name="color-scheme"]');
                 if (m) m.setAttribute('content', savedTheme);
@@ -40,7 +46,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="antialiased selection:bg-brand-500 selection:text-white">
+      <body className="antialiased selection:bg-[#f4730a] selection:text-white">
         {children}
       </body>
     </html>
