@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Antispeech - Servidor Local de Integración por Voz para IDE Antigravity
-======================================================================
+Antispeech - Servidor Local Concurrente (Threading) para IDE Antigravity
+=======================================================================
 Permite conectar el micrófono del celular como entrada de voz para el IDE
 y visualizar las respuestas generadas por la IA en tiempo real en el móvil.
 
-Soporta dos motores de reconocimiento:
-1. MediaRecorder Directo (Envía el audio al servidor, lo procesa con ffmpeg + SpeechRecognition)
-2. Web Speech API (Reconocimiento nativo en el navegador del teléfono)
+IMPORTANTE: Utiliza ThreadingHTTPServer para evitar que las conexiones
+persistentes de Server-Sent Events (SSE) bloqueen las peticiones POST de audio.
 
 Zona Horaria Requerida: America/Caracas (UTC-4)
 """
@@ -19,12 +18,13 @@ import json
 import time
 import socket
 import ssl
+import base64
 import threading
 import tempfile
 import subprocess
 import zoneinfo
 import datetime
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 # Reconfigurar salida para soporte UTF-8 en consolas Windows
@@ -192,18 +192,19 @@ def get_latest_conversation_response():
         return {"status": "error", "content": f"Error leyendo transcripción: {str(e)}"}
 
 class AntispeechHandler(SimpleHTTPRequestHandler):
-    """Manejador HTTP para la API de automatización, audio STT y la PWA."""
+    """Manejador HTTP concurrente para la API de automatización, audio STT y la PWA."""
 
     def __init__(self, *args, **kwargs):
         pwa_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pwa")
         super().__init__(*args, directory=pwa_dir, **kwargs)
 
     def do_OPTIONS(self):
-        """Soporte CORS para peticiones preflight."""
+        """Soporte CORS exhaustivo para todas las peticiones preflight."""
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+        self.send_header("Access-Control-Max-Age", "86400")
         self.end_headers()
 
     def do_POST(self):
@@ -216,12 +217,36 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
         if parsed_path.path == "/api/audio":
             content_length = int(self.headers.get("Content-Length", 0))
             if content_length == 0:
-                self._send_json({"status": "error", "message": "Audio vacío"}, 400)
+                self._send_json({"status": "error", "message": "Petición de audio vacía"}, 400)
                 return
 
-            audio_bytes = self.rfile.read(content_length)
+            raw_body = self.rfile.read(content_length)
+            content_type = self.headers.get("Content-Type", "")
             query_params = parse_qs(parsed_path.query)
             lang = query_params.get("lang", ["es-ES"])[0]
+
+            audio_bytes = None
+
+            # Si se envió como JSON codificado en Base64 (máxima compatibilidad móvil)
+            if "application/json" in content_type:
+                try:
+                    payload = json.loads(raw_body.decode("utf-8"))
+                    base64_str = payload.get("audio_base64", "")
+                    if "lang" in payload:
+                        lang = payload["lang"]
+                    if base64_str:
+                        audio_bytes = base64.b64decode(base64_str)
+                except Exception as ex:
+                    print(f"[-] Error decodificando JSON/Base64: {ex}")
+                    self._send_json({"status": "error", "message": f"Error JSON/Base64: {ex}"}, 400)
+                    return
+            else:
+                # Si se envió directamente como binario
+                audio_bytes = raw_body
+
+            if not audio_bytes or len(audio_bytes) < 100:
+                self._send_json({"status": "error", "message": "Datos de audio insuficientes o vacíos"}, 400)
+                return
 
             timestamp = get_caracas_now_str()
             print(f"\n[{timestamp}] 📥 Recibiendo audio desde el celular ({len(audio_bytes)} bytes)...")
@@ -232,6 +257,7 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
                 text = transcription.get("text", "").strip()
                 print(f"[{timestamp}] 🎙️ TRANSCRIPCIÓN EXITOSA: \"{text}\"")
 
+                # Inyectar en el IDE
                 self._inject_prompt_to_active_window(text)
 
                 self._send_json({
@@ -297,7 +323,7 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
             last_content = None
 
             try:
-                for _ in range(120):
+                for _ in range(60):  # Conexión abierta ~36s por ciclo antes de auto-renovar
                     data = get_latest_conversation_response()
                     current_content = data.get("content", "")
                     current_step = data.get("step_index", 0)
@@ -321,6 +347,8 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
         self.send_response(status_code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -328,7 +356,7 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
     def _transcribe_audio_bytes(self, audio_bytes, lang="es-ES"):
         """
         Guarda el audio temporalmente, lo convierte a WAV 16kHz con ffmpeg
-        y lo transcribe usando SpeechRecognition (Google API gratuita).
+        y lo transcribe usando SpeechRecognition.
         """
         if not sr:
             return {"status": "error", "message": "SpeechRecognition no disponible en el servidor."}
@@ -345,7 +373,7 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
             result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
             if not os.path.exists(temp_wav) or os.path.getsize(temp_wav) == 0:
-                return {"status": "error", "message": "Error al procesar el formato de audio con ffmpeg."}
+                return {"status": "error", "message": "ffmpeg no pudo convertir el audio recibido."}
 
             recognizer = sr.Recognizer()
             with sr.AudioFile(temp_wav) as source:
@@ -359,7 +387,7 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
         except sr.UnknownValueError:
             return {"status": "no_speech", "message": "No se distinguió ninguna palabra clara. Habla más cerca del micrófono."}
         except sr.RequestError as e:
-            return {"status": "error", "message": f"Error de conexión con el motor de voz: {e}"}
+            return {"status": "error", "message": f"Error de conexión con Google Speech: {e}"}
         except Exception as e:
             return {"status": "error", "message": f"Error interno en transcripción: {str(e)}"}
         finally:
@@ -433,21 +461,23 @@ def main():
     print_banner(local_ip, port_https, port_http)
 
     try:
-        httpd_ssl = HTTPServer(("0.0.0.0", port_https), AntispeechHandler)
+        # SERVIDOR HTTPS CONCURRENTE (MULTIHILO)
+        httpd_ssl = ThreadingHTTPServer(("0.0.0.0", port_https), AntispeechHandler)
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         ssl_context.load_cert_chain(certfile=cert_path, keyfile=key_path)
         httpd_ssl.socket = ssl_context.wrap_socket(httpd_ssl.socket, server_side=True)
 
         def run_http():
             try:
-                httpd_plain = HTTPServer(("0.0.0.0", port_http), AntispeechHandler)
+                # SERVIDOR HTTP CONCURRENTE (MULTIHILO)
+                httpd_plain = ThreadingHTTPServer(("0.0.0.0", port_http), AntispeechHandler)
                 httpd_plain.serve_forever()
             except Exception:
                 pass
 
         threading.Thread(target=run_http, daemon=True).start()
 
-        print(f"[✓] Servidor activo escuchando en el puerto {port_https} (HTTPS) y {port_http} (HTTP).")
+        print(f"[✓] Servidor MULTIHILO activo escuchando en el puerto {port_https} (HTTPS) y {port_http} (HTTP).")
         print("[*] Presiona Ctrl+C en esta consola para detener.\n")
         httpd_ssl.serve_forever()
 

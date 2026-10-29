@@ -142,7 +142,7 @@
 
     /* Diagnostic log bar on phone */
     .diag-banner {
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(15, 23, 42, 0.95);
       border: 1px solid rgba(99, 102, 241, 0.3);
       border-radius: 10px;
       padding: 8px 12px;
@@ -163,14 +163,14 @@
     }
 
     .diag-text.warn { color: #fbbf24; }
-    .diag-text.err { color: #f87171; }
+    .diag-text.err { color: #f87171; font-weight: 600; }
     .diag-text.ok { color: #34d399; }
 
     /* Audio visualizer canvas */
     .visualizer-box {
       width: 100%;
-      height: 36px;
-      background: rgba(0, 0, 0, 0.3);
+      height: 38px;
+      background: rgba(0, 0, 0, 0.4);
       border: 1px solid var(--card-border);
       border-radius: 8px;
       overflow: hidden;
@@ -193,7 +193,7 @@
       flex-direction: column;
       gap: 14px;
       min-height: 250px;
-      margin-bottom: 235px; /* Space for sticky bottom controls */
+      margin-bottom: 235px;
     }
 
     .message {
@@ -268,7 +268,6 @@
       margin-bottom: 8px;
     }
 
-    /* TTS button inside message */
     .tts-btn {
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid var(--card-border);
@@ -289,7 +288,7 @@
       left: 0;
       right: 0;
       z-index: 40;
-      background: rgba(9, 13, 22, 0.94);
+      background: rgba(9, 13, 22, 0.95);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-top: 1px solid var(--card-border);
@@ -309,7 +308,6 @@
       gap: 8px;
     }
 
-    /* Realtime transcription preview bar */
     .transcription-bar {
       width: 100%;
       min-height: 40px;
@@ -341,7 +339,6 @@
       color: #93c5fd;
     }
 
-    /* Big Mic Action Button */
     .mic-center {
       display: flex;
       align-items: center;
@@ -416,7 +413,6 @@
       color: white;
     }
 
-    /* Small config pills */
     .config-pills {
       display: flex;
       gap: 6px;
@@ -442,7 +438,6 @@
       font-weight: 600;
     }
 
-    /* Modal / Drawer */
     .modal {
       display: none;
       position: fixed;
@@ -519,13 +514,13 @@
   <main>
     <!-- Live diagnostic banner -->
     <div class="diag-banner">
-      <span class="diag-text" id="diagMsg">Modo: Grabación Servidor (Alta Precisión)</span>
+      <span class="diag-text" id="diagMsg">Modo: Grabación Servidor (Multihilo)</span>
       <button class="pill" id="btnToggleEngine" style="font-size:10.5px; padding:2px 6px;">Cambiar Modo</button>
     </div>
 
     <!-- Live Audio Equalizer / Waveform -->
     <div class="visualizer-box" id="visBox">
-      <canvas id="audioVisualizer" height="36"></canvas>
+      <canvas id="audioVisualizer" height="38"></canvas>
     </div>
 
     <!-- Chat Stream / Feed -->
@@ -537,8 +532,8 @@
         </div>
         <div class="msg-content">
           <p><strong>¡Micrófono de Celular Listo!</strong></p>
-          <p>Toca el botón rojo del micrófono abajo para hablar. El audio será capturado por tu celular y enviado automáticamente a tu IDE en la computadora.</p>
-          <p>La respuesta generada por la IA se mostrará aquí mismo en tiempo real.</p>
+          <p>Toca el botón rojo del micrófono abajo para hablar. Verás las barras azules del ecualizador moverse con tu voz.</p>
+          <p>Al terminar de hablar o hacer pausa, se enviará y se transcribirá en tu IDE en menos de un segundo.</p>
         </div>
       </div>
     </div>
@@ -624,10 +619,9 @@
   </div>
 
   <script>
-    // --- Estado global ---
     const state = {
       serverUrl: window.location.origin,
-      engine: localStorage.getItem('antispeech_engine') || 'server', // 'server' o 'browser'
+      engine: localStorage.getItem('antispeech_engine') || 'server',
       language: localStorage.getItem('antispeech_lang') || 'es-ES',
       autoSend: localStorage.getItem('antispeech_autosend') !== 'false',
       silenceTimeout: parseInt(localStorage.getItem('antispeech_silence') || '1400', 10),
@@ -645,7 +639,6 @@
       lastStepIndex: -1
     };
 
-    // --- Audio Feedback (Web Audio API) ---
     const audioFeedbackCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playBeep(freq = 600, duration = 0.08, type = 'sine') {
       if (!state.audioBeeps) return;
@@ -664,17 +657,13 @@
       } catch (e) {}
     }
 
-    // --- Screen Wake Lock ---
     async function requestWakeLock() {
       try {
-        if ('wakeLock' in navigator) {
-          await navigator.wakeLock.request('screen');
-        }
+        if ('wakeLock' in navigator) await navigator.wakeLock.request('screen');
       } catch (e) {}
     }
     requestWakeLock();
 
-    // --- Elementos UI ---
     const btnMic = document.getElementById('btnMic');
     const transcriptText = document.getElementById('transcriptText');
     const btnClearText = document.getElementById('btnClearText');
@@ -701,10 +690,10 @@
     function updateEnginePills() {
       if (state.engine === 'server') {
         pillEngine.textContent = '🎙️ Modo: Servidor (MediaRecorder)';
-        setDiag('Modo: Grabación Servidor (Infalible en móvil)', 'ok');
+        setDiag('Modo: Grabación Servidor (Multihilo)', 'ok');
       } else {
         pillEngine.textContent = '🎙️ Modo: Web Speech API';
-        setDiag('Modo: Web Speech API (Nativo de Chrome)', 'info');
+        setDiag('Modo: Web Speech API (Nativo)', 'info');
       }
     }
     updateEnginePills();
@@ -716,7 +705,7 @@
     });
 
     // =========================================================
-    // MOTOR 1: GRABACIÓN DIRECTA MEDIARECORDER (RECOMENDADO)
+    // MOTOR 1: GRABACIÓN DIRECTA MEDIARECORDER CON BASE64 JSON
     // =========================================================
     async function startMediaRecorder() {
       try {
@@ -732,10 +721,8 @@
         });
         state.mediaStream = stream;
 
-        // Iniciar visualizador de audio
         startAudioVisualizer(stream);
 
-        // Crear MediaRecorder
         const mimeTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg', 'audio/mp4', ''];
         let chosenMime = '';
         for (const m of mimeTypes) {
@@ -760,7 +747,7 @@
           playBeep(880, 0.1);
           setDiag('🎙️ Grabando audio... Habla ahora', 'ok');
           setIDEStatus('Escuchando...', 'thinking');
-          transcriptText.textContent = 'Escuchando tu voz... Suelta el botón o haz pausa para enviar.';
+          transcriptText.textContent = 'Escuchando tu voz... Habla con naturalidad.';
           transcriptText.className = 'transcription-text interim';
         };
 
@@ -777,7 +764,7 @@
           await uploadAudioToServer(blob);
         };
 
-        recorder.start(250); // Emitir chunks cada 250ms
+        recorder.start(200);
         state.mediaRecorder = recorder;
 
       } catch (err) {
@@ -799,17 +786,40 @@
       playBeep(440, 0.08);
     }
 
+    // Convertir Blob a Base64 para envío 100% confiable
+    function blobToBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const res = reader.result;
+          const base64Data = res.substring(res.indexOf(',') + 1);
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
     async function uploadAudioToServer(audioBlob) {
       setDiag('📤 Transfiriendo audio a la PC y transcribiendo...', 'info');
       setIDEStatus('Transcribiendo...', 'thinking');
       transcriptText.textContent = 'Procesando tu voz en la PC...';
 
       try {
-        const res = await fetch(`${state.serverUrl}/api/audio?lang=${state.language}`, {
+        const base64Audio = await blobToBase64(audioBlob);
+
+        const res = await fetch(`${state.serverUrl}/api/audio`, {
           method: 'POST',
-          headers: { 'Content-Type': audioBlob.type || 'audio/webm' },
-          body: audioBlob
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            audio_base64: base64Audio,
+            lang: state.language
+          })
         });
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
 
         const data = await res.json();
 
@@ -824,14 +834,16 @@
 
           appendUserMessage(text);
         } else {
-          const errMsg = data.message || 'No se reconoció voz en el audio.';
+          const errMsg = data.message || 'No se reconoció voz clara en el audio.';
           setDiag(`⚠️ ${errMsg}`, 'warn');
           transcriptText.textContent = errMsg;
           setIDEStatus('Listo', 'online');
         }
       } catch (err) {
-        setDiag(`Error de red con el servidor: ${err.message}`, 'err');
+        console.error('Upload error:', err);
+        setDiag(`Error de conexión: ${err.message}`, 'err');
         setIDEStatus('Error de conexión', 'error');
+        transcriptText.textContent = `Error al conectar con la PC: ${err.message}`;
       }
     }
 
@@ -871,14 +883,12 @@
             x += barWidth;
           }
 
-          // Detección automática de silencio para MediaRecorder
           const avgVolume = sum / bufferLength;
-          if (avgVolume > 20) {
+          if (avgVolume > 18) {
             hasSpoken = true;
             silenceStart = Date.now();
           } else if (hasSpoken && state.autoSend) {
             if (Date.now() - silenceStart > state.silenceTimeout) {
-              // Silencio prolongado tras haber hablado -> Enviar
               stopMediaRecorder();
             }
           }
@@ -904,7 +914,7 @@
     function initWebSpeech() {
       if (!SpeechRecognition) return null;
       const rec = new SpeechRecognition();
-      rec.continuous = false; // continuous = false es MANDATORIO en Android para evitar que se cuelgue
+      rec.continuous = false;
       rec.interimResults = true;
       rec.lang = state.language;
 
@@ -931,7 +941,6 @@
       };
 
       rec.onerror = (event) => {
-        console.warn('Web Speech error:', event.error);
         setDiag(`Error Web Speech: [${event.error}]. Prueba cambiar a 'Modo Servidor'.`, 'err');
         stopRecording();
       };
