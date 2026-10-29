@@ -59,6 +59,12 @@ sequenceDiagram
 
 ## 3. Características Globales y Decisiones UX/UI
 
+0. **Modo Teclado por Defecto (Sin Permisos de Micrófono):**
+   * El micrófono de la página web requiere HTTPS + aceptar certificado + conceder permiso, lo que falla con frecuencia en móviles.
+   * Por defecto la PWA muestra un cuadro de texto: el usuario usa el **🎤 del teclado nativo** (Gboard en Android, dictado de iOS), que transcribe sin que la página pida permisos. El texto se envía a `POST /api/prompt`.
+   * Funciona incluso por HTTP simple (`http://IP:8000`), sin advertencias de certificado.
+   * La píldora `⌨️ Teclado (mic OFF)` / `🎙️ Micrófono ON` alterna entre modos (persistido en `localStorage`). Si el micrófono falla (`NotAllowedError` o contexto inseguro), `handleMicFailure()` vuelve automáticamente a Modo Teclado.
+
 1. **Lectura por Voz Automática (Auto-TTS) Activada por Defecto:**
    * La PWA ahora sintetiza la voz de inmediato cuando la IA termina de generar su respuesta.
    * Filtra bloques de código largos y símbolos markdown para que el teléfono hable de forma natural y amigable.
