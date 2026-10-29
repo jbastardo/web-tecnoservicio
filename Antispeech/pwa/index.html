@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Antispeech">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <title>Antispeech - Control por Voz de IDE</title>
+
+  <!-- Marked.js para formatear respuestas Markdown en el celular -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(22, 28, 45, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-glow: rgba(99, 102, 241, 0.4);
+      --accent: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(9, 13, 22, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #6366f1, #3b82f6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 16px;
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    .brand-title {
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--danger);
+      transition: background 0.3s;
+    }
+
+    .status-dot.online {
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+
+    .status-dot.thinking {
+      background: #a855f7;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+      animation: pulse 1s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(0.9); opacity: 0.7; }
+      to { transform: scale(1.3); opacity: 1; }
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px;
+      gap: 16px;
+    }
+
+    /* Response / Chat Feed */
+    .chat-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 250px;
+      margin-bottom: 210px; /* Space for sticky bottom controls */
+    }
+
+    .message {
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+      animation: fadeIn 0.25s ease-out;
+      font-size: 14.5px;
+      line-height: 1.55;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(79, 70, 229, 0.15));
+      border-color: rgba(99, 102, 241, 0.4);
+      max-width: 90%;
+    }
+
+    .message.assistant {
+      align-self: flex-start;
+      background: var(--card-bg);
+      backdrop-filter: blur(8px);
+      border-color: var(--card-border);
+      width: 100%;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .msg-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .msg-content {
+      word-break: break-word;
+    }
+
+    .msg-content pre {
+      background: #0f172a;
+      padding: 12px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 10px 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+    }
+
+    .msg-content code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      color: #38bdf8;
+    }
+
+    .msg-content p {
+      margin-bottom: 8px;
+    }
+    .msg-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .msg-content ul, .msg-content ol {
+      margin-left: 20px;
+      margin-bottom: 8px;
+    }
+
+    .msg-content blockquote {
+      border-left: 3px solid var(--primary);
+      padding-left: 10px;
+      color: var(--text-muted);
+      margin: 8px 0;
+    }
+
+    /* TTS button inside message */
+    .tts-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      padding: 3px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .tts-btn:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* Bottom Control Deck */
+    .controls-deck {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      background: rgba(9, 13, 22, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--card-border);
+      padding: 12px 16px max(14px, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .controls-inner {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Realtime transcription preview bar */
+    .transcription-bar {
+      width: 100%;
+      min-height: 38px;
+      max-height: 90px;
+      overflow-y: auto;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: 13.5px;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .transcription-text {
+      flex: 1;
+      white-space: pre-wrap;
+    }
+
+    .transcription-text.empty {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .transcription-text.interim {
+      color: #93c5fd;
+    }
+
+    /* Big Mic Action Button */
+    .mic-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .btn-mic {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      border: none;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 6px 20px var(--primary-glow);
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .btn-mic:active {
+      transform: scale(0.92);
+    }
+
+    .btn-mic.recording {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.7);
+      animation: pulseRecord 1.5s infinite;
+    }
+
+    @keyframes pulseRecord {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { transform: scale(1.06); box-shadow: 0 0 0 16px rgba(239, 68, 68, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    .btn-mic svg {
+      width: 32px;
+      height: 32px;
+      fill: currentColor;
+    }
+
+    .btn-aux {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-aux:hover, .btn-aux:active {
+      background: rgba(255, 255, 255, 0.16);
+      color: white;
+    }
+
+    .btn-aux.send {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+    .btn-aux.send:hover {
+      background: var(--accent);
+      color: white;
+    }
+
+    /* Small config pills */
+    .config-pills {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    .pill {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 3px 8px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      cursor: pointer;
+    }
+    .pill.active {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: var(--primary);
+      color: #a5b4fc;
+    }
+
+    /* Modal / Drawer */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal.open {
+      display: flex;
+    }
+    .modal-box {
+      background: #111827;
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      max-width: 420px;
+      width: 100%;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .modal-title {
+      font-size: 17px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .form-group input, .form-group select {
+      background: #1f2937;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: white;
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+
+    /* Install Banner */
+    .install-banner {
+      display: none;
+      background: linear-gradient(90deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: 12.5px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .install-banner.show {
+      display: flex;
+    }
+    .btn-install {
+      background: var(--primary);
+      border: none;
+      border-radius: 6px;
+      color: white;
+      padding: 4px 10px;
+      font-weight: 600;
+      font-size: 11.5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🎙️</div>
+      <div>
+        <div class="brand-title">Antispeech IDE</div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div class="status-badge" id="statusBadge">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusLabel">Conectando...</span>
+      </div>
+      <button class="btn-aux" style="width: 34px; height: 34px;" id="btnOpenSettings" title="Configuración">
+        ⚙️
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Feed -->
+  <main>
+    <!-- PWA Install Banner -->
+    <div class="install-banner" id="installBanner">
+      <span>📲 Instalar Antispeech en pantalla de inicio</span>
+      <button class="btn-install" id="btnInstallApp">Instalar</button>
+    </div>
+
+    <!-- Chat Stream / Feed -->
+    <div class="chat-section" id="chatFeed">
+      <div class="message assistant" id="welcomeMsg">
+        <div class="msg-header">
+          <span>🤖 Antigravity AI</span>
+          <span>Instrucciones</span>
+        </div>
+        <div class="msg-content">
+          <p><strong>¡Listo para recibir comandos de voz!</strong></p>
+          <p>Presiona el botón del micrófono abajo para dictar tu instrucción. El texto será enviado automáticamente a tu IDE en la PC y se ejecutará de inmediato.</p>
+          <p>Las respuestas y pasos generados por la IA aparecerán reflejados en esta pantalla en tiempo real.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Sticky Bottom Controls Deck -->
+  <div class="controls-deck">
+    <div class="controls-inner">
+      <!-- Live transcription box -->
+      <div class="transcription-bar">
+        <div class="transcription-text empty" id="transcriptText">
+          Toca el micrófono para comenzar a hablar...
+        </div>
+        <button class="btn-aux" id="btnClearText" style="display:none; width: 28px; height: 28px; font-size: 11px;" title="Borrar">✕</button>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="mic-center">
+        <!-- Cancel button -->
+        <button class="btn-aux" id="btnCancelVoice" title="Cancelar dictado">
+          ✕
+        </button>
+
+        <!-- Big Mic button -->
+        <button class="btn-mic" id="btnMic" title="Hablar">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+          </svg>
+        </button>
+
+        <!-- Manual Send button -->
+        <button class="btn-aux send" id="btnSendPrompt" title="Enviar prompt al IDE">
+          ➤
+        </button>
+      </div>
+
+      <!-- Config pills -->
+      <div class="config-pills">
+        <span class="pill active" id="toggleAutoSend">⚡ Auto-envío: ON</span>
+        <span class="pill active" id="toggleWakeLock">👁️ Pantalla encendida</span>
+        <span class="pill" id="currentLangPill">🇪🇸 Español</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span>Configuración</span>
+        <button class="btn-aux" style="width: 30px; height: 30px;" id="btnCloseSettings">✕</button>
+      </div>
+      <div class="form-group">
+        <label>Dirección del Servidor (PC)</label>
+        <input type="text" id="cfgServerUrl" placeholder="https://192.168.x.x:8443">
+      </div>
+      <div class="form-group">
+        <label>Idioma de Reconocimiento de Voz</label>
+        <select id="cfgLanguage">
+          <option value="es-ES">Español (España / Internacional)</option>
+          <option value="es-419" selected>Español (Latinoamérica)</option>
+          <option value="es-VE">Español (Venezuela)</option>
+          <option value="en-US">English (United States)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tiempo de silencio para auto-enviar (ms)</label>
+        <input type="number" id="cfgSilenceTimeout" value="1300" min="500" max="4000" step="100">
+      </div>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="cfgAudioBeeps" checked> Sonidos de confirmación (bips)
+        </label>
+      </div>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="cfgAutoTTS"> Lectura en voz alta automática de la respuesta
+        </label>
+      </div>
+      <button class="btn-mic" style="width: 100%; height: 42px; border-radius: 8px; font-weight: 600; margin-top: 8px;" id="btnSaveSettings">
+        Guardar Ajustes
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // --- Estado global ---
+    const state = {
+      serverUrl: localStorage.getItem('antispeech_server') || window.location.origin,
+      language: localStorage.getItem('antispeech_lang') || 'es-419',
+      autoSend: localStorage.getItem('antispeech_autosend') !== 'false',
+      silenceTimeout: parseInt(localStorage.getItem('antispeech_silence') || '1300', 10),
+      audioBeeps: localStorage.getItem('antispeech_beeps') !== 'false',
+      autoTTS: localStorage.getItem('antispeech_tts') === 'true',
+      isRecording: false,
+      transcript: '',
+      interimTranscript: '',
+      silenceTimer: null,
+      recognition: null,
+      eventSource: null,
+      lastStepIndex: -1,
+      wakeLock: null
+    };
+
+    // --- Audio Feedback (Web Audio API) ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 600, duration = 0.08, type = 'sine') {
+      if (!state.audioBeeps) return;
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        console.warn('Audio feedback failed:', e);
+      }
+    }
+
+    // --- Screen Wake Lock ---
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          state.wakeLock = await navigator.wakeLock.request('screen');
+          console.log('Screen Wake Lock activo.');
+        }
+      } catch (err) {
+        console.warn('Wake Lock error:', err);
+      }
+    }
+    requestWakeLock();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') requestWakeLock();
+    });
+
+    // --- Elementos UI ---
+    const btnMic = document.getElementById('btnMic');
+    const transcriptText = document.getElementById('transcriptText');
+    const btnClearText = document.getElementById('btnClearText');
+    const btnCancelVoice = document.getElementById('btnCancelVoice');
+    const btnSendPrompt = document.getElementById('btnSendPrompt');
+    const statusDot = document.getElementById('statusDot');
+    const statusLabel = document.getElementById('statusLabel');
+    const chatFeed = document.getElementById('chatFeed');
+    const toggleAutoSend = document.getElementById('toggleAutoSend');
+    const currentLangPill = document.getElementById('currentLangPill');
+
+    // --- PWA Service Worker ---
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg failed', err));
+    }
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('installBanner').classList.add('show');
+    });
+    document.getElementById('btnInstallApp').addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          document.getElementById('installBanner').classList.remove('show');
+        }
+        deferredPrompt = null;
+      }
+    });
+
+    // --- Reconocimiento de Voz (Web Speech API) ---
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert('Tu navegador no soporta Web Speech API. Por favor usa Google Chrome o Safari.');
+    } else {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = state.language;
+
+      recognition.onstart = () => {
+        state.isRecording = true;
+        btnMic.classList.add('recording');
+        playBeep(880, 0.1); // Beep alto de inicio
+        setIDEStatus('Escuchando...', 'thinking');
+      };
+
+      recognition.onresult = (event) => {
+        let final = '';
+        let interim = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const item = event.results[i];
+          if (item.isFinal) {
+            final += item[0].transcript;
+          } else {
+            interim += item[0].transcript;
+          }
+        }
+
+        if (final) {
+          state.transcript = (state.transcript + ' ' + final).trim();
+        }
+        state.interimTranscript = interim;
+
+        // Actualizar UI
+        updateTranscriptDisplay();
+
+        // Si auto-envío está activo, reiniciar temporizador de silencio
+        if (state.autoSend && state.transcript.trim()) {
+          clearTimeout(state.silenceTimer);
+          state.silenceTimer = setTimeout(() => {
+            if (state.transcript.trim()) {
+              sendCurrentPrompt();
+            }
+          }, state.silenceTimeout);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed') {
+          alert('Permiso de micrófono denegado. Permite el acceso al micrófono en los ajustes de tu navegador.');
+        }
+        stopRecording();
+      };
+
+      recognition.onend = () => {
+        if (state.isRecording) {
+          // Si sigue marcado en grabación, reiniciar (evita cortes de Android)
+          try {
+            recognition.start();
+          } catch(e) {
+            stopRecording();
+          }
+        } else {
+          stopRecording();
+        }
+      };
+
+      state.recognition = recognition;
+    }
+
+    function startRecording() {
+      if (!state.recognition) return;
+      state.isRecording = true;
+      state.transcript = '';
+      state.interimTranscript = '';
+      updateTranscriptDisplay();
+      try {
+        state.recognition.lang = state.language;
+        state.recognition.start();
+      } catch (e) {
+        console.warn('Start error:', e);
+      }
+    }
+
+    function stopRecording() {
+      state.isRecording = false;
+      btnMic.classList.remove('recording');
+      clearTimeout(state.silenceTimer);
+      if (state.recognition) {
+        try { state.recognition.stop(); } catch(e) {}
+      }
+      setIDEStatus('Listo', 'online');
+    }
+
+    function updateTranscriptDisplay() {
+      const fullText = (state.transcript + ' ' + state.interimTranscript).trim();
+      if (!fullText) {
+        transcriptText.textContent = state.isRecording ? 'Escuchando tu voz...' : 'Toca el micrófono para comenzar a hablar...';
+        transcriptText.className = 'transcription-text empty';
+        btnClearText.style.display = 'none';
+      } else {
+        transcriptText.textContent = fullText;
+        transcriptText.className = 'transcription-text' + (state.interimTranscript ? ' interim' : '');
+        btnClearText.style.display = 'block';
+      }
+    }
+
+    // Toggle Mic button
+    btnMic.addEventListener('click', () => {
+      if (state.isRecording) {
+        stopRecording();
+        playBeep(440, 0.08); // Beep bajo al detener
+      } else {
+        startRecording();
+      }
+    });
+
+    btnCancelVoice.addEventListener('click', () => {
+      stopRecording();
+      state.transcript = '';
+      state.interimTranscript = '';
+      updateTranscriptDisplay();
+      playBeep(300, 0.12);
+    });
+
+    btnClearText.addEventListener('click', () => {
+      state.transcript = '';
+      state.interimTranscript = '';
+      updateTranscriptDisplay();
+    });
+
+    btnSendPrompt.addEventListener('click', () => {
+      sendCurrentPrompt();
+    });
+
+    // --- Enviar Prompt al IDE ---
+    async function sendCurrentPrompt() {
+      const text = (state.transcript + ' ' + state.interimTranscript).trim();
+      if (!text) return;
+
+      stopRecording();
+      playBeep(1200, 0.08); // Chime de éxito
+
+      // Agregar mensaje a la vista
+      appendUserMessage(text);
+
+      // Limpiar texto de entrada
+      state.transcript = '';
+      state.interimTranscript = '';
+      updateTranscriptDisplay();
+
+      setIDEStatus('Enviando a IDE...', 'thinking');
+
+      try {
+        const res = await fetch(`${state.serverUrl}/api/prompt`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text })
+        });
+
+        const data = await res.json();
+        if (data.status === 'ok') {
+          setIDEStatus('Prompt inyectado en IDE', 'online');
+        } else {
+          setIDEStatus('Error al enviar', 'error');
+        }
+      } catch (err) {
+        console.error('Error sending prompt:', err);
+        setIDEStatus('Error de conexión', 'error');
+      }
+    }
+
+    // --- UI Chat Helpers ---
+    function appendUserMessage(text) {
+      const msg = document.createElement('div');
+      msg.className = 'message user';
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      msg.innerHTML = `
+        <div class="msg-header">
+          <span>Tú (Voz)</span>
+          <span>${time}</span>
+        </div>
+        <div class="msg-content">${escapeHtml(text)}</div>
+      `;
+      chatFeed.appendChild(msg);
+      msg.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function appendOrUpdateAssistantMessage(stepIndex, content, isDone = true) {
+      let msg = document.getElementById(`step-${stepIndex}`);
+      if (!msg) {
+        msg = document.createElement('div');
+        msg.id = `step-${stepIndex}`;
+        msg.className = 'message assistant';
+        chatFeed.appendChild(msg);
+      }
+
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const parsedHtml = marked.parse(content || '*Generando respuesta...*');
+
+      msg.innerHTML = `
+        <div class="msg-header">
+          <span>🤖 Antigravity ${isDone ? '✓' : '⚙️ (Escribiendo...)'}</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span>${time}</span>
+            <button class="tts-btn" onclick="speakText(this)">🔊 Escuchar</button>
+          </div>
+        </div>
+        <div class="msg-content">${parsedHtml}</div>
+      `;
+
+      msg.scrollIntoView({ behavior: 'smooth' });
+
+      if (isDone && state.autoTTS && content) {
+        speakTextRaw(content);
+      }
+    }
+
+    function escapeHtml(string) {
+      const div = document.createElement('div');
+      div.innerText = string;
+      return div.innerHTML;
+    }
+
+    function setIDEStatus(label, type) {
+      statusLabel.textContent = label;
+      statusDot.className = 'status-dot';
+      if (type === 'online') statusDot.classList.add('online');
+      else if (type === 'thinking') statusDot.classList.add('thinking');
+    }
+
+    // --- Text-to-Speech (Lectura en voz alta) ---
+    window.speakText = function(btn) {
+      const content = btn.closest('.message').querySelector('.msg-content').innerText;
+      speakTextRaw(content);
+    };
+
+    function speakTextRaw(rawText) {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      // Eliminar bloques de código largos para lectura fluida
+      const cleanText = rawText.replace(/```[\s\S]*?```/g, 'bloque de código omitido.').slice(0, 1500);
+      const utter = new SpeechSynthesisUtterance(cleanText);
+      utter.lang = state.language;
+      window.speechSynthesis.speak(utter);
+    }
+
+    // --- Conexión en Tiempo Real con la PC (SSE & Polling) ---
+    function connectLiveStream() {
+      if (state.eventSource) {
+        state.eventSource.close();
+      }
+
+      try {
+        const streamUrl = `${state.serverUrl}/api/stream`;
+        const es = new EventSource(streamUrl);
+
+        es.onopen = () => {
+          setIDEStatus('Conectado a PC', 'online');
+        };
+
+        es.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            handleIncomingUpdate(data);
+          } catch(e) {}
+        };
+
+        es.onerror = () => {
+          es.close();
+          // Fallback a polling cada 2s
+          setTimeout(pollLatestResponse, 2000);
+        };
+
+        state.eventSource = es;
+      } catch (e) {
+        setTimeout(pollLatestResponse, 2000);
+      }
+    }
+
+    async function pollLatestResponse() {
+      try {
+        const res = await fetch(`${state.serverUrl}/api/response`);
+        if (res.ok) {
+          const data = await res.json();
+          setIDEStatus('Conectado a PC', 'online');
+          handleIncomingUpdate(data);
+        }
+      } catch(e) {
+        setIDEStatus('Desconectado', 'error');
+      }
+      setTimeout(pollLatestResponse, 2500);
+    }
+
+    function handleIncomingUpdate(data) {
+      if (!data || !data.content) return;
+      if (data.step_index !== undefined && data.step_index === state.lastStepIndex && data.is_done) {
+        return; // Ya procesado
+      }
+      state.lastStepIndex = data.step_index || 0;
+      appendOrUpdateAssistantMessage(state.lastStepIndex, data.content, data.is_done !== false);
+    }
+
+    // Iniciar conexión en vivo
+    connectLiveStream();
+
+    // --- Configuración y Ajustes UI ---
+    const modal = document.getElementById('settingsModal');
+    document.getElementById('btnOpenSettings').addEventListener('click', () => {
+      document.getElementById('cfgServerUrl').value = state.serverUrl;
+      document.getElementById('cfgLanguage').value = state.language;
+      document.getElementById('cfgSilenceTimeout').value = state.silenceTimeout;
+      document.getElementById('cfgAudioBeeps').checked = state.audioBeeps;
+      document.getElementById('cfgAutoTTS').checked = state.autoTTS;
+      modal.classList.add('open');
+    });
+
+    document.getElementById('btnCloseSettings').addEventListener('click', () => {
+      modal.classList.remove('open');
+    });
+
+    document.getElementById('btnSaveSettings').addEventListener('click', () => {
+      state.serverUrl = document.getElementById('cfgServerUrl').value.replace(/\/+$/, '') || window.location.origin;
+      state.language = document.getElementById('cfgLanguage').value;
+      state.silenceTimeout = parseInt(document.getElementById('cfgSilenceTimeout').value, 10);
+      state.audioBeeps = document.getElementById('cfgAudioBeeps').checked;
+      state.autoTTS = document.getElementById('cfgAutoTTS').checked;
+
+      localStorage.setItem('antispeech_server', state.serverUrl);
+      localStorage.setItem('antispeech_lang', state.language);
+      localStorage.setItem('antispeech_silence', state.silenceTimeout);
+      localStorage.setItem('antispeech_beeps', state.audioBeeps);
+      localStorage.setItem('antispeech_tts', state.autoTTS);
+
+      if (state.recognition) state.recognition.lang = state.language;
+      currentLangPill.textContent = state.language.includes('es') ? '🇪🇸 Español' : '🇺🇸 English';
+
+      modal.classList.remove('open');
+      connectLiveStream();
+    });
+
+    // Toggle rápido de Auto-envío
+    toggleAutoSend.addEventListener('click', () => {
+      state.autoSend = !state.autoSend;
+      localStorage.setItem('antispeech_autosend', state.autoSend);
+      toggleAutoSend.textContent = `⚡ Auto-envío: ${state.autoSend ? 'ON' : 'OFF'}`;
+      toggleAutoSend.classList.toggle('active', state.autoSend);
+    });
+
+    // Toggle rápido de Wake Lock
+    const toggleWakeLock = document.getElementById('toggleWakeLock');
+    toggleWakeLock.addEventListener('click', () => {
+      if (state.wakeLock) {
+        state.wakeLock.release();
+        state.wakeLock = null;
+        toggleWakeLock.classList.remove('active');
+        toggleWakeLock.textContent = '💤 Pantalla normal';
+      } else {
+        requestWakeLock();
+        toggleWakeLock.classList.add('active');
+        toggleWakeLock.textContent = '👁️ Pantalla encendida';
+      }
+    });
+  </script>
+</body>
+</html>
