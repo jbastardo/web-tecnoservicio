@@ -3,11 +3,9 @@
 """
 Antispeech - Servidor Local Concurrente (Threading) para IDE Antigravity
 =======================================================================
-Permite conectar el micrófono del celular como entrada de voz para el IDE
-y visualizar las respuestas generadas por la IA en tiempo real en el móvil.
-
-IMPORTANTE: Utiliza ThreadingHTTPServer para evitar que las conexiones
-persistentes de Server-Sent Events (SSE) bloqueen las peticiones POST de audio.
+Permite conectar el micrófono del celular como entrada de voz para el IDE,
+visualizar el historial completo y las respuestas en tiempo real,
+y leer las respuestas en voz alta por el altavoz del celular (TTS).
 
 Zona Horaria Requerida: America/Caracas (UTC-4)
 """
@@ -131,15 +129,21 @@ def generate_self_signed_cert(cert_path="cert.pem", key_path="key.pem", ip="127.
     except Exception as e:
         print(f"[-] No se pudo generar certificado SSL con cryptography: {e}")
 
-def get_latest_conversation_response():
+def get_conversation_data():
     """
-    Lee el archivo de transcripción de la conversación activa en Antigravity
-    para extraer en tiempo real la última respuesta de la IA.
+    Lee la transcripción completa de la conversación activa en Antigravity
+    para extraer tanto el historial cronológico como la última respuesta generada.
     """
     user_home = os.path.expanduser("~")
     brain_path = os.path.join(user_home, ".gemini", "antigravity", "brain")
     if not os.path.exists(brain_path):
-        return {"status": "waiting", "content": "Esperando inicialización de Antigravity..."}
+        return {
+            "status": "waiting",
+            "history": [],
+            "latest": None,
+            "is_generating": False,
+            "message": "Esperando inicialización de Antigravity..."
+        }
 
     try:
         dirs = [
@@ -147,7 +151,7 @@ def get_latest_conversation_response():
             if os.path.isdir(os.path.join(brain_path, d)) and d != "tempmediaStorage"
         ]
         if not dirs:
-            return {"status": "waiting", "content": "No hay conversaciones activas."}
+            return {"status": "waiting", "history": [], "latest": None, "is_generating": False}
 
         latest_dir = max(dirs, key=os.path.getmtime)
         log_file = os.path.join(latest_dir, ".system_generated", "logs", "transcript_full.jsonl")
@@ -155,41 +159,64 @@ def get_latest_conversation_response():
             log_file = os.path.join(latest_dir, ".system_generated", "logs", "transcript.jsonl")
 
         if not os.path.exists(log_file):
-            return {"status": "waiting", "content": "Iniciando registro de chat..."}
+            return {"status": "waiting", "history": [], "latest": None, "is_generating": False}
 
         with open(log_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
-        for line in reversed(lines):
-            try:
-                data = json.loads(line)
-                if data.get("source") == "MODEL" and data.get("type") == "PLANNER_RESPONSE":
-                    content = data.get("content", "")
-                    tool_calls = data.get("tool_calls", [])
-                    step_idx = data.get("step_index", 0)
+        history = []
+        latest_assistant = None
+        is_generating = False
 
-                    if content and not tool_calls:
-                        return {
-                            "status": "ready",
-                            "step_index": step_idx,
-                            "content": content,
-                            "is_done": True,
-                            "timestamp": get_caracas_now_str()
+        for line in lines:
+            try:
+                d = json.loads(line)
+                src = d.get("source")
+                t = d.get("type")
+                content = d.get("content", "")
+                step = d.get("step_index", 0)
+
+                # Prompt del usuario
+                if src == "USER_EXPLICIT" and t == "USER_INPUT" and content:
+                    clean = content.replace("<USER_REQUEST>", "").replace("</USER_REQUEST>", "").strip()
+                    if "<ADDITIONAL_METADATA>" in clean:
+                        clean = clean.split("<ADDITIONAL_METADATA>")[0].strip()
+                    history.append({
+                        "role": "user",
+                        "step": step,
+                        "text": clean,
+                        "time": get_caracas_now_str()
+                    })
+                    is_generating = True
+
+                # Respuesta del modelo
+                elif src == "MODEL" and t == "PLANNER_RESPONSE":
+                    tool_calls = d.get("tool_calls", [])
+                    if not tool_calls and content:
+                        item = {
+                            "role": "assistant",
+                            "step": step,
+                            "text": content,
+                            "time": get_caracas_now_str()
                         }
-                    elif tool_calls or data.get("thinking"):
-                        return {
-                            "status": "generating",
-                            "step_index": step_idx,
-                            "content": "*Antigravity está ejecutando acciones y procesando tu prompt...*",
-                            "is_done": False,
-                            "timestamp": get_caracas_now_str()
-                        }
+                        history.append(item)
+                        latest_assistant = item
+                        is_generating = False
+                    elif tool_calls or d.get("thinking"):
+                        is_generating = True
+
             except Exception:
                 continue
 
-        return {"status": "waiting", "content": "Listo para recibir instrucciones."}
+        return {
+            "status": "generating" if is_generating else "ready",
+            "history": history[-12:],  # Últimos 12 mensajes
+            "latest": latest_assistant,
+            "is_generating": is_generating,
+            "timestamp": get_caracas_now_str()
+        }
     except Exception as e:
-        return {"status": "error", "content": f"Error leyendo transcripción: {str(e)}"}
+        return {"status": "error", "message": f"Error leyendo transcripción: {str(e)}"}
 
 class AntispeechHandler(SimpleHTTPRequestHandler):
     """Manejador HTTP concurrente para la API de automatización, audio STT y la PWA."""
@@ -211,9 +238,7 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
         """Endpoints para recibir prompts en texto o archivos de audio."""
         parsed_path = urlparse(self.path)
 
-        # -------------------------------------------------------------
         # 1. Endpoint /api/audio: Recibe audio del celular y transcribe
-        # -------------------------------------------------------------
         if parsed_path.path == "/api/audio":
             content_length = int(self.headers.get("Content-Length", 0))
             if content_length == 0:
@@ -227,7 +252,6 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
 
             audio_bytes = None
 
-            # Si se envió como JSON codificado en Base64 (máxima compatibilidad móvil)
             if "application/json" in content_type:
                 try:
                     payload = json.loads(raw_body.decode("utf-8"))
@@ -237,11 +261,9 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
                     if base64_str:
                         audio_bytes = base64.b64decode(base64_str)
                 except Exception as ex:
-                    print(f"[-] Error decodificando JSON/Base64: {ex}")
                     self._send_json({"status": "error", "message": f"Error JSON/Base64: {ex}"}, 400)
                     return
             else:
-                # Si se envió directamente como binario
                 audio_bytes = raw_body
 
             if not audio_bytes or len(audio_bytes) < 100:
@@ -269,9 +291,7 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
                 print(f"[{timestamp}] ⚠️ {transcription.get('message', 'No se pudo transcribir.')}")
                 self._send_json(transcription, 200)
 
-        # -------------------------------------------------------------
         # 2. Endpoint /api/prompt: Recibe texto ya transcrito por Web Speech
-        # -------------------------------------------------------------
         elif parsed_path.path == "/api/prompt":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length).decode("utf-8")
@@ -297,20 +317,21 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
                 })
 
             except Exception as e:
-                print(f"[-] Error al procesar prompt: {e}")
                 self._send_json({"status": "error", "message": str(e)}, 500)
         else:
             self._send_json({"error": "Ruta no encontrada"}, 404)
 
     def do_GET(self):
-        """Endpoints de API para lectura de respuesta y streaming SSE."""
+        """Endpoints de API para lectura de respuesta, historial y streaming SSE."""
         parsed_path = urlparse(self.path)
 
-        if parsed_path.path == "/api/response":
-            resp = get_latest_conversation_response()
-            self._send_json(resp)
+        # 1. API: Historial completo y estado actual
+        if parsed_path.path in ("/api/history", "/api/response"):
+            data = get_conversation_data()
+            self._send_json(data)
             return
 
+        # 2. API: Server-Sent Events (SSE) para actualización en vivo en el celular
         elif parsed_path.path == "/api/stream":
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
@@ -319,23 +340,20 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
 
-            last_sent_step = None
-            last_content = None
+            last_json = None
 
             try:
-                for _ in range(60):  # Conexión abierta ~36s por ciclo antes de auto-renovar
-                    data = get_latest_conversation_response()
-                    current_content = data.get("content", "")
-                    current_step = data.get("step_index", 0)
+                for _ in range(60):
+                    data = get_conversation_data()
+                    current_json = json.dumps(data)
 
-                    if current_content != last_content or current_step != last_sent_step:
-                        payload = f"data: {json.dumps(data)}\n\n"
+                    if current_json != last_json:
+                        payload = f"data: {current_json}\n\n"
                         self.wfile.write(payload.encode("utf-8"))
                         self.wfile.flush()
-                        last_content = current_content
-                        last_sent_step = current_step
+                        last_json = current_json
 
-                    time.sleep(0.6)
+                    time.sleep(0.5)
             except Exception:
                 pass
             return
@@ -399,7 +417,6 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
     def _inject_prompt_to_active_window(self, text):
         """
         Automatiza la escritura en la ventana activa mediante clipboard paste + Enter.
-        Garantiza que acentos, emojis y saltos de línea se escriban íntegros e instantáneos.
         """
         def run_typing():
             try:
@@ -415,7 +432,7 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
         threading.Thread(target=run_typing, daemon=True).start()
 
     def log_message(self, format, *args):
-        if "/api/response" in format % args or "/api/stream" in format % args:
+        if "/api/response" in format % args or "/api/stream" in format % args or "/api/history" in format % args:
             return
         super().log_message(format, *args)
 
@@ -436,7 +453,7 @@ def print_banner(local_ip, port_https, port_http=None):
     print(" 2. Escanea el código QR de abajo o abre la URL en Chrome/Safari móvil.")
     print(" 3. Al ser HTTPS local, tu celular mostrará 'La conexión no es privada':")
     print("    -> Toca 'Configuración avanzada' y luego 'Acceder a la IP (no seguro)'.")
-    print(" 4. ¡Listo! Puedes dictar usando MediaRecorder o Web Speech.")
+    print(" 4. ¡Listo! Puedes dictar y escuchar las respuestas leídas en voz alta.")
     print("=" * 65 + "\n")
 
     if qrcode:
@@ -461,7 +478,6 @@ def main():
     print_banner(local_ip, port_https, port_http)
 
     try:
-        # SERVIDOR HTTPS CONCURRENTE (MULTIHILO)
         httpd_ssl = ThreadingHTTPServer(("0.0.0.0", port_https), AntispeechHandler)
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         ssl_context.load_cert_chain(certfile=cert_path, keyfile=key_path)
@@ -469,7 +485,6 @@ def main():
 
         def run_http():
             try:
-                # SERVIDOR HTTP CONCURRENTE (MULTIHILO)
                 httpd_plain = ThreadingHTTPServer(("0.0.0.0", port_http), AntispeechHandler)
                 httpd_plain.serve_forever()
             except Exception:

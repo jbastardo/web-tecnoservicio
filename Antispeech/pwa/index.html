@@ -193,7 +193,7 @@
       flex-direction: column;
       gap: 14px;
       min-height: 250px;
-      margin-bottom: 235px;
+      margin-bottom: 240px;
     }
 
     .message {
@@ -272,13 +272,17 @@
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid var(--card-border);
       border-radius: 6px;
-      color: var(--text-muted);
+      color: #a5b4fc;
       padding: 3px 8px;
       font-size: 11px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 4px;
+    }
+    .tts-btn:hover {
+      background: var(--primary);
+      color: white;
     }
 
     /* Bottom Control Deck */
@@ -288,7 +292,7 @@
       left: 0;
       right: 0;
       z-index: 40;
-      background: rgba(9, 13, 22, 0.95);
+      background: rgba(9, 13, 22, 0.96);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-top: 1px solid var(--card-border);
@@ -343,7 +347,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 20px;
+      gap: 16px;
       width: 100%;
     }
 
@@ -411,6 +415,13 @@
     .btn-aux.send:hover {
       background: var(--accent);
       color: white;
+    }
+
+    .btn-stop-speech {
+      display: none;
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #f87171;
     }
 
     .config-pills {
@@ -514,8 +525,8 @@
   <main>
     <!-- Live diagnostic banner -->
     <div class="diag-banner">
-      <span class="diag-text" id="diagMsg">Modo: Grabación Servidor (Multihilo)</span>
-      <button class="pill" id="btnToggleEngine" style="font-size:10.5px; padding:2px 6px;">Cambiar Modo</button>
+      <span class="diag-text" id="diagMsg">Sincronizando chat en tiempo real...</span>
+      <button class="pill" id="btnToggleSpeech" style="font-size:10.5px; padding:2px 6px;">🔊 Voz: ON</button>
     </div>
 
     <!-- Live Audio Equalizer / Waveform -->
@@ -525,17 +536,7 @@
 
     <!-- Chat Stream / Feed -->
     <div class="chat-section" id="chatFeed">
-      <div class="message assistant" id="welcomeMsg">
-        <div class="msg-header">
-          <span>🤖 Antigravity AI</span>
-          <span>Instrucciones</span>
-        </div>
-        <div class="msg-content">
-          <p><strong>¡Micrófono de Celular Listo!</strong></p>
-          <p>Toca el botón rojo del micrófono abajo para hablar. Verás las barras azules del ecualizador moverse con tu voz.</p>
-          <p>Al terminar de hablar o hacer pausa, se enviará y se transcribirá en tu IDE en menos de un segundo.</p>
-        </div>
-      </div>
+      <!-- Mensajes cargados dinámicamente -->
     </div>
   </main>
 
@@ -565,6 +566,11 @@
           </svg>
         </button>
 
+        <!-- Stop Speech button -->
+        <button class="btn-aux btn-stop-speech" id="btnStopSpeech" title="Detener lectura de voz">
+          ⏹️
+        </button>
+
         <!-- Manual Send button -->
         <button class="btn-aux send" id="btnSendPrompt" title="Enviar prompt al IDE">
           ➤
@@ -573,9 +579,9 @@
 
       <!-- Config pills -->
       <div class="config-pills">
-        <span class="pill active" id="pillEngine">🎙️ Modo: Servidor (MediaRecorder)</span>
+        <span class="pill active" id="pillEngine">🎙️ Grabación Directa</span>
         <span class="pill active" id="toggleAutoSend">⚡ Auto-envío: ON</span>
-        <span class="pill active" id="toggleWakeLock">👁️ Pantalla ON</span>
+        <span class="pill active" id="toggleTTS">🔊 Voz IA: ON</span>
       </div>
     </div>
   </div>
@@ -590,17 +596,15 @@
       <div class="form-group">
         <label>Motor de Voz</label>
         <select id="cfgEngine">
-          <option value="server" selected>Servidor Local (MediaRecorder + ffmpeg) - Recomendado</option>
-          <option value="browser">Navegador Web Speech API (Google Chrome / Safari)</option>
+          <option value="server" selected>Servidor Local (MediaRecorder + ffmpeg)</option>
+          <option value="browser">Navegador Web Speech API</option>
         </select>
       </div>
       <div class="form-group">
         <label>Idioma</label>
         <select id="cfgLanguage">
-          <option value="es-ES">Español (España / Internacional)</option>
-          <option value="es-419" selected>Español (Latinoamérica)</option>
-          <option value="es-VE">Español (Venezuela)</option>
-          <option value="en-US">English (United States)</option>
+          <option value="es-ES" selected>Español</option>
+          <option value="en-US">English</option>
         </select>
       </div>
       <div class="form-group">
@@ -609,7 +613,7 @@
       </div>
       <div class="form-group">
         <label>
-          <input type="checkbox" id="cfgAudioBeeps" checked> Sonidos de confirmación
+          <input type="checkbox" id="cfgAutoTTS" checked> Leer automáticamente las respuestas de la IA
         </label>
       </div>
       <button class="btn-mic" style="width: 100%; height: 42px; border-radius: 8px; font-weight: 600; margin-top: 8px;" id="btnSaveSettings">
@@ -625,7 +629,7 @@
       language: localStorage.getItem('antispeech_lang') || 'es-ES',
       autoSend: localStorage.getItem('antispeech_autosend') !== 'false',
       silenceTimeout: parseInt(localStorage.getItem('antispeech_silence') || '1400', 10),
-      audioBeeps: localStorage.getItem('antispeech_beeps') !== 'false',
+      autoTTS: localStorage.getItem('antispeech_tts') !== 'false', // Activado por defecto
       isRecording: false,
       transcript: '',
       silenceTimer: null,
@@ -636,26 +640,25 @@
       analyser: null,
       animFrameId: null,
       recognition: null,
-      lastStepIndex: -1
+      renderedSteps: new Set(),
+      lastSpokenStep: -1,
+      speechUnlocked: false
     };
 
-    const audioFeedbackCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playBeep(freq = 600, duration = 0.08, type = 'sine') {
-      if (!state.audioBeeps) return;
+    // Desbloquear Audio & SpeechSynthesis en el primer toque del usuario
+    function unlockAudioAndSpeech() {
+      if (state.speechUnlocked) return;
       try {
-        if (audioFeedbackCtx.state === 'suspended') audioFeedbackCtx.resume();
-        const osc = audioFeedbackCtx.createOscillator();
-        const gain = audioFeedbackCtx.createGain();
-        osc.type = type;
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.12, audioFeedbackCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioFeedbackCtx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(audioFeedbackCtx.destination);
-        osc.start();
-        osc.stop(audioFeedbackCtx.currentTime + duration);
+        if (window.speechSynthesis) {
+          const silentUtter = new SpeechSynthesisUtterance(' ');
+          silentUtter.volume = 0.01;
+          window.speechSynthesis.speak(silentUtter);
+        }
+        state.speechUnlocked = true;
       } catch (e) {}
     }
+    window.addEventListener('touchstart', unlockAudioAndSpeech, { once: true });
+    window.addEventListener('click', unlockAudioAndSpeech, { once: true });
 
     async function requestWakeLock() {
       try {
@@ -669,12 +672,14 @@
     const btnClearText = document.getElementById('btnClearText');
     const btnCancelVoice = document.getElementById('btnCancelVoice');
     const btnSendPrompt = document.getElementById('btnSendPrompt');
+    const btnStopSpeech = document.getElementById('btnStopSpeech');
     const statusDot = document.getElementById('statusDot');
     const statusLabel = document.getElementById('statusLabel');
     const chatFeed = document.getElementById('chatFeed');
     const diagMsg = document.getElementById('diagMsg');
     const pillEngine = document.getElementById('pillEngine');
-    const btnToggleEngine = document.getElementById('btnToggleEngine');
+    const btnToggleSpeech = document.getElementById('btnToggleSpeech');
+    const toggleTTS = document.getElementById('toggleTTS');
     const visBox = document.getElementById('visBox');
     const canvas = document.getElementById('audioVisualizer');
     const canvasCtx = canvas.getContext('2d');
@@ -687,37 +692,209 @@
       if (type === 'ok') diagMsg.classList.add('ok');
     }
 
-    function updateEnginePills() {
-      if (state.engine === 'server') {
-        pillEngine.textContent = '🎙️ Modo: Servidor (MediaRecorder)';
-        setDiag('Modo: Grabación Servidor (Multihilo)', 'ok');
-      } else {
-        pillEngine.textContent = '🎙️ Modo: Web Speech API';
-        setDiag('Modo: Web Speech API (Nativo)', 'info');
-      }
+    function updateTTSPill() {
+      btnToggleSpeech.textContent = state.autoTTS ? '🔊 Voz: ON' : '🔇 Voz: OFF';
+      toggleTTS.textContent = state.autoTTS ? '🔊 Voz IA: ON' : '🔇 Voz IA: OFF';
+      toggleTTS.classList.toggle('active', state.autoTTS);
     }
-    updateEnginePills();
+    updateTTSPill();
 
-    btnToggleEngine.addEventListener('click', () => {
-      state.engine = state.engine === 'server' ? 'browser' : 'server';
-      localStorage.setItem('antispeech_engine', state.engine);
-      updateEnginePills();
+    btnToggleSpeech.addEventListener('click', () => {
+      state.autoTTS = !state.autoTTS;
+      localStorage.setItem('antispeech_tts', state.autoTTS);
+      updateTTSPill();
+      if (!state.autoTTS && window.speechSynthesis) window.speechSynthesis.cancel();
+    });
+
+    toggleTTS.addEventListener('click', () => {
+      state.autoTTS = !state.autoTTS;
+      localStorage.setItem('antispeech_tts', state.autoTTS);
+      updateTTSPill();
+      if (!state.autoTTS && window.speechSynthesis) window.speechSynthesis.cancel();
+    });
+
+    btnStopSpeech.addEventListener('click', () => {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      btnStopSpeech.style.display = 'none';
+      setDiag('Lectura de voz detenida.', 'warn');
     });
 
     // =========================================================
-    // MOTOR 1: GRABACIÓN DIRECTA MEDIARECORDER CON BASE64 JSON
+    // LECTURA EN VOZ ALTA (TEXT-TO-SPEECH)
+    // =========================================================
+    function speakText(rawContent, stepIndex = null) {
+      if (!window.speechSynthesis) return;
+
+      // Si ya se leyó este paso específico, no repetirlo en bucle
+      if (stepIndex !== null && stepIndex <= state.lastSpokenStep) return;
+      if (stepIndex !== null) state.lastSpokenStep = stepIndex;
+
+      window.speechSynthesis.cancel();
+
+      // Limpiar texto para lectura natural en voz alta
+      let textToSpeak = rawContent
+        .replace(/```[\s\S]*?```/g, ' He dejado el código en tu pantalla. ')
+        .replace(/`([^`]+)`/g, '$1')
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/\*([^*]+)\*/g, '$1')
+        .replace(/#{1,6}\s+/g, '')
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        .replace(/[>•\-]/g, '')
+        .trim();
+
+      if (!textToSpeak) return;
+
+      // Limitar a los primeros 800 caracteres para respuestas fluidas
+      if (textToSpeak.length > 800) {
+        textToSpeak = textToSpeak.substring(0, 800) + '... El resto de la respuesta está en tu pantalla.';
+      }
+
+      const utter = new SpeechSynthesisUtterance(textToSpeak);
+      utter.lang = 'es-ES';
+      utter.rate = 1.05;
+
+      utter.onstart = () => {
+        btnStopSpeech.style.display = 'flex';
+        setDiag('🔊 Leyendo respuesta en voz alta...', 'ok');
+      };
+
+      utter.onend = () => {
+        btnStopSpeech.style.display = 'none';
+        setDiag('✓ Lectura completada.', 'ok');
+      };
+
+      utter.onerror = (e) => {
+        btnStopSpeech.style.display = 'none';
+      };
+
+      window.speechSynthesis.speak(utter);
+    }
+
+    // =========================================================
+    // RENDERIZADO DEL CHAT
+    // =========================================================
+    function renderHistory(historyList) {
+      if (!historyList || historyList.length === 0) return;
+
+      historyList.forEach((msg) => {
+        const msgId = `msg-${msg.role}-${msg.step}`;
+        if (!state.renderedSteps.has(msgId)) {
+          state.renderedSteps.add(msgId);
+
+          const el = document.createElement('div');
+          el.id = msgId;
+          el.className = `message ${msg.role}`;
+
+          const isUser = msg.role === 'user';
+          const senderName = isUser ? 'Tú (Voz)' : '🤖 Antigravity';
+          const htmlContent = isUser ? escapeHtml(msg.text) : marked.parse(msg.text);
+
+          el.innerHTML = `
+            <div class="msg-header">
+              <span>${senderName}</span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span>${msg.time || ''}</span>
+                ${!isUser ? `<button class="tts-btn" onclick="speakTextFromCard('${msgId}')">🔊 Escuchar</button>` : ''}
+              </div>
+            </div>
+            <div class="msg-content">${htmlContent}</div>
+          `;
+
+          chatFeed.appendChild(el);
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    }
+
+    window.speakTextFromCard = function(msgId) {
+      const card = document.getElementById(msgId);
+      if (card) {
+        const content = card.querySelector('.msg-content').innerText;
+        speakText(content);
+      }
+    };
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.innerText = str;
+      return div.innerHTML;
+    }
+
+    function setIDEStatus(label, type) {
+      statusLabel.textContent = label;
+      statusDot.className = 'status-dot';
+      if (type === 'online') statusDot.classList.add('online');
+      else if (type === 'thinking') statusDot.classList.add('thinking');
+    }
+
+    // =========================================================
+    // CONEXIÓN EN TIEMPO REAL (HISTORIAL Y STREAMING SSE)
+    // =========================================================
+    async function loadInitialHistory() {
+      try {
+        const res = await fetch(`${state.serverUrl}/api/history`);
+        if (res.ok) {
+          const data = await res.json();
+          setIDEStatus(data.is_generating ? 'Antigravity pensando...' : 'Listo', data.is_generating ? 'thinking' : 'online');
+          if (data.history) renderHistory(data.history);
+
+          // Si hay una última respuesta disponible al abrir la app
+          if (data.latest && data.latest.step) {
+            state.lastSpokenStep = data.latest.step; // Evitar que hable la respuesta vieja al recargar
+          }
+        }
+      } catch (e) {
+        setIDEStatus('Desconectado', 'error');
+      }
+    }
+
+    function connectSSE() {
+      try {
+        const es = new EventSource(`${state.serverUrl}/api/stream`);
+
+        es.onopen = () => setIDEStatus('Conectado a PC', 'online');
+
+        es.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (!data) return;
+
+            setIDEStatus(data.is_generating ? 'Antigravity pensando...' : 'Listo', data.is_generating ? 'thinking' : 'online');
+
+            if (data.history) renderHistory(data.history);
+
+            // Si se completó una nueva respuesta del asistente
+            if (!data.is_generating && data.latest && data.latest.text) {
+              const step = data.latest.step;
+              if (state.autoTTS && step > state.lastSpokenStep) {
+                speakText(data.latest.text, step);
+              }
+            }
+          } catch(e) {}
+        };
+
+        es.onerror = () => {
+          es.close();
+          setTimeout(connectSSE, 2500);
+        };
+      } catch (e) {
+        setTimeout(connectSSE, 2500);
+      }
+    }
+
+    loadInitialHistory().then(connectSSE);
+
+    // =========================================================
+    // GRABACIÓN DE AUDIO (MEDIARECORDER A BASE64)
     // =========================================================
     async function startMediaRecorder() {
+      unlockAudioAndSpeech();
       try {
         setDiag('Accediendo al micrófono...', 'info');
         state.audioChunks = [];
 
         const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          }
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
         });
         state.mediaStream = stream;
 
@@ -736,15 +913,12 @@
         const recorder = new MediaRecorder(stream, options);
 
         recorder.ondataavailable = (e) => {
-          if (e.data && e.data.size > 0) {
-            state.audioChunks.push(e.data);
-          }
+          if (e.data && e.data.size > 0) state.audioChunks.push(e.data);
         };
 
         recorder.onstart = () => {
           state.isRecording = true;
           btnMic.classList.add('recording');
-          playBeep(880, 0.1);
           setDiag('🎙️ Grabando audio... Habla ahora', 'ok');
           setIDEStatus('Escuchando...', 'thinking');
           transcriptText.textContent = 'Escuchando tu voz... Habla con naturalidad.';
@@ -756,7 +930,7 @@
           btnMic.classList.remove('recording');
 
           if (state.audioChunks.length === 0) {
-            setDiag('No se grabó ningún audio.', 'warn');
+            setDiag('No se detectó audio.', 'warn');
             return;
           }
 
@@ -768,8 +942,7 @@
         state.mediaRecorder = recorder;
 
       } catch (err) {
-        console.error('Error mic:', err);
-        setDiag(`Error de micrófono: ${err.message || err.name}`, 'err');
+        setDiag(`Error de micrófono: ${err.message}`, 'err');
         stopRecording();
       }
     }
@@ -783,18 +956,12 @@
         state.mediaStream = null;
       }
       state.isRecording = false;
-      playBeep(440, 0.08);
     }
 
-    // Convertir Blob a Base64 para envío 100% confiable
     function blobToBase64(blob) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onloadend = () => {
-          const res = reader.result;
-          const base64Data = res.substring(res.indexOf(',') + 1);
-          resolve(base64Data);
-        };
+        reader.onloadend = () => resolve(reader.result.substring(reader.result.indexOf(',') + 1));
         reader.onerror = reject;
         reader.readAsDataURL(blob);
       });
@@ -817,37 +984,36 @@
           })
         });
 
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
-
         const data = await res.json();
 
         if (data.status === 'ok') {
           const text = data.text;
-          playBeep(1200, 0.08);
-          setDiag(`✓ Transcrito e Inyectado: "${text.slice(0, 35)}..."`, 'ok');
+          setDiag(`✓ Inyectado en IDE: "${text.slice(0, 35)}..."`, 'ok');
           setIDEStatus('Prompt inyectado en IDE', 'online');
           transcriptText.textContent = text;
           transcriptText.className = 'transcription-text';
           btnClearText.style.display = 'block';
 
-          appendUserMessage(text);
+          // Agregar mensaje de usuario inmediatamente
+          renderHistory([{
+            role: 'user',
+            step: Date.now(),
+            text: text,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }]);
         } else {
-          const errMsg = data.message || 'No se reconoció voz clara en el audio.';
+          const errMsg = data.message || 'No se reconoció voz clara.';
           setDiag(`⚠️ ${errMsg}`, 'warn');
           transcriptText.textContent = errMsg;
           setIDEStatus('Listo', 'online');
         }
       } catch (err) {
-        console.error('Upload error:', err);
         setDiag(`Error de conexión: ${err.message}`, 'err');
         setIDEStatus('Error de conexión', 'error');
-        transcriptText.textContent = `Error al conectar con la PC: ${err.message}`;
       }
     }
 
-    // --- Visualizador de audio / Vúmetro ---
+    // --- Ecualizador Vúmetro ---
     function startAudioVisualizer(stream) {
       try {
         visBox.classList.add('active');
@@ -906,61 +1072,9 @@
       }
     }
 
-    // =========================================================
-    // MOTOR 2: WEB SPEECH API (DEL NAVEGADOR)
-    // =========================================================
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    function initWebSpeech() {
-      if (!SpeechRecognition) return null;
-      const rec = new SpeechRecognition();
-      rec.continuous = false;
-      rec.interimResults = true;
-      rec.lang = state.language;
-
-      rec.onstart = () => {
-        state.isRecording = true;
-        btnMic.classList.add('recording');
-        playBeep(880, 0.1);
-        setDiag('🎙️ Web Speech activo. Habla ahora...', 'ok');
-        setIDEStatus('Escuchando...', 'thinking');
-      };
-
-      rec.onresult = (event) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          transcript += event.results[i][0].transcript;
-        }
-        if (transcript.trim()) {
-          state.transcript = transcript.trim();
-          transcriptText.textContent = state.transcript;
-          transcriptText.className = 'transcription-text';
-          btnClearText.style.display = 'block';
-          setDiag(`📝 Reconocido: "${state.transcript.slice(0, 30)}..."`, 'ok');
-        }
-      };
-
-      rec.onerror = (event) => {
-        setDiag(`Error Web Speech: [${event.error}]. Prueba cambiar a 'Modo Servidor'.`, 'err');
-        stopRecording();
-      };
-
-      rec.onend = () => {
-        state.isRecording = false;
-        btnMic.classList.remove('recording');
-        setIDEStatus('Listo', 'online');
-        if (state.autoSend && state.transcript.trim()) {
-          sendTextPrompt(state.transcript.trim());
-        }
-      };
-
-      return rec;
-    }
-
-    // =========================================================
-    // CONTROL GENERAL DE GRABACIÓN
-    // =========================================================
+    // Botones de acción
     btnMic.addEventListener('click', () => {
+      unlockAudioAndSpeech();
       if (state.isRecording) {
         stopRecording();
       } else {
@@ -972,37 +1086,11 @@
       state.transcript = '';
       transcriptText.textContent = 'Iniciando micrófono...';
       transcriptText.className = 'transcription-text interim';
-
-      if (state.engine === 'server') {
-        startMediaRecorder();
-      } else {
-        state.recognition = initWebSpeech();
-        if (!state.recognition) {
-          alert('Web Speech API no disponible en este navegador. Cambiando a Modo Servidor.');
-          state.engine = 'server';
-          updateEnginePills();
-          startMediaRecorder();
-          return;
-        }
-        try {
-          state.recognition.start();
-        } catch (e) {
-          setDiag(`Error iniciando Web Speech: ${e.message}`, 'err');
-        }
-      }
+      startMediaRecorder();
     }
 
     function stopRecording() {
-      if (state.engine === 'server') {
-        stopMediaRecorder();
-      } else {
-        if (state.recognition) {
-          try { state.recognition.stop(); } catch(e){}
-        }
-        state.isRecording = false;
-        btnMic.classList.remove('recording');
-        playBeep(440, 0.08);
-      }
+      stopMediaRecorder();
     }
 
     btnCancelVoice.addEventListener('click', () => {
@@ -1012,7 +1100,6 @@
       transcriptText.className = 'transcription-text empty';
       btnClearText.style.display = 'none';
       setDiag('Dictado cancelado.', 'warn');
-      playBeep(300, 0.12);
     });
 
     btnClearText.addEventListener('click', () => {
@@ -1023,157 +1110,15 @@
     });
 
     btnSendPrompt.addEventListener('click', () => {
-      if (state.isRecording) {
-        stopRecording();
-      } else if (state.transcript.trim()) {
-        sendTextPrompt(state.transcript.trim());
-      }
+      if (state.isRecording) stopRecording();
     });
 
-    async function sendTextPrompt(text) {
-      if (!text) return;
-      playBeep(1200, 0.08);
-      appendUserMessage(text);
-
-      state.transcript = '';
-      transcriptText.textContent = 'Toca el micrófono para comenzar a hablar...';
-      transcriptText.className = 'transcription-text empty';
-      btnClearText.style.display = 'none';
-
-      setIDEStatus('Enviando a IDE...', 'thinking');
-
-      try {
-        const res = await fetch(`${state.serverUrl}/api/prompt`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text })
-        });
-        const data = await res.json();
-        if (data.status === 'ok') {
-          setIDEStatus('Prompt inyectado en IDE', 'online');
-          setDiag('✓ Prompt inyectado en IDE', 'ok');
-        }
-      } catch (err) {
-        setIDEStatus('Error de conexión', 'error');
-        setDiag(`Error al enviar: ${err.message}`, 'err');
-      }
-    }
-
-    // --- UI Chat Helpers ---
-    function appendUserMessage(text) {
-      const msg = document.createElement('div');
-      msg.className = 'message user';
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      msg.innerHTML = `
-        <div class="msg-header">
-          <span>Tú (Voz)</span>
-          <span>${time}</span>
-        </div>
-        <div class="msg-content">${escapeHtml(text)}</div>
-      `;
-      chatFeed.appendChild(msg);
-      msg.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function appendOrUpdateAssistantMessage(stepIndex, content, isDone = true) {
-      let msg = document.getElementById(`step-${stepIndex}`);
-      if (!msg) {
-        msg = document.createElement('div');
-        msg.id = `step-${stepIndex}`;
-        msg.className = 'message assistant';
-        chatFeed.appendChild(msg);
-      }
-
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const parsedHtml = marked.parse(content || '*Generando respuesta...*');
-
-      msg.innerHTML = `
-        <div class="msg-header">
-          <span>🤖 Antigravity ${isDone ? '✓' : '⚙️ (Escribiendo...)'}</span>
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <span>${time}</span>
-            <button class="tts-btn" onclick="speakText(this)">🔊 Escuchar</button>
-          </div>
-        </div>
-        <div class="msg-content">${parsedHtml}</div>
-      `;
-
-      msg.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function escapeHtml(string) {
-      const div = document.createElement('div');
-      div.innerText = string;
-      return div.innerHTML;
-    }
-
-    function setIDEStatus(label, type) {
-      statusLabel.textContent = label;
-      statusDot.className = 'status-dot';
-      if (type === 'online') statusDot.classList.add('online');
-      else if (type === 'thinking') statusDot.classList.add('thinking');
-    }
-
-    window.speakText = function(btn) {
-      const content = btn.closest('.message').querySelector('.msg-content').innerText;
-      if (!window.speechSynthesis) return;
-      window.speechSynthesis.cancel();
-      const cleanText = content.replace(/```[\s\S]*?```/g, 'bloque de código omitido.').slice(0, 1500);
-      const utter = new SpeechSynthesisUtterance(cleanText);
-      utter.lang = state.language;
-      window.speechSynthesis.speak(utter);
-    };
-
-    // --- Conexión SSE con Servidor ---
-    function connectLiveStream() {
-      try {
-        const es = new EventSource(`${state.serverUrl}/api/stream`);
-        es.onopen = () => setIDEStatus('Conectado a PC', 'online');
-        es.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (data && data.content) {
-              if (data.step_index !== undefined && data.step_index === state.lastStepIndex && data.is_done) return;
-              state.lastStepIndex = data.step_index || 0;
-              appendOrUpdateAssistantMessage(state.lastStepIndex, data.content, data.is_done !== false);
-            }
-          } catch(e) {}
-        };
-        es.onerror = () => {
-          es.close();
-          setTimeout(pollLatestResponse, 2000);
-        };
-      } catch (e) {
-        setTimeout(pollLatestResponse, 2000);
-      }
-    }
-
-    async function pollLatestResponse() {
-      try {
-        const res = await fetch(`${state.serverUrl}/api/response`);
-        if (res.ok) {
-          const data = await res.json();
-          setIDEStatus('Conectado a PC', 'online');
-          if (data && data.content && data.step_index !== state.lastStepIndex) {
-            state.lastStepIndex = data.step_index || 0;
-            appendOrUpdateAssistantMessage(state.lastStepIndex, data.content, data.is_done !== false);
-          }
-        }
-      } catch(e) {
-        setIDEStatus('Desconectado', 'error');
-      }
-      setTimeout(pollLatestResponse, 2500);
-    }
-
-    connectLiveStream();
-
-    // --- Modal Configuración ---
+    // Modal Ajustes
     const modal = document.getElementById('settingsModal');
     document.getElementById('btnOpenSettings').addEventListener('click', () => {
-      document.getElementById('cfgEngine').value = state.engine;
       document.getElementById('cfgLanguage').value = state.language;
       document.getElementById('cfgSilenceTimeout').value = state.silenceTimeout;
-      document.getElementById('cfgAudioBeeps').checked = state.audioBeeps;
+      document.getElementById('cfgAutoTTS').checked = state.autoTTS;
       modal.classList.add('open');
     });
 
@@ -1182,17 +1127,15 @@
     });
 
     document.getElementById('btnSaveSettings').addEventListener('click', () => {
-      state.engine = document.getElementById('cfgEngine').value;
       state.language = document.getElementById('cfgLanguage').value;
       state.silenceTimeout = parseInt(document.getElementById('cfgSilenceTimeout').value, 10);
-      state.audioBeeps = document.getElementById('cfgAudioBeeps').checked;
+      state.autoTTS = document.getElementById('cfgAutoTTS').checked;
 
-      localStorage.setItem('antispeech_engine', state.engine);
       localStorage.setItem('antispeech_lang', state.language);
       localStorage.setItem('antispeech_silence', state.silenceTimeout);
-      localStorage.setItem('antispeech_beeps', state.audioBeeps);
+      localStorage.setItem('antispeech_tts', state.autoTTS);
 
-      updateEnginePills();
+      updateTTSPill();
       modal.classList.remove('open');
     });
 
@@ -1202,11 +1145,6 @@
       localStorage.setItem('antispeech_autosend', state.autoSend);
       toggleAutoSend.textContent = `⚡ Auto-envío: ${state.autoSend ? 'ON' : 'OFF'}`;
       toggleAutoSend.classList.toggle('active', state.autoSend);
-    });
-
-    const toggleWakeLock = document.getElementById('toggleWakeLock');
-    toggleWakeLock.addEventListener('click', () => {
-      requestWakeLock();
     });
   </script>
 </body>
