@@ -53,7 +53,7 @@
       position: sticky;
       top: 0;
       z-index: 50;
-      background: rgba(9, 13, 22, 0.85);
+      background: rgba(9, 13, 22, 0.88);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--card-border);
@@ -136,8 +136,54 @@
       max-width: 800px;
       width: 100%;
       margin: 0 auto;
-      padding: 16px;
-      gap: 16px;
+      padding: 14px 16px;
+      gap: 14px;
+    }
+
+    /* Diagnostic log bar on phone */
+    .diag-banner {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .diag-text {
+      color: #cbd5e1;
+      font-family: ui-monospace, monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    .diag-text.warn { color: #fbbf24; }
+    .diag-text.err { color: #f87171; }
+    .diag-text.ok { color: #34d399; }
+
+    /* Audio visualizer canvas */
+    .visualizer-box {
+      width: 100%;
+      height: 36px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      overflow: hidden;
+      display: none;
+    }
+    .visualizer-box.active {
+      display: block;
+    }
+
+    canvas#audioVisualizer {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
 
     /* Response / Chat Feed */
@@ -147,7 +193,7 @@
       flex-direction: column;
       gap: 14px;
       min-height: 250px;
-      margin-bottom: 210px; /* Space for sticky bottom controls */
+      margin-bottom: 235px; /* Space for sticky bottom controls */
     }
 
     .message {
@@ -222,13 +268,6 @@
       margin-bottom: 8px;
     }
 
-    .msg-content blockquote {
-      border-left: 3px solid var(--primary);
-      padding-left: 10px;
-      color: var(--text-muted);
-      margin: 8px 0;
-    }
-
     /* TTS button inside message */
     .tts-btn {
       background: rgba(255, 255, 255, 0.08);
@@ -242,10 +281,6 @@
       align-items: center;
       gap: 4px;
     }
-    .tts-btn:hover {
-      background: var(--primary);
-      color: white;
-    }
 
     /* Bottom Control Deck */
     .controls-deck {
@@ -254,15 +289,15 @@
       left: 0;
       right: 0;
       z-index: 40;
-      background: rgba(9, 13, 22, 0.92);
+      background: rgba(9, 13, 22, 0.94);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-top: 1px solid var(--card-border);
-      padding: 12px 16px max(14px, env(safe-area-inset-bottom));
+      padding: 10px 16px max(14px, env(safe-area-inset-bottom));
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .controls-inner {
@@ -271,20 +306,20 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     /* Realtime transcription preview bar */
     .transcription-bar {
       width: 100%;
-      min-height: 38px;
-      max-height: 90px;
+      min-height: 40px;
+      max-height: 95px;
       overflow-y: auto;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--card-border);
       border-radius: 12px;
       padding: 8px 12px;
-      font-size: 13.5px;
+      font-size: 14px;
       color: #e2e8f0;
       display: flex;
       align-items: center;
@@ -317,8 +352,8 @@
 
     .btn-mic {
       position: relative;
-      width: 72px;
-      height: 72px;
+      width: 74px;
+      height: 74px;
       border-radius: 50%;
       background: linear-gradient(135deg, #6366f1, #4f46e5);
       border: none;
@@ -338,7 +373,7 @@
     .btn-mic.recording {
       background: linear-gradient(135deg, #ef4444, #dc2626);
       box-shadow: 0 0 25px rgba(239, 68, 68, 0.7);
-      animation: pulseRecord 1.5s infinite;
+      animation: pulseRecord 1.4s infinite;
     }
 
     @keyframes pulseRecord {
@@ -348,8 +383,8 @@
     }
 
     .btn-mic svg {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       fill: currentColor;
     }
 
@@ -384,23 +419,27 @@
     /* Small config pills */
     .config-pills {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
-      font-size: 11.5px;
+      font-size: 11px;
       color: var(--text-muted);
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     .pill {
       background: rgba(255, 255, 255, 0.05);
-      padding: 3px 8px;
+      padding: 4px 8px;
       border-radius: 12px;
       border: 1px solid var(--card-border);
       cursor: pointer;
+      user-select: none;
     }
     .pill.active {
-      background: rgba(99, 102, 241, 0.2);
+      background: rgba(99, 102, 241, 0.25);
       border-color: var(--primary);
       color: #a5b4fc;
+      font-weight: 600;
     }
 
     /* Modal / Drawer */
@@ -453,32 +492,6 @@
       padding: 8px 12px;
       font-size: 14px;
     }
-
-    /* Install Banner */
-    .install-banner {
-      display: none;
-      background: linear-gradient(90deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
-      border: 1px solid rgba(99, 102, 241, 0.4);
-      border-radius: 12px;
-      padding: 8px 12px;
-      font-size: 12.5px;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    .install-banner.show {
-      display: flex;
-    }
-    .btn-install {
-      background: var(--primary);
-      border: none;
-      border-radius: 6px;
-      color: white;
-      padding: 4px 10px;
-      font-weight: 600;
-      font-size: 11.5px;
-      cursor: pointer;
-    }
   </style>
 </head>
 <body>
@@ -504,10 +517,15 @@
 
   <!-- Main Feed -->
   <main>
-    <!-- PWA Install Banner -->
-    <div class="install-banner" id="installBanner">
-      <span>📲 Instalar Antispeech en pantalla de inicio</span>
-      <button class="btn-install" id="btnInstallApp">Instalar</button>
+    <!-- Live diagnostic banner -->
+    <div class="diag-banner">
+      <span class="diag-text" id="diagMsg">Modo: Grabación Servidor (Alta Precisión)</span>
+      <button class="pill" id="btnToggleEngine" style="font-size:10.5px; padding:2px 6px;">Cambiar Modo</button>
+    </div>
+
+    <!-- Live Audio Equalizer / Waveform -->
+    <div class="visualizer-box" id="visBox">
+      <canvas id="audioVisualizer" height="36"></canvas>
     </div>
 
     <!-- Chat Stream / Feed -->
@@ -518,9 +536,9 @@
           <span>Instrucciones</span>
         </div>
         <div class="msg-content">
-          <p><strong>¡Listo para recibir comandos de voz!</strong></p>
-          <p>Presiona el botón del micrófono abajo para dictar tu instrucción. El texto será enviado automáticamente a tu IDE en la PC y se ejecutará de inmediato.</p>
-          <p>Las respuestas y pasos generados por la IA aparecerán reflejados en esta pantalla en tiempo real.</p>
+          <p><strong>¡Micrófono de Celular Listo!</strong></p>
+          <p>Toca el botón rojo del micrófono abajo para hablar. El audio será capturado por tu celular y enviado automáticamente a tu IDE en la computadora.</p>
+          <p>La respuesta generada por la IA se mostrará aquí mismo en tiempo real.</p>
         </div>
       </div>
     </div>
@@ -560,9 +578,9 @@
 
       <!-- Config pills -->
       <div class="config-pills">
+        <span class="pill active" id="pillEngine">🎙️ Modo: Servidor (MediaRecorder)</span>
         <span class="pill active" id="toggleAutoSend">⚡ Auto-envío: ON</span>
-        <span class="pill active" id="toggleWakeLock">👁️ Pantalla encendida</span>
-        <span class="pill" id="currentLangPill">🇪🇸 Español</span>
+        <span class="pill active" id="toggleWakeLock">👁️ Pantalla ON</span>
       </div>
     </div>
   </div>
@@ -575,11 +593,14 @@
         <button class="btn-aux" style="width: 30px; height: 30px;" id="btnCloseSettings">✕</button>
       </div>
       <div class="form-group">
-        <label>Dirección del Servidor (PC)</label>
-        <input type="text" id="cfgServerUrl" placeholder="https://192.168.x.x:8443">
+        <label>Motor de Voz</label>
+        <select id="cfgEngine">
+          <option value="server" selected>Servidor Local (MediaRecorder + ffmpeg) - Recomendado</option>
+          <option value="browser">Navegador Web Speech API (Google Chrome / Safari)</option>
+        </select>
       </div>
       <div class="form-group">
-        <label>Idioma de Reconocimiento de Voz</label>
+        <label>Idioma</label>
         <select id="cfgLanguage">
           <option value="es-ES">Español (España / Internacional)</option>
           <option value="es-419" selected>Español (Latinoamérica)</option>
@@ -588,17 +609,12 @@
         </select>
       </div>
       <div class="form-group">
-        <label>Tiempo de silencio para auto-enviar (ms)</label>
-        <input type="number" id="cfgSilenceTimeout" value="1300" min="500" max="4000" step="100">
+        <label>Silencio para auto-enviar (ms)</label>
+        <input type="number" id="cfgSilenceTimeout" value="1400" min="500" max="4000" step="100">
       </div>
       <div class="form-group">
         <label>
-          <input type="checkbox" id="cfgAudioBeeps" checked> Sonidos de confirmación (bips)
-        </label>
-      </div>
-      <div class="form-group">
-        <label>
-          <input type="checkbox" id="cfgAutoTTS"> Lectura en voz alta automática de la respuesta
+          <input type="checkbox" id="cfgAudioBeeps" checked> Sonidos de confirmación
         </label>
       </div>
       <button class="btn-mic" style="width: 100%; height: 42px; border-radius: 8px; font-weight: 600; margin-top: 8px;" id="btnSaveSettings">
@@ -610,58 +626,53 @@
   <script>
     // --- Estado global ---
     const state = {
-      serverUrl: localStorage.getItem('antispeech_server') || window.location.origin,
-      language: localStorage.getItem('antispeech_lang') || 'es-419',
+      serverUrl: window.location.origin,
+      engine: localStorage.getItem('antispeech_engine') || 'server', // 'server' o 'browser'
+      language: localStorage.getItem('antispeech_lang') || 'es-ES',
       autoSend: localStorage.getItem('antispeech_autosend') !== 'false',
-      silenceTimeout: parseInt(localStorage.getItem('antispeech_silence') || '1300', 10),
+      silenceTimeout: parseInt(localStorage.getItem('antispeech_silence') || '1400', 10),
       audioBeeps: localStorage.getItem('antispeech_beeps') !== 'false',
-      autoTTS: localStorage.getItem('antispeech_tts') === 'true',
       isRecording: false,
       transcript: '',
-      interimTranscript: '',
       silenceTimer: null,
+      mediaStream: null,
+      mediaRecorder: null,
+      audioChunks: [],
+      audioContext: null,
+      analyser: null,
+      animFrameId: null,
       recognition: null,
-      eventSource: null,
-      lastStepIndex: -1,
-      wakeLock: null
+      lastStepIndex: -1
     };
 
     // --- Audio Feedback (Web Audio API) ---
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const audioFeedbackCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playBeep(freq = 600, duration = 0.08, type = 'sine') {
       if (!state.audioBeeps) return;
       try {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+        if (audioFeedbackCtx.state === 'suspended') audioFeedbackCtx.resume();
+        const osc = audioFeedbackCtx.createOscillator();
+        const gain = audioFeedbackCtx.createGain();
         osc.type = type;
         osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        gain.gain.setValueAtTime(0.12, audioFeedbackCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioFeedbackCtx.currentTime + duration);
         osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        gain.connect(audioFeedbackCtx.destination);
         osc.start();
-        osc.stop(audioCtx.currentTime + duration);
-      } catch (e) {
-        console.warn('Audio feedback failed:', e);
-      }
+        osc.stop(audioFeedbackCtx.currentTime + duration);
+      } catch (e) {}
     }
 
     // --- Screen Wake Lock ---
     async function requestWakeLock() {
       try {
         if ('wakeLock' in navigator) {
-          state.wakeLock = await navigator.wakeLock.request('screen');
-          console.log('Screen Wake Lock activo.');
+          await navigator.wakeLock.request('screen');
         }
-      } catch (err) {
-        console.warn('Wake Lock error:', err);
-      }
+      } catch (e) {}
     }
     requestWakeLock();
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') requestWakeLock();
-    });
 
     // --- Elementos UI ---
     const btnMic = document.getElementById('btnMic');
@@ -672,184 +683,353 @@
     const statusDot = document.getElementById('statusDot');
     const statusLabel = document.getElementById('statusLabel');
     const chatFeed = document.getElementById('chatFeed');
-    const toggleAutoSend = document.getElementById('toggleAutoSend');
-    const currentLangPill = document.getElementById('currentLangPill');
+    const diagMsg = document.getElementById('diagMsg');
+    const pillEngine = document.getElementById('pillEngine');
+    const btnToggleEngine = document.getElementById('btnToggleEngine');
+    const visBox = document.getElementById('visBox');
+    const canvas = document.getElementById('audioVisualizer');
+    const canvasCtx = canvas.getContext('2d');
 
-    // --- PWA Service Worker ---
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg failed', err));
+    function setDiag(msg, type = 'info') {
+      diagMsg.textContent = msg;
+      diagMsg.className = 'diag-text';
+      if (type === 'warn') diagMsg.classList.add('warn');
+      if (type === 'err') diagMsg.classList.add('err');
+      if (type === 'ok') diagMsg.classList.add('ok');
     }
-    let deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      document.getElementById('installBanner').classList.add('show');
-    });
-    document.getElementById('btnInstallApp').addEventListener('click', async () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          document.getElementById('installBanner').classList.remove('show');
-        }
-        deferredPrompt = null;
+
+    function updateEnginePills() {
+      if (state.engine === 'server') {
+        pillEngine.textContent = '🎙️ Modo: Servidor (MediaRecorder)';
+        setDiag('Modo: Grabación Servidor (Infalible en móvil)', 'ok');
+      } else {
+        pillEngine.textContent = '🎙️ Modo: Web Speech API';
+        setDiag('Modo: Web Speech API (Nativo de Chrome)', 'info');
       }
+    }
+    updateEnginePills();
+
+    btnToggleEngine.addEventListener('click', () => {
+      state.engine = state.engine === 'server' ? 'browser' : 'server';
+      localStorage.setItem('antispeech_engine', state.engine);
+      updateEnginePills();
     });
 
-    // --- Reconocimiento de Voz (Web Speech API) ---
+    // =========================================================
+    // MOTOR 1: GRABACIÓN DIRECTA MEDIARECORDER (RECOMENDADO)
+    // =========================================================
+    async function startMediaRecorder() {
+      try {
+        setDiag('Accediendo al micrófono...', 'info');
+        state.audioChunks = [];
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+        state.mediaStream = stream;
+
+        // Iniciar visualizador de audio
+        startAudioVisualizer(stream);
+
+        // Crear MediaRecorder
+        const mimeTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg', 'audio/mp4', ''];
+        let chosenMime = '';
+        for (const m of mimeTypes) {
+          if (!m || MediaRecorder.isTypeSupported(m)) {
+            chosenMime = m;
+            break;
+          }
+        }
+
+        const options = chosenMime ? { mimeType: chosenMime } : {};
+        const recorder = new MediaRecorder(stream, options);
+
+        recorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            state.audioChunks.push(e.data);
+          }
+        };
+
+        recorder.onstart = () => {
+          state.isRecording = true;
+          btnMic.classList.add('recording');
+          playBeep(880, 0.1);
+          setDiag('🎙️ Grabando audio... Habla ahora', 'ok');
+          setIDEStatus('Escuchando...', 'thinking');
+          transcriptText.textContent = 'Escuchando tu voz... Suelta el botón o haz pausa para enviar.';
+          transcriptText.className = 'transcription-text interim';
+        };
+
+        recorder.onstop = async () => {
+          stopAudioVisualizer();
+          btnMic.classList.remove('recording');
+
+          if (state.audioChunks.length === 0) {
+            setDiag('No se grabó ningún audio.', 'warn');
+            return;
+          }
+
+          const blob = new Blob(state.audioChunks, { type: chosenMime || 'audio/webm' });
+          await uploadAudioToServer(blob);
+        };
+
+        recorder.start(250); // Emitir chunks cada 250ms
+        state.mediaRecorder = recorder;
+
+      } catch (err) {
+        console.error('Error mic:', err);
+        setDiag(`Error de micrófono: ${err.message || err.name}`, 'err');
+        stopRecording();
+      }
+    }
+
+    function stopMediaRecorder() {
+      if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+        state.mediaRecorder.stop();
+      }
+      if (state.mediaStream) {
+        state.mediaStream.getTracks().forEach(track => track.stop());
+        state.mediaStream = null;
+      }
+      state.isRecording = false;
+      playBeep(440, 0.08);
+    }
+
+    async function uploadAudioToServer(audioBlob) {
+      setDiag('📤 Transfiriendo audio a la PC y transcribiendo...', 'info');
+      setIDEStatus('Transcribiendo...', 'thinking');
+      transcriptText.textContent = 'Procesando tu voz en la PC...';
+
+      try {
+        const res = await fetch(`${state.serverUrl}/api/audio?lang=${state.language}`, {
+          method: 'POST',
+          headers: { 'Content-Type': audioBlob.type || 'audio/webm' },
+          body: audioBlob
+        });
+
+        const data = await res.json();
+
+        if (data.status === 'ok') {
+          const text = data.text;
+          playBeep(1200, 0.08);
+          setDiag(`✓ Transcrito e Inyectado: "${text.slice(0, 35)}..."`, 'ok');
+          setIDEStatus('Prompt inyectado en IDE', 'online');
+          transcriptText.textContent = text;
+          transcriptText.className = 'transcription-text';
+          btnClearText.style.display = 'block';
+
+          appendUserMessage(text);
+        } else {
+          const errMsg = data.message || 'No se reconoció voz en el audio.';
+          setDiag(`⚠️ ${errMsg}`, 'warn');
+          transcriptText.textContent = errMsg;
+          setIDEStatus('Listo', 'online');
+        }
+      } catch (err) {
+        setDiag(`Error de red con el servidor: ${err.message}`, 'err');
+        setIDEStatus('Error de conexión', 'error');
+      }
+    }
+
+    // --- Visualizador de audio / Vúmetro ---
+    function startAudioVisualizer(stream) {
+      try {
+        visBox.classList.add('active');
+        state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const source = state.audioContext.createMediaStreamSource(stream);
+        state.analyser = state.audioContext.createAnalyser();
+        state.analyser.fftSize = 64;
+        source.connect(state.analyser);
+
+        const bufferLength = state.analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        let silenceStart = Date.now();
+        let hasSpoken = false;
+
+        function draw() {
+          state.animFrameId = requestAnimationFrame(draw);
+          state.analyser.getByteFrequencyData(dataArray);
+
+          canvasCtx.fillStyle = 'rgba(9, 13, 22, 0.6)';
+          canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+          let sum = 0;
+          const barWidth = (canvas.width / bufferLength) * 1.5;
+          let x = 0;
+
+          for (let i = 0; i < bufferLength; i++) {
+            const barHeight = (dataArray[i] / 255) * canvas.height;
+            sum += dataArray[i];
+
+            canvasCtx.fillStyle = `rgb(${dataArray[i] + 50}, 99, 241)`;
+            canvasCtx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
+            x += barWidth;
+          }
+
+          // Detección automática de silencio para MediaRecorder
+          const avgVolume = sum / bufferLength;
+          if (avgVolume > 20) {
+            hasSpoken = true;
+            silenceStart = Date.now();
+          } else if (hasSpoken && state.autoSend) {
+            if (Date.now() - silenceStart > state.silenceTimeout) {
+              // Silencio prolongado tras haber hablado -> Enviar
+              stopMediaRecorder();
+            }
+          }
+        }
+        draw();
+      } catch (e) {}
+    }
+
+    function stopAudioVisualizer() {
+      visBox.classList.remove('active');
+      if (state.animFrameId) cancelAnimationFrame(state.animFrameId);
+      if (state.audioContext) {
+        state.audioContext.close().catch(() => {});
+        state.audioContext = null;
+      }
+    }
+
+    // =========================================================
+    // MOTOR 2: WEB SPEECH API (DEL NAVEGADOR)
+    // =========================================================
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    if (!SpeechRecognition) {
-      alert('Tu navegador no soporta Web Speech API. Por favor usa Google Chrome o Safari.');
-    } else {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = state.language;
+    function initWebSpeech() {
+      if (!SpeechRecognition) return null;
+      const rec = new SpeechRecognition();
+      rec.continuous = false; // continuous = false es MANDATORIO en Android para evitar que se cuelgue
+      rec.interimResults = true;
+      rec.lang = state.language;
 
-      recognition.onstart = () => {
+      rec.onstart = () => {
         state.isRecording = true;
         btnMic.classList.add('recording');
-        playBeep(880, 0.1); // Beep alto de inicio
+        playBeep(880, 0.1);
+        setDiag('🎙️ Web Speech activo. Habla ahora...', 'ok');
         setIDEStatus('Escuchando...', 'thinking');
       };
 
-      recognition.onresult = (event) => {
-        let final = '';
-        let interim = '';
-
+      rec.onresult = (event) => {
+        let transcript = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-          const item = event.results[i];
-          if (item.isFinal) {
-            final += item[0].transcript;
-          } else {
-            interim += item[0].transcript;
-          }
+          transcript += event.results[i][0].transcript;
         }
-
-        if (final) {
-          state.transcript = (state.transcript + ' ' + final).trim();
-        }
-        state.interimTranscript = interim;
-
-        // Actualizar UI
-        updateTranscriptDisplay();
-
-        // Si auto-envío está activo, reiniciar temporizador de silencio
-        if (state.autoSend && state.transcript.trim()) {
-          clearTimeout(state.silenceTimer);
-          state.silenceTimer = setTimeout(() => {
-            if (state.transcript.trim()) {
-              sendCurrentPrompt();
-            }
-          }, state.silenceTimeout);
+        if (transcript.trim()) {
+          state.transcript = transcript.trim();
+          transcriptText.textContent = state.transcript;
+          transcriptText.className = 'transcription-text';
+          btnClearText.style.display = 'block';
+          setDiag(`📝 Reconocido: "${state.transcript.slice(0, 30)}..."`, 'ok');
         }
       };
 
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        if (event.error === 'not-allowed') {
-          alert('Permiso de micrófono denegado. Permite el acceso al micrófono en los ajustes de tu navegador.');
-        }
+      rec.onerror = (event) => {
+        console.warn('Web Speech error:', event.error);
+        setDiag(`Error Web Speech: [${event.error}]. Prueba cambiar a 'Modo Servidor'.`, 'err');
         stopRecording();
       };
 
-      recognition.onend = () => {
-        if (state.isRecording) {
-          // Si sigue marcado en grabación, reiniciar (evita cortes de Android)
-          try {
-            recognition.start();
-          } catch(e) {
-            stopRecording();
-          }
-        } else {
-          stopRecording();
+      rec.onend = () => {
+        state.isRecording = false;
+        btnMic.classList.remove('recording');
+        setIDEStatus('Listo', 'online');
+        if (state.autoSend && state.transcript.trim()) {
+          sendTextPrompt(state.transcript.trim());
         }
       };
 
-      state.recognition = recognition;
+      return rec;
     }
 
-    function startRecording() {
-      if (!state.recognition) return;
-      state.isRecording = true;
-      state.transcript = '';
-      state.interimTranscript = '';
-      updateTranscriptDisplay();
-      try {
-        state.recognition.lang = state.language;
-        state.recognition.start();
-      } catch (e) {
-        console.warn('Start error:', e);
-      }
-    }
-
-    function stopRecording() {
-      state.isRecording = false;
-      btnMic.classList.remove('recording');
-      clearTimeout(state.silenceTimer);
-      if (state.recognition) {
-        try { state.recognition.stop(); } catch(e) {}
-      }
-      setIDEStatus('Listo', 'online');
-    }
-
-    function updateTranscriptDisplay() {
-      const fullText = (state.transcript + ' ' + state.interimTranscript).trim();
-      if (!fullText) {
-        transcriptText.textContent = state.isRecording ? 'Escuchando tu voz...' : 'Toca el micrófono para comenzar a hablar...';
-        transcriptText.className = 'transcription-text empty';
-        btnClearText.style.display = 'none';
-      } else {
-        transcriptText.textContent = fullText;
-        transcriptText.className = 'transcription-text' + (state.interimTranscript ? ' interim' : '');
-        btnClearText.style.display = 'block';
-      }
-    }
-
-    // Toggle Mic button
+    // =========================================================
+    // CONTROL GENERAL DE GRABACIÓN
+    // =========================================================
     btnMic.addEventListener('click', () => {
       if (state.isRecording) {
         stopRecording();
-        playBeep(440, 0.08); // Beep bajo al detener
       } else {
         startRecording();
       }
     });
 
+    function startRecording() {
+      state.transcript = '';
+      transcriptText.textContent = 'Iniciando micrófono...';
+      transcriptText.className = 'transcription-text interim';
+
+      if (state.engine === 'server') {
+        startMediaRecorder();
+      } else {
+        state.recognition = initWebSpeech();
+        if (!state.recognition) {
+          alert('Web Speech API no disponible en este navegador. Cambiando a Modo Servidor.');
+          state.engine = 'server';
+          updateEnginePills();
+          startMediaRecorder();
+          return;
+        }
+        try {
+          state.recognition.start();
+        } catch (e) {
+          setDiag(`Error iniciando Web Speech: ${e.message}`, 'err');
+        }
+      }
+    }
+
+    function stopRecording() {
+      if (state.engine === 'server') {
+        stopMediaRecorder();
+      } else {
+        if (state.recognition) {
+          try { state.recognition.stop(); } catch(e){}
+        }
+        state.isRecording = false;
+        btnMic.classList.remove('recording');
+        playBeep(440, 0.08);
+      }
+    }
+
     btnCancelVoice.addEventListener('click', () => {
       stopRecording();
       state.transcript = '';
-      state.interimTranscript = '';
-      updateTranscriptDisplay();
+      transcriptText.textContent = 'Toca el micrófono para comenzar a hablar...';
+      transcriptText.className = 'transcription-text empty';
+      btnClearText.style.display = 'none';
+      setDiag('Dictado cancelado.', 'warn');
       playBeep(300, 0.12);
     });
 
     btnClearText.addEventListener('click', () => {
       state.transcript = '';
-      state.interimTranscript = '';
-      updateTranscriptDisplay();
+      transcriptText.textContent = 'Toca el micrófono para comenzar a hablar...';
+      transcriptText.className = 'transcription-text empty';
+      btnClearText.style.display = 'none';
     });
 
     btnSendPrompt.addEventListener('click', () => {
-      sendCurrentPrompt();
+      if (state.isRecording) {
+        stopRecording();
+      } else if (state.transcript.trim()) {
+        sendTextPrompt(state.transcript.trim());
+      }
     });
 
-    // --- Enviar Prompt al IDE ---
-    async function sendCurrentPrompt() {
-      const text = (state.transcript + ' ' + state.interimTranscript).trim();
+    async function sendTextPrompt(text) {
       if (!text) return;
-
-      stopRecording();
-      playBeep(1200, 0.08); // Chime de éxito
-
-      // Agregar mensaje a la vista
+      playBeep(1200, 0.08);
       appendUserMessage(text);
 
-      // Limpiar texto de entrada
       state.transcript = '';
-      state.interimTranscript = '';
-      updateTranscriptDisplay();
+      transcriptText.textContent = 'Toca el micrófono para comenzar a hablar...';
+      transcriptText.className = 'transcription-text empty';
+      btnClearText.style.display = 'none';
 
       setIDEStatus('Enviando a IDE...', 'thinking');
 
@@ -859,16 +1039,14 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: text })
         });
-
         const data = await res.json();
         if (data.status === 'ok') {
           setIDEStatus('Prompt inyectado en IDE', 'online');
-        } else {
-          setIDEStatus('Error al enviar', 'error');
+          setDiag('✓ Prompt inyectado en IDE', 'ok');
         }
       } catch (err) {
-        console.error('Error sending prompt:', err);
         setIDEStatus('Error de conexión', 'error');
+        setDiag(`Error al enviar: ${err.message}`, 'err');
       }
     }
 
@@ -912,10 +1090,6 @@
       `;
 
       msg.scrollIntoView({ behavior: 'smooth' });
-
-      if (isDone && state.autoTTS && content) {
-        speakTextRaw(content);
-      }
     }
 
     function escapeHtml(string) {
@@ -931,50 +1105,35 @@
       else if (type === 'thinking') statusDot.classList.add('thinking');
     }
 
-    // --- Text-to-Speech (Lectura en voz alta) ---
     window.speakText = function(btn) {
       const content = btn.closest('.message').querySelector('.msg-content').innerText;
-      speakTextRaw(content);
-    };
-
-    function speakTextRaw(rawText) {
       if (!window.speechSynthesis) return;
       window.speechSynthesis.cancel();
-      // Eliminar bloques de código largos para lectura fluida
-      const cleanText = rawText.replace(/```[\s\S]*?```/g, 'bloque de código omitido.').slice(0, 1500);
+      const cleanText = content.replace(/```[\s\S]*?```/g, 'bloque de código omitido.').slice(0, 1500);
       const utter = new SpeechSynthesisUtterance(cleanText);
       utter.lang = state.language;
       window.speechSynthesis.speak(utter);
-    }
+    };
 
-    // --- Conexión en Tiempo Real con la PC (SSE & Polling) ---
+    // --- Conexión SSE con Servidor ---
     function connectLiveStream() {
-      if (state.eventSource) {
-        state.eventSource.close();
-      }
-
       try {
-        const streamUrl = `${state.serverUrl}/api/stream`;
-        const es = new EventSource(streamUrl);
-
-        es.onopen = () => {
-          setIDEStatus('Conectado a PC', 'online');
-        };
-
+        const es = new EventSource(`${state.serverUrl}/api/stream`);
+        es.onopen = () => setIDEStatus('Conectado a PC', 'online');
         es.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            handleIncomingUpdate(data);
+            if (data && data.content) {
+              if (data.step_index !== undefined && data.step_index === state.lastStepIndex && data.is_done) return;
+              state.lastStepIndex = data.step_index || 0;
+              appendOrUpdateAssistantMessage(state.lastStepIndex, data.content, data.is_done !== false);
+            }
           } catch(e) {}
         };
-
         es.onerror = () => {
           es.close();
-          // Fallback a polling cada 2s
           setTimeout(pollLatestResponse, 2000);
         };
-
-        state.eventSource = es;
       } catch (e) {
         setTimeout(pollLatestResponse, 2000);
       }
@@ -986,7 +1145,10 @@
         if (res.ok) {
           const data = await res.json();
           setIDEStatus('Conectado a PC', 'online');
-          handleIncomingUpdate(data);
+          if (data && data.content && data.step_index !== state.lastStepIndex) {
+            state.lastStepIndex = data.step_index || 0;
+            appendOrUpdateAssistantMessage(state.lastStepIndex, data.content, data.is_done !== false);
+          }
         }
       } catch(e) {
         setIDEStatus('Desconectado', 'error');
@@ -994,26 +1156,15 @@
       setTimeout(pollLatestResponse, 2500);
     }
 
-    function handleIncomingUpdate(data) {
-      if (!data || !data.content) return;
-      if (data.step_index !== undefined && data.step_index === state.lastStepIndex && data.is_done) {
-        return; // Ya procesado
-      }
-      state.lastStepIndex = data.step_index || 0;
-      appendOrUpdateAssistantMessage(state.lastStepIndex, data.content, data.is_done !== false);
-    }
-
-    // Iniciar conexión en vivo
     connectLiveStream();
 
-    // --- Configuración y Ajustes UI ---
+    // --- Modal Configuración ---
     const modal = document.getElementById('settingsModal');
     document.getElementById('btnOpenSettings').addEventListener('click', () => {
-      document.getElementById('cfgServerUrl').value = state.serverUrl;
+      document.getElementById('cfgEngine').value = state.engine;
       document.getElementById('cfgLanguage').value = state.language;
       document.getElementById('cfgSilenceTimeout').value = state.silenceTimeout;
       document.getElementById('cfgAudioBeeps').checked = state.audioBeeps;
-      document.getElementById('cfgAutoTTS').checked = state.autoTTS;
       modal.classList.add('open');
     });
 
@@ -1022,26 +1173,21 @@
     });
 
     document.getElementById('btnSaveSettings').addEventListener('click', () => {
-      state.serverUrl = document.getElementById('cfgServerUrl').value.replace(/\/+$/, '') || window.location.origin;
+      state.engine = document.getElementById('cfgEngine').value;
       state.language = document.getElementById('cfgLanguage').value;
       state.silenceTimeout = parseInt(document.getElementById('cfgSilenceTimeout').value, 10);
       state.audioBeeps = document.getElementById('cfgAudioBeeps').checked;
-      state.autoTTS = document.getElementById('cfgAutoTTS').checked;
 
-      localStorage.setItem('antispeech_server', state.serverUrl);
+      localStorage.setItem('antispeech_engine', state.engine);
       localStorage.setItem('antispeech_lang', state.language);
       localStorage.setItem('antispeech_silence', state.silenceTimeout);
       localStorage.setItem('antispeech_beeps', state.audioBeeps);
-      localStorage.setItem('antispeech_tts', state.autoTTS);
 
-      if (state.recognition) state.recognition.lang = state.language;
-      currentLangPill.textContent = state.language.includes('es') ? '🇪🇸 Español' : '🇺🇸 English';
-
+      updateEnginePills();
       modal.classList.remove('open');
-      connectLiveStream();
     });
 
-    // Toggle rápido de Auto-envío
+    const toggleAutoSend = document.getElementById('toggleAutoSend');
     toggleAutoSend.addEventListener('click', () => {
       state.autoSend = !state.autoSend;
       localStorage.setItem('antispeech_autosend', state.autoSend);
@@ -1049,19 +1195,9 @@
       toggleAutoSend.classList.toggle('active', state.autoSend);
     });
 
-    // Toggle rápido de Wake Lock
     const toggleWakeLock = document.getElementById('toggleWakeLock');
     toggleWakeLock.addEventListener('click', () => {
-      if (state.wakeLock) {
-        state.wakeLock.release();
-        state.wakeLock = null;
-        toggleWakeLock.classList.remove('active');
-        toggleWakeLock.textContent = '💤 Pantalla normal';
-      } else {
-        requestWakeLock();
-        toggleWakeLock.classList.add('active');
-        toggleWakeLock.textContent = '👁️ Pantalla encendida';
-      }
+      requestWakeLock();
     });
   </script>
 </body>

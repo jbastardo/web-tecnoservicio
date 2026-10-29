@@ -6,6 +6,10 @@ Antispeech - Servidor Local de Integración por Voz para IDE Antigravity
 Permite conectar el micrófono del celular como entrada de voz para el IDE
 y visualizar las respuestas generadas por la IA en tiempo real en el móvil.
 
+Soporta dos motores de reconocimiento:
+1. MediaRecorder Directo (Envía el audio al servidor, lo procesa con ffmpeg + SpeechRecognition)
+2. Web Speech API (Reconocimiento nativo en el navegador del teléfono)
+
 Zona Horaria Requerida: America/Caracas (UTC-4)
 """
 
@@ -16,16 +20,18 @@ import time
 import socket
 import ssl
 import threading
+import tempfile
+import subprocess
 import zoneinfo
 import datetime
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 # Reconfigurar salida para soporte UTF-8 en consolas Windows
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
-# Intentar importar librerías de automatización y utilidades
+# Librerías de automatización y teclado
 try:
     import pyautogui
     import pyperclip
@@ -33,6 +39,14 @@ except ImportError:
     print("[-] Error: Faltan dependencias. Ejecuta: pip install pyautogui pyperclip")
     sys.exit(1)
 
+# Reconocimiento de voz en servidor
+try:
+    import speech_recognition as sr
+except ImportError:
+    sr = None
+    print("[!] Advertencia: SpeechRecognition no está instalado. Ejecuta: pip install SpeechRecognition")
+
+# QR Code en terminal
 try:
     import qrcode
 except ImportError:
@@ -60,7 +74,7 @@ def get_local_ip():
 def generate_self_signed_cert(cert_path="cert.pem", key_path="key.pem", ip="127.0.0.1"):
     """
     Genera automáticamente certificados SSL autofirmados para habilitar HTTPS en la LAN.
-    Esencial para que Web Speech API funcione en Chrome (Android) y Safari (iOS).
+    Esencial para que el micrófono funcione en Chrome (Android) y Safari (iOS).
     """
     if os.path.exists(cert_path) and os.path.exists(key_path):
         return
@@ -76,7 +90,6 @@ def generate_self_signed_cert(cert_path="cert.pem", key_path="key.pem", ip="127.
 
         key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
-        # Generar SANs (Subject Alternative Names) para IP y localhost
         san_list = [
             x509.DNSName("localhost"),
             x509.IPAddress(ipaddress.ip_address("127.0.0.1"))
@@ -136,7 +149,6 @@ def get_latest_conversation_response():
         if not dirs:
             return {"status": "waiting", "content": "No hay conversaciones activas."}
 
-        # Conversación más reciente por tiempo de modificación
         latest_dir = max(dirs, key=os.path.getmtime)
         log_file = os.path.join(latest_dir, ".system_generated", "logs", "transcript_full.jsonl")
         if not os.path.exists(log_file):
@@ -148,17 +160,14 @@ def get_latest_conversation_response():
         with open(log_file, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
-        # Buscar la última respuesta de la IA (MODEL con PLANNER_RESPONSE)
         for line in reversed(lines):
             try:
                 data = json.loads(line)
-                # Si el modelo generó una respuesta de texto dirigida al usuario
                 if data.get("source") == "MODEL" and data.get("type") == "PLANNER_RESPONSE":
                     content = data.get("content", "")
                     tool_calls = data.get("tool_calls", [])
                     step_idx = data.get("step_index", 0)
 
-                    # Si tiene contenido de texto para el usuario
                     if content and not tool_calls:
                         return {
                             "status": "ready",
@@ -167,7 +176,6 @@ def get_latest_conversation_response():
                             "is_done": True,
                             "timestamp": get_caracas_now_str()
                         }
-                    # Si está ejecutando herramientas / pensando
                     elif tool_calls or data.get("thinking"):
                         return {
                             "status": "generating",
@@ -184,10 +192,9 @@ def get_latest_conversation_response():
         return {"status": "error", "content": f"Error leyendo transcripción: {str(e)}"}
 
 class AntispeechHandler(SimpleHTTPRequestHandler):
-    """Manejador HTTP para la API de automatización y la PWA."""
+    """Manejador HTTP para la API de automatización, audio STT y la PWA."""
 
     def __init__(self, *args, **kwargs):
-        # Directorio base de archivos estáticos (pwa/)
         pwa_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pwa")
         super().__init__(*args, directory=pwa_dir, **kwargs)
 
@@ -200,10 +207,46 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        """Endpoint para recibir prompts dictados desde el celular."""
+        """Endpoints para recibir prompts en texto o archivos de audio."""
         parsed_path = urlparse(self.path)
 
-        if parsed_path.path == "/api/prompt":
+        # -------------------------------------------------------------
+        # 1. Endpoint /api/audio: Recibe audio del celular y transcribe
+        # -------------------------------------------------------------
+        if parsed_path.path == "/api/audio":
+            content_length = int(self.headers.get("Content-Length", 0))
+            if content_length == 0:
+                self._send_json({"status": "error", "message": "Audio vacío"}, 400)
+                return
+
+            audio_bytes = self.rfile.read(content_length)
+            query_params = parse_qs(parsed_path.query)
+            lang = query_params.get("lang", ["es-ES"])[0]
+
+            timestamp = get_caracas_now_str()
+            print(f"\n[{timestamp}] 📥 Recibiendo audio desde el celular ({len(audio_bytes)} bytes)...")
+
+            transcription = self._transcribe_audio_bytes(audio_bytes, lang=lang)
+
+            if transcription.get("status") == "ok":
+                text = transcription.get("text", "").strip()
+                print(f"[{timestamp}] 🎙️ TRANSCRIPCIÓN EXITOSA: \"{text}\"")
+
+                self._inject_prompt_to_active_window(text)
+
+                self._send_json({
+                    "status": "ok",
+                    "text": text,
+                    "injected_at": timestamp
+                })
+            else:
+                print(f"[{timestamp}] ⚠️ {transcription.get('message', 'No se pudo transcribir.')}")
+                self._send_json(transcription, 200)
+
+        # -------------------------------------------------------------
+        # 2. Endpoint /api/prompt: Recibe texto ya transcrito por Web Speech
+        # -------------------------------------------------------------
+        elif parsed_path.path == "/api/prompt":
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length).decode("utf-8")
 
@@ -219,8 +262,6 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
                 print(f"\n[{timestamp}] 🎙️ PROMPT RECIBIDO DESDE EL CELULAR:")
                 print(f"» \"{text}\"")
 
-                # Inyectar el texto en la ventana activa usando el portapapeles y pyautogui
-                # El uso de portapapeles (pyperclip) preserva caracteres en español (acentos, ñ, signos ¿?)
                 self._inject_prompt_to_active_window(text)
 
                 self._send_json({
@@ -239,13 +280,11 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
         """Endpoints de API para lectura de respuesta y streaming SSE."""
         parsed_path = urlparse(self.path)
 
-        # 1. API: Respuesta actual de la IA (Polling)
         if parsed_path.path == "/api/response":
             resp = get_latest_conversation_response()
             self._send_json(resp)
             return
 
-        # 2. API: Server-Sent Events (SSE) para actualización en vivo en el celular
         elif parsed_path.path == "/api/stream":
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
@@ -258,7 +297,7 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
             last_content = None
 
             try:
-                for _ in range(120):  # Conexión abierta ~1 minuto por ciclo
+                for _ in range(120):
                     data = get_latest_conversation_response()
                     current_content = data.get("content", "")
                     current_step = data.get("step_index", 0)
@@ -272,10 +311,9 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
 
                     time.sleep(0.6)
             except Exception:
-                pass  # Cliente desconectado
+                pass
             return
 
-        # 3. Archivos estáticos de la PWA
         super().do_GET()
 
     def _send_json(self, data, status_code=200):
@@ -287,6 +325,49 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _transcribe_audio_bytes(self, audio_bytes, lang="es-ES"):
+        """
+        Guarda el audio temporalmente, lo convierte a WAV 16kHz con ffmpeg
+        y lo transcribe usando SpeechRecognition (Google API gratuita).
+        """
+        if not sr:
+            return {"status": "error", "message": "SpeechRecognition no disponible en el servidor."}
+
+        temp_dir = tempfile.gettempdir()
+        temp_input = os.path.join(temp_dir, f"antispeech_{int(time.time()*1000)}.raw")
+        temp_wav = os.path.join(temp_dir, f"antispeech_{int(time.time()*1000)}.wav")
+
+        try:
+            with open(temp_input, "wb") as f:
+                f.write(audio_bytes)
+
+            cmd = ["ffmpeg", "-y", "-i", temp_input, "-ac", "1", "-ar", "16000", temp_wav]
+            result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+
+            if not os.path.exists(temp_wav) or os.path.getsize(temp_wav) == 0:
+                return {"status": "error", "message": "Error al procesar el formato de audio con ffmpeg."}
+
+            recognizer = sr.Recognizer()
+            with sr.AudioFile(temp_wav) as source:
+                audio_data = recognizer.record(source)
+
+            target_lang = "es-ES" if "es" in lang else "en-US"
+            recognized_text = recognizer.recognize_google(audio_data, language=target_lang)
+
+            return {"status": "ok", "text": recognized_text}
+
+        except sr.UnknownValueError:
+            return {"status": "no_speech", "message": "No se distinguió ninguna palabra clara. Habla más cerca del micrófono."}
+        except sr.RequestError as e:
+            return {"status": "error", "message": f"Error de conexión con el motor de voz: {e}"}
+        except Exception as e:
+            return {"status": "error", "message": f"Error interno en transcripción: {str(e)}"}
+        finally:
+            for p in (temp_input, temp_wav):
+                if os.path.exists(p):
+                    try: os.remove(p)
+                    except Exception: pass
+
     def _inject_prompt_to_active_window(self, text):
         """
         Automatiza la escritura en la ventana activa mediante clipboard paste + Enter.
@@ -294,25 +375,18 @@ class AntispeechHandler(SimpleHTTPRequestHandler):
         """
         def run_typing():
             try:
-                # 1. Guardar texto en el portapapeles del sistema
                 pyperclip.copy(text)
                 time.sleep(0.08)
-
-                # 2. Pegar mediante Ctrl + V
                 pyautogui.hotkey("ctrl", "v")
                 time.sleep(0.08)
-
-                # 3. Presionar Enter para enviar el prompt al IDE
                 pyautogui.press("enter")
                 print(f"[+] Prompt inyectado y 'Enter' presionado con éxito en la ventana activa.")
             except Exception as ex:
                 print(f"[-] Error en automatización de teclado: {ex}")
 
-        # Ejecutar en hilo separado para no bloquear la respuesta HTTP
         threading.Thread(target=run_typing, daemon=True).start()
 
     def log_message(self, format, *args):
-        # Suprimir logs continuos de polling para mantener la consola limpia
         if "/api/response" in format % args or "/api/stream" in format % args:
             return
         super().log_message(format, *args)
@@ -334,7 +408,7 @@ def print_banner(local_ip, port_https, port_http=None):
     print(" 2. Escanea el código QR de abajo o abre la URL en Chrome/Safari móvil.")
     print(" 3. Al ser HTTPS local, tu celular mostrará 'La conexión no es privada':")
     print("    -> Toca 'Configuración avanzada' y luego 'Acceder a la IP (no seguro)'.")
-    print(" 4. ¡Listo! Toca el micrófono para hablar y enviar prompts al IDE.")
+    print(" 4. ¡Listo! Puedes dictar usando MediaRecorder o Web Speech.")
     print("=" * 65 + "\n")
 
     if qrcode:
@@ -351,25 +425,19 @@ def main():
     port_http = 8000
     local_ip = get_local_ip()
 
-    # Archivos de certificados SSL
     base_dir = os.path.dirname(os.path.abspath(__file__))
     cert_path = os.path.join(base_dir, "cert.pem")
     key_path = os.path.join(base_dir, "key.pem")
 
-    # Generar certificados SSL si no existen
     generate_self_signed_cert(cert_path, key_path, ip=local_ip)
-
-    # Imprimir instrucciones y código QR
     print_banner(local_ip, port_https, port_http)
 
-    # Iniciar servidor HTTPS principal
     try:
         httpd_ssl = HTTPServer(("0.0.0.0", port_https), AntispeechHandler)
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         ssl_context.load_cert_chain(certfile=cert_path, keyfile=key_path)
         httpd_ssl.socket = ssl_context.wrap_socket(httpd_ssl.socket, server_side=True)
 
-        # Iniciar también servidor HTTP secundario en hilo separado para flexibilidad
         def run_http():
             try:
                 httpd_plain = HTTPServer(("0.0.0.0", port_http), AntispeechHandler)

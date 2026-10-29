@@ -3,7 +3,7 @@
 ## 1. Título y Propósito
 **Antispeech** es una solución de puente de hardware y software que transforma un celular móvil (Android o iOS) en un micrófono inalámbrico interactivo de baja latencia para el entorno de desarrollo **Google Antigravity IDE**.
 
-Permite al desarrollador dictar prompts en lenguaje natural usando la Web Speech API del navegador de su smartphone, inyectar automáticamente el texto en el chat activo del IDE en la computadora de escritorio mediante automatización de teclado (`pyautogui` + `pyperclip`), y **visualizar en tiempo real en la pantalla del celular la respuesta y pasos de razonamiento generados por la IA**.
+Permite al desarrollador dictar prompts en lenguaje natural usando un motor híbrido de voz (MediaRecorder de audio directo procesado con `ffmpeg` + `SpeechRecognition` en el servidor, o Web Speech API en el navegador), inyectar automáticamente el texto en el chat activo del IDE mediante portapapeles (`pyautogui` + `pyperclip`), y **visualizar en tiempo real en la pantalla del celular la respuesta y pasos de razonamiento generados por la IA**.
 
 ---
 
@@ -11,10 +11,13 @@ Permite al desarrollador dictar prompts en lenguaje natural usando la Web Speech
 
 ### Stack Técnico
 * **Servidor Backend Local:** Python 3.10+ (`http.server`, `threading`, `ssl`, `zoneinfo`).
+* **Motor STT en Servidor:** `SpeechRecognition` + `ffmpeg` (conversión instantánea de WebM/OGG/MP4 a WAV 16kHz mono).
 * **Automatización de Teclado:** `pyautogui` + `pyperclip` (inyección rápida mediante portapapeles para soportar 100% de caracteres en español, acentos, `ñ`, signos `¿?`, emojis y saltos de línea).
 * **Seguridad y Criptografía:** `cryptography` (generación dinámica de certificados SSL autofirmados con extensiones SAN para la IP local).
 * **Frontend Mobile / PWA:** Progressive Web App de archivo único (`pwa/index.html`), compatible con Service Worker (`sw.js`) y `manifest.json`.
-* **Motor de Voz:** Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`) con retroalimentación acústica por Web Audio API (`AudioContext`).
+* **Motor de Voz Dual:**
+  1. *Modo Servidor (MediaRecorder - Por defecto):* Captura el audio en bruto con `getUserMedia()`, muestra un vúmetro en tiempo real, y envía el archivo al endpoint `POST /api/audio`. Resuelve los bloqueos de Google Speech en Android Chrome.
+  2. *Modo Web Speech API:* Reconocimiento en el navegador con `continuous = false` para evitar congelamientos en Android.
 * **Visualizador de Respuestas:** Integración con el motor de transcripciones de Antigravity (`~/.gemini/antigravity/brain/<conv_id>/.system_generated/logs/transcript_full.jsonl`) con transmisión en vivo vía Server-Sent Events (SSE) y polling fallback.
 * **Formateo:** `marked.js` para renderizar código y Markdown en la pantalla del celular.
 
@@ -30,16 +33,19 @@ sequenceDiagram
     participant IDE as Antigravity IDE
     participant Brain as Registro de Conversación (Brain)
 
-    Note over Dev,Phone: Dictado por Voz
-    Dev->>Phone: Presiona 'Hablar' y dicta instrucción
-    Phone->>Phone: Web Speech API convierte audio a texto
-    Phone->>Phone: Detecta silencio o presiona Enviar
-    Phone->>Server: POST /api/prompt { text: "..." }
+    Note over Dev,Phone: Dictado de Audio (MediaRecorder)
+    Dev->>Phone: Toca 'Hablar' (Vúmetro activo en pantalla)
+    Phone->>Phone: Captura stream de audio (MediaRecorder)
+    Phone->>Phone: Detecta silencio o usuario suelta botón
+    Phone->>Server: POST /api/audio (Blob WebM/Opus)
     
-    Note over Server,OS: Automatización de Escritura
+    Note over Server,OS: Procesamiento y Automatización
+    Server->>Server: Convierte a WAV 16kHz (ffmpeg)
+    Server->>Server: Transcribe voz a texto (SpeechRecognition)
     Server->>OS: Copia texto a portapapeles (pyperclip)
     Server->>OS: Simula Ctrl+V y Enter (pyautogui)
-    OS->>IDE: Texto ingresado en chat activo
+    OS->>IDE: Prompt inyectado en chat activo
+    Server-->>Phone: Retorna 200 OK con texto transcrito
     
     Note over IDE,Brain: Procesamiento IA
     IDE->>Brain: Escribe pasos y respuesta en transcript_full.jsonl
@@ -55,37 +61,32 @@ sequenceDiagram
 
 ## 3. Características Globales y Decisiones UX/UI
 
-1. **Contexto Seguro HTTPS Obligatorio en LAN:**
-   * La Web Speech API y el acceso al micrófono en navegadores móviles (Chrome Android, Safari iOS) están restringidos por política de seguridad a contextos seguros (`HTTPS` o `localhost`).
-   * `server.py` genera automáticamente en el arranque certificados SSL autofirmados (`cert.pem`, `key.pem`) asignados a la IP de red local del usuario.
-2. **Vinculación Cero-Fricción con Código QR:**
-   * El script detecta la IP privada de la máquina (`192.168.x.x`) y genera un código QR ASCII directamente en la consola de Windows para que el usuario simplemente apunte la cámara del celular.
+1. **Vúmetro y Diagnóstico Visual en el Teléfono:**
+   * La PWA dibuja un ecualizador en vivo usando `AnalyserNode` de la Web Audio API. El usuario ve las barras moverse mientras habla, garantizando que el micrófono físico está capturando sonido.
+   * Barra de diagnóstico superior que informa el estado exacto: `"Grabando audio..."`, `"Transfiriendo a PC..."`, `"✓ Transcrito e Inyectado"`.
+2. **Contexto Seguro HTTPS Obligatorio en LAN:**
+   * `server.py` genera automáticamente certificados SSL autofirmados (`cert.pem`, `key.pem`) asignados a la IP local para que los navegadores móviles permitan el acceso al micrófono.
 3. **Inyección Inmune a Distribución de Teclado:**
-   * En lugar de emular tecla por tecla (`typewrite`) —que corrompe caracteres especiales como `á, é, í, ó, ú, ñ, ¿, ¡`—, el sistema usa `pyperclip.copy()` seguido de `Ctrl + V` y `Enter`. La inserción es instantánea y respeta saltos de línea y emojis.
+   * Usa `pyperclip.copy()` seguido de `Ctrl + V` y `Enter`. La inserción es instantánea y respeta saltos de línea y emojis.
 4. **Pantalla Siempre Activa (Wake Lock API):**
-   * La PWA solicita un bloqueo de suspensión de pantalla (`navigator.wakeLock`) para evitar que el teléfono se apague mientras se programa en pareja.
-5. **Detección Automática de Silencio (Auto-envío):**
-   * Temporizador configurable (1.3 segundos por defecto). Al terminar de hablar, el prompt se dispara solo al IDE sin necesidad de tocar la pantalla.
+   * Mantiene el smartphone activo durante la sesión de programación.
+5. **Detección Automática de Silencio:**
+   * Al hacer una pausa de 1.4 segundos en el habla, el audio se corta y se despacha automáticamente a la PC.
 
 ---
 
 ## 4. Detalle de Módulos y Lógica de Negocio
 
 ### 4.1. Módulo Servidor (`server.py`)
-* `get_local_ip()`: Determina la interfaz LAN activa abriendo un socket UDP contra un DNS público (`8.8.8.8:80`) sin enviar tráfico real.
-* `generate_self_signed_cert()`: Utiliza `cryptography.x509` para emitir un certificado RSA 2048-bit válido por 365 días con nombres alternativos de sujeto (SAN) para `localhost` y la IP local.
-* `get_latest_conversation_response()`:
-  * Examina `~/.gemini/antigravity/brain`.
-  * Filtra la carpeta de conversación con el `mtime` más reciente.
-  * Lee hacia atrás las líneas JSONL buscando entradas `MODEL` con `type: PLANNER_RESPONSE`.
-  * Determina si el modelo está en ejecución de herramientas (`status: generating`) o si emitió su respuesta final al usuario (`status: ready, is_done: true`).
+* `_transcribe_audio_bytes()`:
+  * Recibe el audio binario de `POST /api/audio`.
+  * Invoca `ffmpeg` para normalizar la tasa de muestreo a 16000 Hz, canal mono PCM.
+  * Ejecuta `recognizer.recognize_google(audio, language="es-ES")`.
 * `_inject_prompt_to_active_window()`: Ejecuta la inyección en un hilo separado tipo `daemon` para evitar bloquear la respuesta HTTP 200 hacia el celular.
+* `get_latest_conversation_response()`: Lee `transcript_full.jsonl` del directorio de conversación más reciente de Antigravity.
 * **Zona Horaria:** Todos los logs y auditorías se calculan y presentan explícitamente en `America/Caracas` (VET, UTC-4).
 
 ### 4.2. Módulo Cliente PWA (`pwa/index.html`)
-* **Audio Feedback:** Dos frecuencias sinusoidales en `AudioContext`:
-  * `880 Hz`: Beep agudo de confirmación de inicio de escucha.
-  * `440 Hz`: Beep medio de parada.
-  * `1200 Hz`: Acorde agudo de envío exitoso.
-* **Motor TTS (Text-to-Speech):** La PWA incluye un botón "Escuchar" y un toggle de lectura automática para que el teléfono lea en voz alta la respuesta de la IA a través del altavoz.
-* **Manejo de Errores Móviles:** Si el reconocimiento se interrumpe por el motor de Android, el evento `onend` reengancha automáticamente la sesión de escucha si `state.isRecording` sigue activo.
+* **Motor MediaRecorder:** Captura paquetes de audio periódicos (cada 250ms).
+* **Audio Visualizer:** Dibuja sobre `<canvas>` con gradiente violeta/azul y calcula el volumen promedio para el disparo automático por silencio.
+* **Motor TTS:** Lectura en voz alta opcional en el altavoz del celular.
