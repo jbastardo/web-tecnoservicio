@@ -560,7 +560,7 @@ export default function CheckinAdminPage() {
                       {/* Nombre & Contacto */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-white text-sm block">
+                          <span className="font-extrabold text-slate-900 dark:text-white text-sm block">
                             {p.name || "Sin Nombre"}
                           </span>
                           {p.phone && (
@@ -575,23 +575,23 @@ export default function CheckinAdminPage() {
                             </a>
                           )}
                         </div>
-                        <span className="text-[11px] text-slate-400 block font-mono">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-mono">
                           {p.phone || "Sin teléfono"}
                         </span>
                       </td>
 
                       {/* Cédula */}
-                      <td className="py-3.5 px-4 font-mono font-bold text-white text-xs">
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white text-xs">
                         {p.docType || "V"}-{p.docNumber || "S/D"}
                       </td>
 
                       {/* Empresa / Proyecto */}
                       <td className="py-3.5 px-4">
-                        <span className="font-semibold text-slate-200 block">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 block">
                           {p.company || "Independiente"}
                         </span>
                         {p.cargo && (
-                          <span className="text-[10px] text-slate-400 block">{p.cargo}</span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 block">{p.cargo}</span>
                         )}
                       </td>
 
@@ -608,7 +608,7 @@ export default function CheckinAdminPage() {
                                 handleSaveCarnet(r.id, (e.target as HTMLInputElement).value);
                               }
                             }}
-                            className="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-mono font-bold text-center focus:border-[#f4730a] outline-none"
+                            className="w-20 bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-900 dark:text-white font-mono font-bold text-center focus:border-[#f4730a] outline-none"
                             title="Escribe el número de carnet físico entregado en recepción"
                           />
                         </div>

@@ -238,70 +238,118 @@ html:not([data-theme="dark"]) .divide-slate-800 > :not([hidden]) ~ :not([hidden]
   border-color: #e2e8f0 !important;
 }
 
-/* Tipografía Oscura en Superficies Claras */
-html[data-theme="light"] h1,
-html[data-theme="light"] h2,
-html[data-theme="light"] h3,
-html[data-theme="light"] h4,
+/* Tipografía en Modo Claro sobre Superficies Claras (excluyendo expresamente fondos oscuros o clases white) */
+html[data-theme="light"] h1:not([class*="text-white"]):not(.keep-white),
+html[data-theme="light"] h2:not([class*="text-white"]):not(.keep-white),
+html[data-theme="light"] h3:not([class*="text-white"]):not(.keep-white),
+html[data-theme="light"] h4:not([class*="text-white"]):not(.keep-white),
 html[data-theme="light"] th,
-html:not([data-theme="dark"]) h1,
-html:not([data-theme="dark"]) h2,
-html:not([data-theme="dark"]) h3,
-html:not([data-theme="dark"]) h4,
+html:not([data-theme="dark"]) h1:not([class*="text-white"]):not(.keep-white),
+html:not([data-theme="dark"]) h2:not([class*="text-white"]):not(.keep-white),
+html:not([data-theme="dark"]) h3:not([class*="text-white"]):not(.keep-white),
+html:not([data-theme="dark"]) h4:not([class*="text-white"]):not(.keep-white),
 html:not([data-theme="dark"]) th {
   color: #0f172a;
 }
 
-/* En Modo Claro, los elementos que tenían clases text-white/slate pero sobre fondo claro deben ser oscuros */
-html[data-theme="light"] td .text-white,
-html[data-theme="light"] td .text-slate-200,
-html[data-theme="light"] .bg-white .text-white,
-html[data-theme="light"] .bg-white .text-slate-100,
-html[data-theme="light"] .bg-white .text-slate-200,
-html[data-theme="light"] .bg-slate-900 .text-white,
-html[data-theme="light"] .bg-slate-900 .text-slate-100,
-html[data-theme="light"] .bg-slate-900 .text-slate-200,
-html[data-theme="light"] .bg-slate-950 .text-white,
-html[data-theme="light"] .bg-slate-950 .text-slate-200,
-html:not([data-theme="dark"]) td .text-white,
-html:not([data-theme="dark"]) .bg-white .text-white,
-html:not([data-theme="dark"]) .bg-slate-900 .text-white {
-  color: #0f172a !important;
-}
-
-html[data-theme="light"] .text-slate-300,
-html:not([data-theme="dark"]) .text-slate-300 {
-  color: #334155 !important;
-}
-
-html[data-theme="light"] .text-slate-400,
-html:not([data-theme="dark"]) .text-slate-400 {
-  color: #475569 !important;
-}
-
-html[data-theme="light"] .text-slate-500,
-html:not([data-theme="dark"]) .text-slate-500 {
-  color: #64748b !important;
-}
-
 /* --------------------------------------------------------------------------
-   2. PROTECCIÓN CRÍTICA DE CONTRASTE: BOTONES Y FONDOS SATURADOS / OSCUROS
-   En CUALQUIER botón o elemento con fondo naranja, azul marino, verde, etc.,
-   el texto DEBE SER BLANCO PURO para garantizar contraste perfecto.
+   2. REGLA SUPREMA DE CONTRASTE: FONDOS AZUL OSCURO, NAVY, GRADIENTES Y SUPERFICIES OSCURAS
+   BAJO NINGUNA CIRCUNSTANCIA SE PERMITE TEXTO NEGRO U OSCURO SOBRE FONDO AZUL OSCURO O NAVY
    -------------------------------------------------------------------------- */
 
+/* Contenedores con fondo Azul Marino / Navy / Slate Oscuro / Gradientes */
+.bg-\[\#2a285c\],
+.bg-\[\#1f1d47\],
+.bg-\[\#1a183b\],
+.bg-\[\#1a1b4b\],
+[class*="bg-[#2a285c]"],
+[class*="bg-[#1f1d47]"],
+[class*="bg-[#1a183b]"],
+[class*="bg-[#1a1b4b]"],
+[class*="from-[#2a285c]"],
+[class*="from-[#1f1d47]"],
+[class*="from-[#1a183b]"],
+[class*="from-[#1a1b4b]"],
+[class*="to-[#2a285c]"],
+[class*="to-[#1f1d47]"],
+[class*="to-[#1a183b]"],
+[class*="to-[#1a1b4b]"],
+footer.bg-\[\#2a285c\],
+.keep-white {
+  color: #ffffff !important;
+}
+
+/* Todos los elementos descendientes dentro de fondos azul oscuro */
+.bg-\[\#2a285c\] *,
+.bg-\[\#1f1d47\] *,
+.bg-\[\#1a183b\] *,
+.bg-\[\#1a1b4b\] *,
+[class*="bg-[#2a285c]"] *,
+[class*="bg-[#1f1d47]"] *,
+[class*="bg-[#1a183b]"] *,
+[class*="bg-[#1a1b4b]"] *,
+[class*="from-[#2a285c]"] *,
+[class*="from-[#1f1d47]"] *,
+[class*="from-[#1a183b]"] *,
+[class*="from-[#1a1b4b]"] *,
+[class*="to-[#2a285c]"] *,
+[class*="to-[#1f1d47]"] *,
+[class*="to-[#1a183b]"] *,
+[class*="to-[#1a1b4b]"] *,
+footer.bg-\[\#2a285c\] *,
+.keep-white * {
+  color: #ffffff !important;
+}
+
+/* Títulos h1 a h6 explícitamente protegidos como BLANCO PURO dentro de fondos azul oscuro */
+.bg-\[\#2a285c\] h1, .bg-\[\#2a285c\] h2, .bg-\[\#2a285c\] h3, .bg-\[\#2a285c\] h4, .bg-\[\#2a285c\] h5, .bg-\[\#2a285c\] h6,
+[class*="bg-[#2a285c]"] h1, [class*="bg-[#2a285c]"] h2, [class*="bg-[#2a285c]"] h3, [class*="bg-[#2a285c]"] h4,
+[class*="from-[#2a285c]"] h1, [class*="from-[#2a285c]"] h2, [class*="from-[#2a285c]"] h3, [class*="from-[#2a285c]"] h4,
+[class*="from-[#1a183b]"] h1, [class*="from-[#1a183b]"] h2, [class*="from-[#1a183b]"] h3, [class*="from-[#1a183b]"] h4,
+[class*="from-[#1a1b4b]"] h1, [class*="from-[#1a1b4b]"] h2, [class*="from-[#1a1b4b]"] h3, [class*="from-[#1a1b4b]"] h4,
+footer.bg-\[\#2a285c\] h1, footer.bg-\[\#2a285c\] h2, footer.bg-\[\#2a285c\] h3, footer.bg-\[\#2a285c\] h4 {
+  color: #ffffff !important;
+}
+
+/* Subtítulos secundarios legibles (gris perla / plata) dentro de fondos azul oscuro */
+.bg-\[\#2a285c\] .text-slate-200,
+.bg-\[\#2a285c\] .text-slate-300,
+.bg-\[\#2a285c\] .text-slate-400,
+[class*="bg-[#2a285c]"] .text-slate-200,
+[class*="bg-[#2a285c]"] .text-slate-300,
+[class*="bg-[#2a285c]"] .text-slate-400,
+[class*="from-[#2a285c]"] .text-slate-200,
+[class*="from-[#2a285c]"] .text-slate-300,
+[class*="from-[#2a285c]"] .text-slate-400,
+[class*="from-[#1a183b]"] .text-slate-200,
+[class*="from-[#1a183b]"] .text-slate-300,
+[class*="from-[#1a183b]"] .text-slate-400,
+footer.bg-\[\#2a285c\] .text-slate-200,
+footer.bg-\[\#2a285c\] .text-slate-300,
+footer.bg-\[\#2a285c\] .text-slate-400 {
+  color: #cbd5e1 !important;
+}
+
+/* Excepciones de acento dentro de fondos azul oscuro: Amarillo Cashea y Naranja OnProtec */
+.bg-\[\#2a285c\] .text-\[\#fdff00\],
+[class*="from-[#2a285c]"] .text-\[\#fdff00\],
+footer.bg-\[\#2a285c\] a:hover,
+footer.bg-\[\#2a285c\] .text-\[\#fdff00\] {
+  color: #fdff00 !important;
+}
+
+.bg-\[\#2a285c\] .text-\[\#f4730a\],
+[class*="from-[#2a285c]"] .text-\[\#f4730a\] {
+  color: #f4730a !important;
+}
+
+/* Botones Naranja, Verde, Cian y Primarios: Texto Blanco Puro */
 button.bg-\[\#f4730a\],
 a.bg-\[\#f4730a\],
-div.bg-\[\#f4730a\],
 .bg-\[\#f4730a\],
 button.bg-\[\#ef7922\],
 a.bg-\[\#ef7922\],
 .bg-\[\#ef7922\],
-button.bg-\[\#2a285c\],
-a.bg-\[\#2a285c\],
-div.bg-\[\#2a285c\],
-.bg-\[\#2a285c\],
-.bg-\[\#1a1b4b\],
 button.bg-emerald-600,
 a.bg-emerald-600,
 .bg-emerald-600,
@@ -309,32 +357,22 @@ button.bg-cyan-600,
 .bg-cyan-600,
 button.bg-brand-600,
 .bg-brand-600,
-.onprotec-btn-primary,
-footer.bg-\[\#2a285c\] {
+.onprotec-btn-primary {
   color: #ffffff !important;
 }
 
 button.bg-\[\#f4730a\] *,
 a.bg-\[\#f4730a\] *,
-div.bg-\[\#f4730a\] *,
 .bg-\[\#f4730a\] *,
-button.bg-\[\#2a285c\] *,
-a.bg-\[\#2a285c\] *,
-div.bg-\[\#2a285c\] *,
-.bg-\[\#2a285c\] *,
+button.bg-\[\#ef7922\] *,
+a.bg-\[\#ef7922\] *,
+.bg-\[\#ef7922\] *,
 button.bg-emerald-600 *,
 .bg-emerald-600 *,
 button.bg-cyan-600 *,
 .bg-cyan-600 *,
-button.bg-brand-600 *,
-.bg-brand-600 *,
-.onprotec-btn-primary *,
-footer.bg-\[\#2a285c\] * {
+.onprotec-btn-primary * {
   color: #ffffff !important;
-}
-
-footer.bg-\[\#2a285c\] .text-slate-300 {
-  color: #cbd5e1 !important;
 }
 
 /* Cintillo Cashea Amarillo Oficial: Texto Negro */

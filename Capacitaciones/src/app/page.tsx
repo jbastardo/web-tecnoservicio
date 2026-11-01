@@ -439,14 +439,14 @@ export default function HomePage() {
               {selectedTraining ? (
                 <div className="bg-white dark:bg-[#13182b] rounded-3xl border-2 border-[#f4730a]/30 shadow-[0_20px_60px_rgba(42,40,92,0.12)] overflow-hidden">
                   {/* Cabecera Navy Corporativa */}
-                  <div className="bg-[#2a285c] text-white px-6 py-4 flex items-center justify-between gap-3">
+                  <div className="bg-[#2a285c] text-white px-6 py-4 flex items-center justify-between gap-3 keep-white">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-[#fdff00] animate-ping" />
-                      <span className="text-[11px] font-black uppercase tracking-widest text-[#fdff00]">
+                      <span className="text-[11px] font-black uppercase tracking-widest text-[#fdff00] keep-white">
                         CONVOCATORIA ACTIVA DESTACADA
                       </span>
                     </div>
-                    <span className="text-xs font-mono font-bold bg-white/15 px-3 py-1 rounded-full">
+                    <span className="text-xs font-mono font-bold bg-white/15 text-white px-3 py-1 rounded-full keep-white">
                       {selectedTraining.code}
                     </span>
                   </div>
@@ -488,7 +488,7 @@ export default function HomePage() {
                         <span className="inline-block bg-[#f4730a] text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md mb-1.5">
                           {selectedTraining.brand || "ONPROTEC"}
                         </span>
-                        <h3 className="text-lg sm:text-xl font-black text-white leading-tight line-clamp-2">
+                        <h3 className="text-lg sm:text-xl font-black text-white leading-tight line-clamp-2 keep-white">
                           {selectedTraining.title}
                         </h3>
                       </div>
@@ -598,11 +598,11 @@ export default function HomePage() {
                     }}
                     className={`group relative flex items-center justify-between px-5 py-3.5 rounded-full font-black text-xs sm:text-sm tracking-wider uppercase transition-all cursor-pointer shadow-sm ${
                       isActive
-                        ? "bg-[#2a285c] text-white ring-4 ring-[#f4730a]/30 scale-[1.02]"
-                        : "bg-[#f4730a] hover:bg-[#ef7922] text-white hover:-translate-y-0.5 shadow-[#f4730a]/20"
+                        ? "bg-[#2a285c] text-white ring-4 ring-[#f4730a]/30 scale-[1.02] keep-white"
+                        : "bg-[#f4730a] hover:bg-[#ef7922] text-white hover:-translate-y-0.5 shadow-[#f4730a]/20 keep-white"
                     }`}
                   >
-                    <span className="truncate">{cat.pillLabel}</span>
+                    <span className="truncate text-white keep-white">{cat.pillLabel}</span>
                     <span
                       className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 ${
                         isActive ? "bg-[#f4730a] text-white" : "bg-white/20 text-white"
@@ -779,11 +779,13 @@ export default function HomePage() {
                       onClick={() => setStatusTab("all")}
                       className={`text-xs px-4 py-2 rounded-xl font-extrabold flex items-center gap-2 transition cursor-pointer ${
                         statusTab === "all"
-                          ? "bg-[#2a285c] text-white shadow-md shadow-[#2a285c]/20"
+                          ? "bg-[#2a285c] text-white shadow-md shadow-[#2a285c]/20 keep-white"
                           : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
                       }`}
                     >
-                      <span>Histórico de Talleres ({trainings.length})</span>
+                      <span className={statusTab === "all" ? "text-white keep-white" : ""}>
+                        Histórico de Talleres ({trainings.length})
+                      </span>
                     </button>
                   </div>
 
@@ -827,7 +829,7 @@ export default function HomePage() {
                         >
                           <div>
                             <div className="flex items-center justify-between gap-2 mb-2.5">
-                              <span className="text-[10px] font-mono font-extrabold px-2.5 py-0.5 rounded-md bg-[#2a285c] text-white">
+                              <span className="text-[10px] font-mono font-extrabold px-2.5 py-0.5 rounded-md bg-[#2a285c] text-white keep-white">
                                 {t.code}
                               </span>
                               <div className="flex items-center gap-1.5">
@@ -906,7 +908,7 @@ export default function HomePage() {
                         <span className="bg-[#f4730a] text-white text-[11px] font-black uppercase px-3 py-1 rounded-full">
                           {selectedTraining.brand || "ONPROTEC"}
                         </span>
-                        <span className="bg-[#2a285c] text-white text-[11px] font-mono font-bold px-3 py-1 rounded-full">
+                        <span className="bg-[#2a285c] text-white text-[11px] font-mono font-bold px-3 py-1 rounded-full keep-white">
                           {selectedTraining.code}
                         </span>
                         <span className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-[11px] font-extrabold px-3 py-1 rounded-full">
@@ -1033,7 +1035,7 @@ export default function HomePage() {
 
                   {/* Paso 2 */}
                   <div className="relative">
-                    <div className="absolute -left-[35px] sm:-left-[43px] top-0.5 w-6 h-6 rounded-full bg-[#2a285c] text-white text-xs font-black flex items-center justify-center ring-4 ring-indigo-100 dark:ring-slate-900">
+                    <div className="absolute -left-[35px] sm:-left-[43px] top-0.5 w-6 h-6 rounded-full bg-[#2a285c] text-white text-xs font-black flex items-center justify-center ring-4 ring-indigo-100 dark:ring-slate-900 keep-white">
                       2
                     </div>
                     <div className="bg-[#f8f9fc] dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800">
@@ -1101,21 +1103,21 @@ export default function HomePage() {
             <div id="registro-express" className="lg:col-span-5 lg:sticky lg:top-28">
               <div className="bg-white dark:bg-[#13182b] rounded-3xl border-2 border-[#2a285c]/15 dark:border-slate-800 shadow-[0_24px_60px_rgba(42,40,92,0.10)] overflow-hidden">
                 {/* Cabecera del Formulario */}
-                <div className="bg-gradient-to-r from-[#2a285c] to-[#1f1d47] text-white p-6">
+                <div className="bg-gradient-to-r from-[#2a285c] to-[#1f1d47] text-white p-6 keep-white">
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-[#f4730a] text-white px-3 py-1 rounded-full">
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-[#f4730a] text-white px-3 py-1 rounded-full keep-white">
                       <Lock className="w-3 h-3" /> REGISTRO RÁPIDO SIN FRICCIÓN
                     </span>
                     {selectedTraining && (
-                      <span className="text-xs font-mono font-bold text-[#fdff00]">
+                      <span className="text-xs font-mono font-bold text-[#fdff00] keep-white">
                         {selectedTraining.code}
                       </span>
                     )}
                   </div>
-                  <h3 className="text-xl font-black tracking-tight">
+                  <h3 className="text-xl font-black tracking-tight text-white keep-white">
                     Asegura tu Asiento en la Sala VIP
                   </h3>
-                  <p className="text-xs text-slate-300 mt-1">
+                  <p className="text-xs text-slate-200 mt-1 keep-white">
                     {selectedTraining
                       ? `${selectedTraining.title} • ${
                           availableSeats > 0
@@ -1286,7 +1288,7 @@ export default function HomePage() {
                     {/* GRUPO 2: CONTACTO Y EMPRESA INTEGRADORA */}
                     <div className="space-y-3.5 pt-2 border-t border-slate-200/70 dark:border-slate-800">
                       <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#2a285c] dark:text-slate-200">
-                        <span className="w-5 h-5 rounded-full bg-[#2a285c] text-white text-[11px] flex items-center justify-center">
+                        <span className="w-5 h-5 rounded-full bg-[#2a285c] text-white text-[11px] flex items-center justify-center keep-white">
                           2
                         </span>
                         Contacto & Empresa Integradora
@@ -1566,7 +1568,7 @@ export default function HomePage() {
       {/* =====================================================================
           8. FOOTER CORPORATIVO ONPROTEC®
       ===================================================================== */}
-      <footer className="bg-[#2a285c] text-white py-10">
+      <footer className="bg-[#2a285c] text-white py-10 keep-white">
         <div className="max-w-[1640px] mx-auto px-4 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <img
@@ -1575,10 +1577,10 @@ export default function HomePage() {
               className="h-8 sm:h-9 w-auto object-contain"
             />
             <div>
-              <p className="text-sm font-black tracking-wide">
+              <p className="text-sm font-black tracking-wide text-white keep-white">
                 ONPROTEC® — LA TIENDA DEL INSTALADOR
               </p>
-              <p className="text-xs text-slate-300">
+              <p className="text-xs text-slate-200 keep-white">
                 Av. Los Estadios con Calle Edison, Los Chaguaramos, Caracas • RIF: J-40685449-2
               </p>
             </div>

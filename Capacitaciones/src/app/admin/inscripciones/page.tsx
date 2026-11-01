@@ -305,12 +305,12 @@ export default function InscripcionesAdminPage() {
                         <button
                           type="button"
                           onClick={() => setViewingDetailsReg(r)}
-                          className="font-bold text-white hover:text-[#e07b29] text-left block transition cursor-pointer"
+                          className="font-bold text-slate-900 dark:text-white hover:text-[#e07b29] text-left block transition cursor-pointer"
                           title="Clic para ver todos los datos de este inscrito"
                         >
                           {r.participant?.name || "Sin Nombre"}
                         </button>
-                        <span className="text-[11px] text-slate-400 block font-mono">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-mono">
                           {r.participant?.docNumber || "S/D"} | {r.participant?.phone}
                         </span>
                         {r.participant?.participations && (
@@ -330,7 +330,7 @@ export default function InscripcionesAdminPage() {
 
                       {/* Capacitación */}
                       <td className="py-3.5 px-4 max-w-xs">
-                        <span className="font-semibold text-slate-200 block truncate">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate">
                           {r.training?.name || "Capacitación"}
                         </span>
                         <span className="text-[11px] text-slate-500">
@@ -341,7 +341,7 @@ export default function InscripcionesAdminPage() {
                       {/* Monto / Estado de Cobro */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-white">
+                          <span className="font-bold text-slate-900 dark:text-white">
                             {formatCurrency(r.amount, r.currency)}
                           </span>
                           <button
