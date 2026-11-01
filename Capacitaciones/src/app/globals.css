@@ -169,27 +169,46 @@ html[data-theme="dark"] .cashea-banner {
 }
 
 /* ==========================================================================
-   ADAPTACIÓN AUTOMÁTICA MODO CLARO / OSCURO PARA VISTAS ADMINISTRATIVAS Y LANDING
+   SISTEMA DE CONTRASTE DINÁMICO: MODO CLARO (FUENTES OSCURAS) / MODO OSCURO (FUENTES CLARAS)
    ========================================================================== */
 
+/* --------------------------------------------------------------------------
+   1. MODO CLARO (FUENTES OSCURAS PARA MÁXIMO CONTRASTE SOBRE FONDOS CLAROS)
+   -------------------------------------------------------------------------- */
+
 html[data-theme="light"] body,
-html[data-theme="light"] .bg-slate-950 {
+html:not([data-theme="dark"]) body {
   background-color: #f8f9fc !important;
-  color: #1e293b !important;
+  color: #0f172a !important;
+}
+
+/* Superficies y Tarjetas en Modo Claro */
+html[data-theme="light"] .bg-slate-950,
+html:not([data-theme="dark"]) .bg-slate-950 {
+  background-color: #f8f9fc !important;
+  color: #0f172a !important;
 }
 
 html[data-theme="light"] .bg-slate-950\/80,
-html[data-theme="light"] .bg-slate-950\/90 {
-  background-color: #f1f4f9 !important;
-  color: #1e293b !important;
+html[data-theme="light"] .bg-slate-950\/90,
+html:not([data-theme="dark"]) .bg-slate-950\/80,
+html:not([data-theme="dark"]) .bg-slate-950\/90 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
 }
 
 html[data-theme="light"] .bg-slate-900,
 html[data-theme="light"] .bg-slate-900\/95,
 html[data-theme="light"] .bg-slate-900\/90,
-html[data-theme="light"] .bg-slate-900\/60 {
+html[data-theme="light"] .bg-slate-900\/70,
+html[data-theme="light"] .bg-slate-900\/60,
+html:not([data-theme="dark"]) .bg-slate-900,
+html:not([data-theme="dark"]) .bg-slate-900\/95,
+html:not([data-theme="dark"]) .bg-slate-900\/90,
+html:not([data-theme="dark"]) .bg-slate-900\/70,
+html:not([data-theme="dark"]) .bg-slate-900\/60 {
   background-color: #ffffff !important;
-  color: #1e293b !important;
+  color: #0f172a !important;
   box-shadow: 0 4px 20px rgba(42, 40, 92, 0.05);
 }
 
@@ -197,62 +216,134 @@ html[data-theme="light"] .bg-slate-800,
 html[data-theme="light"] .bg-slate-800\/80,
 html[data-theme="light"] .bg-slate-800\/60,
 html[data-theme="light"] .hover\:bg-slate-800:hover,
-html[data-theme="light"] .hover\:bg-slate-800\/40:hover {
+html[data-theme="light"] .hover\:bg-slate-800\/40:hover,
+html:not([data-theme="dark"]) .bg-slate-800,
+html:not([data-theme="dark"]) .hover\:bg-slate-800:hover,
+html:not([data-theme="dark"]) .hover\:bg-slate-800\/40:hover {
   background-color: #f1f5f9 !important;
-  color: #2a285c !important;
+  color: #1a1c29 !important;
 }
 
 html[data-theme="light"] .border-slate-800,
 html[data-theme="light"] .border-slate-800\/80,
-html[data-theme="light"] .border-slate-700 {
+html[data-theme="light"] .border-slate-700,
+html:not([data-theme="dark"]) .border-slate-800,
+html:not([data-theme="dark"]) .border-slate-700 {
   border-color: #e2e8f0 !important;
 }
 
 html[data-theme="light"] .divide-slate-800\/80 > :not([hidden]) ~ :not([hidden]),
-html[data-theme="light"] .divide-slate-800 > :not([hidden]) ~ :not([hidden]) {
+html[data-theme="light"] .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
+html:not([data-theme="dark"]) .divide-slate-800 > :not([hidden]) ~ :not([hidden]) {
   border-color: #e2e8f0 !important;
 }
 
-html[data-theme="light"] .text-white:not(.keep-white),
-html[data-theme="light"] .text-slate-100:not(.keep-white),
-html[data-theme="light"] .text-slate-200:not(.keep-white) {
-  color: #2a285c !important;
+/* Tipografía Oscura en Superficies Claras */
+html[data-theme="light"] h1,
+html[data-theme="light"] h2,
+html[data-theme="light"] h3,
+html[data-theme="light"] h4,
+html[data-theme="light"] th,
+html:not([data-theme="dark"]) h1,
+html:not([data-theme="dark"]) h2,
+html:not([data-theme="dark"]) h3,
+html:not([data-theme="dark"]) h4,
+html:not([data-theme="dark"]) th {
+  color: #0f172a;
 }
 
-html[data-theme="light"] .bg-brand-600,
-html[data-theme="light"] .bg-brand-500,
-html[data-theme="light"] .bg-emerald-600,
-html[data-theme="light"] .bg-cyan-600,
-html[data-theme="light"] .bg-amber-600,
-html[data-theme="light"] .bg-red-600,
-html[data-theme="light"] .from-brand-600,
-html[data-theme="light"] .onprotec-btn-primary,
-html[data-theme="light"] .keep-white {
-  color: #ffffff !important;
+/* En Modo Claro, los elementos que tenían clases text-white/slate pero sobre fondo claro deben ser oscuros */
+html[data-theme="light"] td .text-white,
+html[data-theme="light"] td .text-slate-200,
+html[data-theme="light"] .bg-white .text-white,
+html[data-theme="light"] .bg-white .text-slate-100,
+html[data-theme="light"] .bg-white .text-slate-200,
+html[data-theme="light"] .bg-slate-900 .text-white,
+html[data-theme="light"] .bg-slate-900 .text-slate-100,
+html[data-theme="light"] .bg-slate-900 .text-slate-200,
+html[data-theme="light"] .bg-slate-950 .text-white,
+html[data-theme="light"] .bg-slate-950 .text-slate-200,
+html:not([data-theme="dark"]) td .text-white,
+html:not([data-theme="dark"]) .bg-white .text-white,
+html:not([data-theme="dark"]) .bg-slate-900 .text-white {
+  color: #0f172a !important;
 }
 
-html[data-theme="light"] .bg-brand-600 *,
-html[data-theme="light"] .bg-emerald-600 *,
-html[data-theme="light"] .from-brand-600 *,
-html[data-theme="light"] .onprotec-btn-primary *,
-html[data-theme="light"] .keep-white * {
-  color: #ffffff !important;
-}
-
-html[data-theme="light"] .text-slate-300 {
+html[data-theme="light"] .text-slate-300,
+html:not([data-theme="dark"]) .text-slate-300 {
   color: #334155 !important;
 }
 
 html[data-theme="light"] .text-slate-400,
-html[data-theme="light"] .text-slate-500 {
+html:not([data-theme="dark"]) .text-slate-400 {
+  color: #475569 !important;
+}
+
+html[data-theme="light"] .text-slate-500,
+html:not([data-theme="dark"]) .text-slate-500 {
   color: #64748b !important;
 }
 
-html[data-theme="light"] .text-brand-300,
-html[data-theme="light"] .text-brand-400 {
-  color: #0e5cd7 !important;
+/* --------------------------------------------------------------------------
+   2. PROTECCIÓN CRÍTICA DE CONTRASTE: BOTONES Y FONDOS SATURADOS / OSCUROS
+   En CUALQUIER botón o elemento con fondo naranja, azul marino, verde, etc.,
+   el texto DEBE SER BLANCO PURO para garantizar contraste perfecto.
+   -------------------------------------------------------------------------- */
+
+button.bg-\[\#f4730a\],
+a.bg-\[\#f4730a\],
+div.bg-\[\#f4730a\],
+.bg-\[\#f4730a\],
+button.bg-\[\#ef7922\],
+a.bg-\[\#ef7922\],
+.bg-\[\#ef7922\],
+button.bg-\[\#2a285c\],
+a.bg-\[\#2a285c\],
+div.bg-\[\#2a285c\],
+.bg-\[\#2a285c\],
+.bg-\[\#1a1b4b\],
+button.bg-emerald-600,
+a.bg-emerald-600,
+.bg-emerald-600,
+button.bg-cyan-600,
+.bg-cyan-600,
+button.bg-brand-600,
+.bg-brand-600,
+.onprotec-btn-primary,
+footer.bg-\[\#2a285c\] {
+  color: #ffffff !important;
 }
 
+button.bg-\[\#f4730a\] *,
+a.bg-\[\#f4730a\] *,
+div.bg-\[\#f4730a\] *,
+.bg-\[\#f4730a\] *,
+button.bg-\[\#2a285c\] *,
+a.bg-\[\#2a285c\] *,
+div.bg-\[\#2a285c\] *,
+.bg-\[\#2a285c\] *,
+button.bg-emerald-600 *,
+.bg-emerald-600 *,
+button.bg-cyan-600 *,
+.bg-cyan-600 *,
+button.bg-brand-600 *,
+.bg-brand-600 *,
+.onprotec-btn-primary *,
+footer.bg-\[\#2a285c\] * {
+  color: #ffffff !important;
+}
+
+footer.bg-\[\#2a285c\] .text-slate-300 {
+  color: #cbd5e1 !important;
+}
+
+/* Cintillo Cashea Amarillo Oficial: Texto Negro */
+.cashea-banner,
+.cashea-banner * {
+  color: #000000 !important;
+}
+
+/* Colores de Acentos en Modo Claro */
 html[data-theme="light"] .text-cyan-300,
 html[data-theme="light"] .text-cyan-400 {
   color: #0284c7 !important;
@@ -260,27 +351,135 @@ html[data-theme="light"] .text-cyan-400 {
 
 html[data-theme="light"] .text-emerald-300,
 html[data-theme="light"] .text-emerald-400 {
-  color: #047857 !important;
+  color: #059669 !important;
 }
 
-html[data-theme="light"] .text-amber-200,
 html[data-theme="light"] .text-amber-300,
 html[data-theme="light"] .text-amber-400 {
   color: #d97706 !important;
 }
 
-html[data-theme="light"] .text-red-200,
 html[data-theme="light"] .text-red-300,
 html[data-theme="light"] .text-red-400 {
   color: #dc2626 !important;
 }
 
+/* Inputs en Modo Claro */
 html[data-theme="light"] input,
 html[data-theme="light"] select,
-html[data-theme="light"] textarea {
+html[data-theme="light"] textarea,
+html:not([data-theme="dark"]) input:not([type="checkbox"]):not([type="radio"]),
+html:not([data-theme="dark"]) select,
+html:not([data-theme="dark"]) textarea {
   background-color: #ffffff !important;
-  color: #1e293b !important;
+  color: #0f172a !important;
   border-color: #cbd5e1 !important;
+}
+
+html[data-theme="light"] input::placeholder,
+html[data-theme="light"] textarea::placeholder,
+html:not([data-theme="dark"]) input::placeholder,
+html:not([data-theme="dark"]) textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. MODO OSCURO (FUENTES CLARAS PARA MÁXIMO CONTRASTE SOBRE FONDOS OSCUROS)
+   -------------------------------------------------------------------------- */
+
+html[data-theme="dark"],
+.dark {
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] body,
+.dark body {
+  background-color: #0b0e17 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Títulos y Encabezados en Modo Oscuro: Blanco Puro Brillante */
+html[data-theme="dark"] h1,
+html[data-theme="dark"] h2,
+html[data-theme="dark"] h3,
+html[data-theme="dark"] h4,
+html[data-theme="dark"] th,
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark th {
+  color: #ffffff !important;
+}
+
+/* Textos Generales en Modo Oscuro */
+html[data-theme="dark"] p,
+html[data-theme="dark"] span:not([class*="bg-"]):not([class*="text-[#f4730a]"]):not([class*="text-[#fdff00]"]):not([class*="text-emerald"]):not([class*="text-amber"]):not([class*="text-cyan"]):not([class*="text-red"]):not(.cashea-banner-text),
+.dark p {
+  color: #e2e8f0;
+}
+
+html[data-theme="dark"] td,
+.dark td {
+  color: #f1f5f9 !important;
+}
+
+/* Textos que tenían colores oscuros hardcodeados (ej. text-[#1a1c29], text-[#2a285c]) se vuelven claros en modo oscuro */
+html[data-theme="dark"] .text-\[\#1a1c29\],
+html[data-theme="dark"] .text-\[\#2a285c\]:not(header *):not(.cashea-banner *),
+.dark .text-\[\#1a1c29\],
+.dark .text-\[\#2a285c\]:not(header *):not(.cashea-banner *) {
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .text-slate-600,
+html[data-theme="dark"] .text-slate-700,
+html[data-theme="dark"] .text-slate-800,
+.dark .text-slate-600,
+.dark .text-slate-700,
+.dark .text-slate-800 {
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] .text-slate-400,
+html[data-theme="dark"] .text-slate-500,
+.dark .text-slate-400,
+.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* Superficies Oscuras */
+html[data-theme="dark"] .bg-slate-900,
+html[data-theme="dark"] .bg-slate-950,
+.dark .bg-slate-900,
+.dark .bg-slate-950 {
+  background-color: #111526 !important;
+}
+
+html[data-theme="dark"] .border-slate-800,
+html[data-theme="dark"] .border-slate-700,
+.dark .border-slate-800,
+.dark .border-slate-700 {
+  border-color: #1e293b !important;
+}
+
+/* Inputs en Modo Oscuro */
+html[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea,
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark select,
+.dark textarea {
+  background-color: #0b0e17 !important;
+  color: #ffffff !important;
+  border-color: #334155 !important;
+}
+
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder,
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b !important;
 }
 
 /* Scrollbars */
