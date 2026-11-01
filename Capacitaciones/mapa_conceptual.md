@@ -253,3 +253,9 @@ Atendiendo los requerimientos operativos de Coordinación de Sala (Diana Barrero
    * Soporte para exportación instantánea en formato Excel / CSV.
 
 
+
+
+6. **Sistema Dinámico de Contraste Tipográfico (Modo Claro vs. Modo Oscuro):**
+   * **Modo Claro:** Tipografías, títulos (`h1`, `h2`, `h3`, `h4`, `th`), celdas de tabla e inputs se renderizan en tonos oscuros de alto contraste (`#0f172a`, `#1e293b`, `#334155`) sobre fondos blancos/grises (`#ffffff`, `#f8f9fc`). Todos los botones coloreados (`#f4730a`, `#2a285c`, `.bg-emerald-600`, etc.) preservan estrictamente su tipografía en blanco puro (`#ffffff !important`).
+   * **Modo Oscuro:** Tipografías, encabezados e inputs se renderizan en tonos claros (`#ffffff`, `#f1f5f9`, `#e2e8f0`) sobre fondos oscuros (`#0b0e17`, `#111526`), con inputs en fondo oscuro y texto blanco.
+   * **Adaptación de Logos:** Sobre superficies claras se muestra el logotipo a color (`onprotec-logo-color.png`), mientras que sobre superficies oscuras o pie de página `#2a285c` se renderiza el logotipo blanco monocromático (`onprotec-logo-white.png`).
