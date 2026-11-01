@@ -117,6 +117,7 @@ const ddlStatements = [
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "custom_answers" JSONB DEFAULT '{}'::jsonb;`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "original_form_name" VARCHAR(255);`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "form_submitted_at" TIMESTAMP WITH TIME ZONE;`,
+  `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "carnet_number" VARCHAR(50);`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "check_in_at" TIMESTAMP WITH TIME ZONE;`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "reminder_sent_at" TIMESTAMP WITH TIME ZONE;`,
   `ALTER TABLE "registrations" ADD COLUMN IF NOT EXISTS "survey_sent_at" TIMESTAMP WITH TIME ZONE;`,

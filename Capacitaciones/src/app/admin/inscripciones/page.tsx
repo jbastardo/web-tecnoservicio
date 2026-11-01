@@ -19,6 +19,16 @@ import {
   ExternalLink,
   AlertCircle,
   Edit3,
+  Eye,
+  Phone,
+  Mail,
+  Building,
+  Briefcase,
+  MapPin,
+  HelpCircle,
+  Hash,
+  Sparkles,
+  User,
 } from "lucide-react";
 import { fmtLocalDate, fmtLocalTime, formatCurrency } from "@/utils/formatUtils";
 
@@ -34,6 +44,8 @@ export default function InscripcionesAdminPage() {
   const [modalReg, setModalReg] = useState<any | null>(null);
   // Estado para ver en qué capacitaciones ha participado un inscrito
   const [historyParticipant, setHistoryParticipant] = useState<any | null>(null);
+  // Estado para inspeccionar todos los datos enviados por el inscrito
+  const [viewingDetailsReg, setViewingDetailsReg] = useState<any | null>(null);
   const [modalForm, setModalForm] = useState({
     isPaid: false,
     amount: 0,
@@ -290,9 +302,14 @@ export default function InscripcionesAdminPage() {
                     <tr key={r.id} className="hover:bg-slate-800/40 transition">
                       {/* Participante */}
                       <td className="py-3.5 px-4">
-                        <span className="font-bold text-white block">
+                        <button
+                          type="button"
+                          onClick={() => setViewingDetailsReg(r)}
+                          className="font-bold text-white hover:text-[#e07b29] text-left block transition cursor-pointer"
+                          title="Clic para ver todos los datos de este inscrito"
+                        >
                           {r.participant?.name || "Sin Nombre"}
-                        </span>
+                        </button>
                         <span className="text-[11px] text-slate-400 block font-mono">
                           {r.participant?.docNumber || "S/D"} | {r.participant?.phone}
                         </span>
@@ -439,6 +456,16 @@ export default function InscripcionesAdminPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
+                            onClick={() => setViewingDetailsReg(r)}
+                            className="px-2.5 py-1 bg-[#e07b29]/15 hover:bg-[#e07b29]/25 text-[#e07b29] rounded text-[11px] font-bold border border-[#e07b29]/40 flex items-center gap-1 transition cursor-pointer"
+                            title="Ver todos los datos enviados por el inscrito y respuestas del formulario"
+                          >
+                            <Eye className="w-3 h-3 text-[#e07b29]" />
+                            <span>Ver Datos</span>
+                          </button>
+
+                          <button
+                            type="button"
                             onClick={() => openValidationModal(r)}
                             className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded text-[11px] font-semibold border border-slate-700 flex items-center gap-1 transition"
                             title="Validar o modificar pago manualmente"
@@ -522,6 +549,360 @@ export default function InscripcionesAdminPage() {
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ficha Completa: Datos del Inscrito & Respuestas del Formulario */}
+      {viewingDetailsReg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-4xl p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setViewingDetailsReg(null)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition"
+              title="Cerrar Ficha"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Cabecera de la Ficha */}
+            <div className="flex flex-wrap items-start justify-between gap-4 pb-5 mb-6 border-b border-slate-800">
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#e07b29] text-white">
+                    FICHA DETALLADA DEL INSCRITO
+                  </span>
+                  <span className="text-xs font-mono font-bold text-cyan-300 bg-slate-950 px-2.5 py-0.5 rounded-lg border border-slate-800">
+                    ID: #{viewingDetailsReg.id}
+                  </span>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                      viewingDetailsReg.status === "Asistió"
+                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                        : viewingDetailsReg.status === "Confirmado"
+                        ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                        : viewingDetailsReg.status === "Lista de Espera"
+                        ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                        : "bg-slate-800 text-slate-300 border-slate-700"
+                    }`}
+                  >
+                    {viewingDetailsReg.status}
+                  </span>
+                </div>
+                <h2 className="text-2xl font-black text-white">
+                  {viewingDetailsReg.participant?.name || "Sin Nombre"}
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Capacitación:{" "}
+                  <strong className="text-white">
+                    {viewingDetailsReg.training?.code} — {viewingDetailsReg.training?.name}
+                  </strong>{" "}
+                  ({fmtLocalDate(viewingDetailsReg.training?.eventDate)})
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {viewingDetailsReg.participant?.phone && (
+                  <a
+                    href={`https://wa.me/${viewingDetailsReg.participant.phone.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-sm transition"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>WhatsApp</span>
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* Grid 2 Columnas Widescreen */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Columna Izquierda: Datos Personales & Empresa */}
+              <div className="lg:col-span-6 space-y-4">
+                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3.5">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-[#e07b29] flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Datos Personales & Contacto
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                        Cédula / Documento
+                      </span>
+                      <span className="font-mono font-bold text-white text-sm">
+                        {viewingDetailsReg.participant?.docType || "V"}-
+                        {viewingDetailsReg.participant?.docNumber || "S/D"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                        Teléfono / WhatsApp
+                      </span>
+                      <span className="font-mono font-bold text-cyan-300 text-sm">
+                        {viewingDetailsReg.participant?.phone || "No registrado"}
+                      </span>
+                    </div>
+
+                    <div className="col-span-2">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                        Correo Electrónico
+                      </span>
+                      <a
+                        href={`mailto:${viewingDetailsReg.participant?.email}`}
+                        className="font-medium text-slate-200 hover:text-[#e07b29] transition block truncate"
+                      >
+                        {viewingDetailsReg.participant?.email || "No registrado"}
+                      </a>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                        Ciudad / Región
+                      </span>
+                      <span className="font-bold text-white">
+                        {viewingDetailsReg.participant?.city || "Caracas"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                        Nº de Carnet Físico
+                      </span>
+                      <input
+                        type="text"
+                        defaultValue={viewingDetailsReg.carnetNumber || ""}
+                        placeholder="Ej. 09"
+                        onBlur={async (e) => {
+                          const val = e.target.value.trim();
+                          await patchRegistration(viewingDetailsReg.id, { carnetNumber: val });
+                          setViewingDetailsReg((prev: any) => ({ ...prev, carnetNumber: val }));
+                          showToast("Nº de Carnet físico guardado");
+                        }}
+                        className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-mono w-24 focus:border-[#e07b29] outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3.5">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                    <Building className="w-4 h-4" />
+                    Empresa & Perfil Técnico
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                        Empresa / Integrador
+                      </span>
+                      <span className="font-bold text-white text-sm">
+                        {viewingDetailsReg.participant?.company || "Independiente"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                        Cargo / Rol
+                      </span>
+                      <span className="font-bold text-slate-200">
+                        {viewingDetailsReg.participant?.cargo || "Técnico / Instalador"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                        Nivel de Experiencia
+                      </span>
+                      <span className="font-semibold text-slate-300">
+                        {viewingDetailsReg.participant?.experienceLevel ||
+                          viewingDetailsReg.experienceLevel ||
+                          "No especificado"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                        ¿Cómo se enteró?
+                      </span>
+                      <span className="font-semibold text-slate-300">
+                        {viewingDetailsReg.participant?.referralSource || "Redes / Web OnProtec"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Columna Derecha: Respuestas a Preguntas del Formulario + Pago */}
+              <div className="lg:col-span-6 space-y-4">
+                {/* Preguntas Personalizadas del Formulario */}
+                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Respuestas al Formulario de Inscripción
+                    </h3>
+                    <span className="text-[10px] font-mono text-slate-500">
+                      {Object.keys(viewingDetailsReg.customAnswers || {}).length} respuestas
+                    </span>
+                  </div>
+
+                  {viewingDetailsReg.customAnswers &&
+                  Object.keys(viewingDetailsReg.customAnswers).length > 0 ? (
+                    <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                      {Object.entries(viewingDetailsReg.customAnswers).map(
+                        ([questionKey, answer]: [string, any], idx) => {
+                          // Intentar emparejar con el label de formQuestions de la capacitación
+                          const formQ = (
+                            viewingDetailsReg.training?.formQuestions || []
+                          ).find((fq: any) => fq.id === questionKey);
+                          const questionLabel = formQ?.label || questionKey;
+
+                          return (
+                            <div
+                              key={idx}
+                              className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs"
+                            >
+                              <span className="text-[10px] font-bold uppercase text-[#e07b29] block mb-0.5">
+                                {questionLabel}
+                              </span>
+                              <span className="font-bold text-white leading-relaxed block">
+                                {typeof answer === "boolean"
+                                  ? answer
+                                    ? "Sí"
+                                    : "No"
+                                  : String(answer || "Sin respuesta")}
+                              </span>
+                            </div>
+                          );
+                        }
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-center text-xs text-slate-500">
+                      Formulario base completado (sin preguntas dinámicas adicionales registradas).
+                    </div>
+                  )}
+
+                  {viewingDetailsReg.specialNotes && (
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200">
+                      <span className="text-[10px] font-black uppercase tracking-wider block text-amber-400 mb-0.5">
+                        Nota Especial / Expectativas
+                      </span>
+                      {viewingDetailsReg.specialNotes}
+                    </div>
+                  )}
+                </div>
+
+                {/* Resumen de Pago & Facturación */}
+                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                      <CreditCard className="w-4 h-4" />
+                      Inversión & Validación de Pago
+                    </h3>
+                    <span
+                      className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                        viewingDetailsReg.isPaid
+                          ? "bg-emerald-500/20 text-emerald-300"
+                          : "bg-red-500/20 text-red-300"
+                      }`}
+                    >
+                      {viewingDetailsReg.isPaid ? "PAGO VALIDADO" : "PENDIENTE / POR COBRAR"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                        Monto de Inscripción
+                      </span>
+                      <span className="font-black text-white text-base">
+                        {formatCurrency(viewingDetailsReg.amount, viewingDetailsReg.currency)}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                        Método de Pago
+                      </span>
+                      <span className="font-bold text-slate-200">
+                        {viewingDetailsReg.paymentMethod || "No especificado"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                        Referencia
+                      </span>
+                      <span className="font-mono font-bold text-cyan-300">
+                        {viewingDetailsReg.paymentReference || "S/R"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                        Factura / Nota
+                      </span>
+                      <span className="font-mono font-bold text-slate-300">
+                        {viewingDetailsReg.invoiceNumber || "Sin facturar"}
+                      </span>
+                    </div>
+
+                    {viewingDetailsReg.paymentProofUrl && (
+                      <div className="col-span-2">
+                        <a
+                          href={viewingDetailsReg.paymentProofUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-cyan-400 hover:underline"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Ver Comprobante de Pago Adjunto (Google Drive)</span>
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Pie de la Ficha con Acciones Rápidas */}
+            <div className="mt-6 pt-5 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setHistoryParticipant(viewingDetailsReg.participant);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition cursor-pointer"
+              >
+                <span>
+                  📚 Ver Historial de otros cursos (
+                  {viewingDetailsReg.participant?.participations?.length || 1})
+                </span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    openValidationModal(viewingDetailsReg);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-extrabold shadow-sm transition cursor-pointer"
+                >
+                  Editar Estado / Validar Pago
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewingDetailsReg(null)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         </div>

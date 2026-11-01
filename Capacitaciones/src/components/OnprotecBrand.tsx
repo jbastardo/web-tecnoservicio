@@ -16,11 +16,16 @@ export function OnprotecBrand({
 }: BrandProps) {
   return (
     <Link href={href} className="flex items-center gap-3 group flex-shrink-0">
-      <div className="relative flex items-center justify-center bg-white rounded-xl px-2.5 py-1.5 border border-slate-200/80 shadow-sm group-hover:border-[#f4730a] transition">
+      <div className="relative flex items-center justify-center bg-white dark:bg-slate-900 rounded-xl px-2.5 py-1.5 border border-slate-200/80 dark:border-slate-800 shadow-sm group-hover:border-[#f4730a] transition">
         <img
-          src="/brand/onprotec-logo-web.webp"
+          src="/brand/onprotec-logo-color.png"
           alt="OnProtec - La Tienda del Instalador"
-          className={`${compact ? "h-6" : "h-7 sm:h-8"} w-auto object-contain`}
+          className={`${compact ? "h-6" : "h-7 sm:h-8"} w-auto object-contain dark:hidden`}
+        />
+        <img
+          src="/brand/onprotec-logo-white.png"
+          alt="OnProtec - La Tienda del Instalador"
+          className={`${compact ? "h-6" : "h-7 sm:h-8"} w-auto object-contain hidden dark:block`}
         />
       </div>
       <div className="hidden sm:block">

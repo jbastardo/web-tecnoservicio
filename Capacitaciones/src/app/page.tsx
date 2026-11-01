@@ -53,6 +53,7 @@ export default function HomePage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [brandFilter, setBrandFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusTab, setStatusTab] = useState<"open" | "all">("open");
 
   // Formulario de Fricción Cero con Etiquetas Flotantes (Floating Labels)
   const [form, setForm] = useState({
@@ -110,9 +111,22 @@ export default function HomePage() {
     scrollToSection("registro-express");
   };
 
+  const isSelectedTrainingOpen =
+    selectedTraining &&
+    (selectedTraining.status === "Planificado" || selectedTraining.status === "En Publicidad");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTraining) return;
+
+    if (!isSelectedTrainingOpen) {
+      setSubmissionResult({
+        success: false,
+        error:
+          "Esta capacitación ya culminó su ciclo. Las inscripciones se encuentran cerradas.",
+      });
+      return;
+    }
 
     setSubmitting(true);
     setSubmissionResult(null);
@@ -148,6 +162,11 @@ export default function HomePage() {
   };
 
   const filteredTrainings = trainings.filter((t) => {
+    const isPlanned = t.status === "Planificado" || t.status === "En Publicidad";
+    if (statusTab === "open" && !isPlanned) {
+      return false;
+    }
+
     const textBlob = `${t.title || ""} ${t.brand || ""} ${t.topic || ""} ${t.code || ""}`.toLowerCase();
 
     if (searchQuery.trim() !== "" && !textBlob.includes(searchQuery.toLowerCase().trim())) {
@@ -735,6 +754,46 @@ export default function HomePage() {
                   </div>
                 </div>
 
+                {/* Pestañas de Convocatorias Abiertas vs Histórico */}
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-3 border-b border-slate-200/80 dark:border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStatusTab("open");
+                        const openOne = trainings.find((t) => t.status === "Planificado" || t.status === "En Publicidad");
+                        if (openOne) setSelectedTraining(openOne);
+                      }}
+                      className={`text-xs px-4 py-2 rounded-xl font-extrabold flex items-center gap-2 transition cursor-pointer ${
+                        statusTab === "open"
+                          ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+                      <span>Convocatorias Abiertas ({trainings.filter((t) => t.status === "Planificado" || t.status === "En Publicidad").length})</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setStatusTab("all")}
+                      className={`text-xs px-4 py-2 rounded-xl font-extrabold flex items-center gap-2 transition cursor-pointer ${
+                        statusTab === "all"
+                          ? "bg-[#2a285c] text-white shadow-md shadow-[#2a285c]/20"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                      }`}
+                    >
+                      <span>Histórico de Talleres ({trainings.length})</span>
+                    </button>
+                  </div>
+
+                  <span className="text-[11px] font-semibold text-slate-400">
+                    {statusTab === "open"
+                      ? "Mostrando eventos con cupos activos"
+                      : "Archivo histórico (inscripciones cerradas)"}
+                  </span>
+                </div>
+
                 {/* Grid Escaneable de Capacitaciones con Insignias (Badges) */}
                 {loading ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1068,7 +1127,41 @@ export default function HomePage() {
                 </div>
 
                 <div className="p-6 sm:p-7">
-                  {/* Mensaje de Confirmación Post-Registro */}
+                  {!isSelectedTrainingOpen ? (
+                    <div className="p-6 sm:p-8 rounded-2xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 text-center space-y-4">
+                      <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 mx-auto flex items-center justify-center">
+                        <Lock className="w-7 h-7" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                          CAPACITACIÓN FINALIZADA
+                        </span>
+                        <h4 className="text-base font-extrabold text-[#2a285c] dark:text-white mt-2">
+                          Inscripciones Cerradas para este Evento
+                        </h4>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto mt-1 leading-relaxed">
+                          Este curso culminó su ciclo formativo presencial ({selectedTraining ? fmtLocalDate(selectedTraining.startDate) : "Fecha pasada"}). No admite nuevas inscripciones.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const openOne =
+                            trainings.find(
+                              (t) => t.status === "Planificado" || t.status === "En Publicidad"
+                            ) || trainings[0];
+                          setSelectedTraining(openOne);
+                          setStatusTab("open");
+                        }}
+                        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#f4730a] hover:bg-[#ef7922] text-white font-extrabold text-xs shadow-md shadow-[#f4730a]/25 transition cursor-pointer"
+                      >
+                        <span>Ver Convocatoria Abierta Actual</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Mensaje de Confirmación Post-Registro */}
                   {submissionResult && (
                     <div
                       className={`mb-6 p-5 rounded-2xl border-2 ${
@@ -1394,6 +1487,8 @@ export default function HomePage() {
                       <strong className="text-[#2a285c] dark:text-slate-200">OnProtec®</strong>.
                     </p>
                   </form>
+                  </>
+                  )}
                 </div>
               </div>
             </div>
@@ -1474,9 +1569,9 @@ export default function HomePage() {
       <footer className="bg-[#2a285c] text-white py-10">
         <div className="max-w-[1640px] mx-auto px-4 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="bg-white px-4 py-2 rounded-2xl">
+            <div className="bg-white px-3.5 py-1.5 rounded-xl shadow-sm">
               <img
-                src="/brand/onprotec-logo-web.webp"
+                src="/brand/onprotec-logo-color.png"
                 alt="OnProtec"
                 className="h-7 w-auto object-contain"
               />

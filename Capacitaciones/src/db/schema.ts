@@ -115,6 +115,7 @@ export const registrations = pgTable(
     customAnswers: jsonb("custom_answers").$type<Record<string, any>>().default({}).notNull(),
     originalFormName: varchar("original_form_name", { length: 255 }),
     formSubmittedAt: timestamp("form_submitted_at", { withTimezone: true }),
+    carnetNumber: varchar("carnet_number", { length: 50 }), // Nº de carnet físico escrito en mesa
     reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
     surveySentAt: timestamp("survey_sent_at", { withTimezone: true }),
     checkInAt: timestamp("check_in_at", { withTimezone: true }),

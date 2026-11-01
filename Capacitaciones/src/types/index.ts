@@ -143,6 +143,7 @@ export interface Registration {
   customAnswers?: Record<string, any>; // Respuestas a preguntas personalizadas del formulario
   originalFormName?: string | null;
   formSubmittedAt?: string | null;
+  carnetNumber?: string | null; // Nº de Carnet físico asignado en mesa
   reminderSentAt: string | null;
   surveySentAt: string | null;
   checkInAt: string | null;

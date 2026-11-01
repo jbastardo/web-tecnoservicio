@@ -100,6 +100,22 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validación crítica: No permitir inscripciones en capacitaciones finalizadas o cerradas
+    const isClosedOrPast =
+      training.status === "Finalizado" ||
+      training.status === "Cancelado" ||
+      (training.status !== "Planificado" && training.status !== "En Publicidad");
+    if (isClosedOrPast) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Esta capacitación ya finalizó o las inscripciones se encuentran cerradas. Por favor selecciona una capacitación activa o comunícate con OnProtec.",
+        },
+        { status: 400 }
+      );
+    }
+
     // 1. Verificar el aforo de la sala de capacitaciones (18 cupos)
     const maxCap = Number(training.maxCapacity) || 18;
     const activeRegs = initialRegistrations.filter(
@@ -187,6 +203,7 @@ export async function POST(request: Request) {
         customAnswers?.specialExpectations ||
         (isWaitlist ? `Generado en lista de espera (Cupo > ${maxCap})` : null),
       experienceLevel: resolvedExp,
+      carnetNumber: body.carnetNumber || null,
       customAnswers: customAnswers || {},
       formSubmittedAt: new Date().toISOString(),
       reminderSentAt: null,
@@ -248,6 +265,7 @@ export async function PATCH(request: Request) {
       paymentDate,
       checkInAt,
       invoiceNumber,
+      carnetNumber,
       customAnswers,
     } = body;
 
@@ -280,6 +298,7 @@ export async function PATCH(request: Request) {
       ...(paymentDate !== undefined && { paymentDate }),
       ...(checkInAt !== undefined && { checkInAt }),
       ...(invoiceNumber !== undefined && { invoiceNumber }),
+      ...(carnetNumber !== undefined && { carnetNumber }),
       ...(customAnswers !== undefined && { customAnswers }),
       updatedAt: new Date().toISOString(),
     };

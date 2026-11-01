@@ -157,6 +157,18 @@ export const defaultAdminUsers: AdminUser[] = [
     lastLoginAt: null,
     createdAt: "2026-02-01T12:00:00Z",
   },
+  {
+    id: 5,
+    username: "diana",
+    email: "diana@onprotec.com",
+    name: "Diana Barrero",
+    role: "Coordinador de Sala",
+    department: "Coordinación de Capacitaciones & Sala",
+    password: "Onprotec2026*",
+    isActive: true,
+    lastLoginAt: null,
+    createdAt: "2026-02-01T12:00:00Z",
+  },
 ];
 
 // =============================================================================

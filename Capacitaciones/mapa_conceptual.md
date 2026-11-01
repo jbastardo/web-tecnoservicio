@@ -222,4 +222,34 @@ Se reconstruyó desde cero la página principal de **"OnProtec® | Sala de Capac
 6. **Prueba Social, Autoridad y Cintillo Oficial Cashea:**
    * Tarjetas interactivas de marcas certificadas (`Hikvision`, `Dahua Technology`, `TP-Link / Omada`, `Ubiquiti UniFi`, `WatchGuard`, `EZVIZ`, `Marsriva`), cintillo oficial `.cashea-banner` (`#fdff00` con `/brand/icono-cashea.png`) y botón flotante `.float-wa` de WhatsApp (`http://wa.me/584129635648`).
 
+---
+
+## 10. Control de Asistencia en Mesa, Ficha de Datos del Inscrito & Formato Físico de Lista de Asistencia
+
+Atendiendo los requerimientos operativos de Coordinación de Sala (Diana Barrero):
+
+1. **Bloqueo Estricto de Inscripciones en Eventos Finalizados / Pasados:**
+   * Tanto en la API (`POST /api/inscripciones`) como en la Landing Page (`src/app/page.tsx`), las capacitaciones con estado `Finalizado`, `Cancelado` o fuera de convocatoria activa bloquean el formulario.
+   * En la interfaz pública se introdujo el selector de pestañas: **Convocatorias Abiertas (Inscripción Activa)** vs. **Histórico de Talleres (Archivo)**. Si un usuario inspecciona un taller pasado, se presenta una tarjeta informativa de cierre con botón para saltar al evento abierto vigente.
+
+2. **Inspección Integral de Datos del Inscrito (`viewingDetailsReg`):**
+   * En la matriz `/admin/inscripciones` y en `/admin/participantes`, se añadió el botón **"👁️ Ver Datos"** y enlace en el nombre del participante.
+   * Abre una ficha completa widescreen que muestra: Cédula, WhatsApp (enlace directo), Email, Ciudad, Empresa, Cargo, Nivel de experiencia, Fuente de referencia, **todas las respuestas dinámicas a las preguntas redactadas del formulario (`customAnswers`)**, detalles de pago/factura y notas especiales.
+
+3. **Logos Oficiales OnProtec (Color y Blanco Vectorial):**
+   * Actualizados en `public/brand/` con los nuevos activos provistos (`onprotec-logo-color.png` y `onprotec-logo-white.png`), adaptándose automáticamente a vistas claras y oscuras en cabeceras, modales y pie de página.
+
+4. **Toma de Asistencia Interactiva (1-Tap Check) y Carnet Físico:**
+   * En `/admin/checkin` ("Lista de Asistencia & Check-in"), Diana puede dar un solo clic a **`[ ✓ Marcar Presente ]`** / **`[ ✓ ASISTIÓ ]`**, registrando la hora exacta en Caracas (`America/Caracas`) y actualizando en tiempo real el termómetro de ocupación de sala (1 a 18).
+   * Campo editable en línea de **Nº de Carnet Físico** (`carnetNumber`) para ingresar a mano los carnets (ej. 01, 09, 15) como se hace en mesa de recepción.
+
+5. **Generador de Formato Físico de Asistencia (Print / PDF / CSV):**
+   * Botón **"🖨️ Generar Lista de Asistencia (PDF / Imprimir)"** que reproduce el diseño exacto del formato físico de recepción:
+     * Cabecera oficial con Logo OnProtec, Título del Evento, Badge de Confirmados y Aforo Máximo.
+     * Tira de datos: Evento/Código, Fecha Caracas, Estatus e Instrucción de Mesa ("Escribir Nº Carnet a mano").
+     * Tabla formateada: `Nº`, `NOMBRE Y APELLIDO`, `CÉDULA DE IDENTIDAD`, `EMPRESA / PROYECTO`, `Nº DE CARNET (A MANO)`, `HORA`, `FIRMA`.
+     * Filas adicionales en blanco para registros de último momento.
+     * Pie de validación con líneas para `Responsable del Registro en Mesa` y `Coordinador del Evento (Firma y Sello)`.
+   * Soporte para exportación instantánea en formato Excel / CSV.
+
 

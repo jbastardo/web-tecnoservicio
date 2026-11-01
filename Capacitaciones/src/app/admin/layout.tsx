@@ -101,7 +101,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/admin", label: "Dashboard & KPIs", icon: LayoutDashboard },
     { href: "/admin/capacitaciones", label: "Capacitaciones", icon: CalendarCheck },
     { href: "/admin/inscripciones", label: "Inscripciones & Pagos", icon: ClipboardList },
-    { href: "/admin/checkin", label: "Check-in (Día Evento)", icon: UserCheck },
+    { href: "/admin/checkin", label: "Lista de Asistencia & Check-in", icon: UserCheck },
     { href: "/admin/participantes", label: "Participantes (CRM)", icon: Users },
     { href: "/admin/credenciales", label: "Credenciales & Accesos", icon: KeyRound },
   ];
@@ -175,10 +175,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     person: "Julio Subero",
                   },
                   {
-                    label: "Coordinación Sala",
+                    label: "Coordinación Sala & Capacitaciones",
+                    user: "diana@onprotec.com",
+                    pass: "Onprotec2026*",
+                    person: "Diana Barrero",
+                  },
+                  {
+                    label: "Recepción / Mesa",
                     user: "cursos@onprotec.com",
                     pass: "Sala2026*",
-                    person: "Recepción / Check-in",
+                    person: "Rafael Herrera",
                   },
                 ].map((cred) => (
                   <button
