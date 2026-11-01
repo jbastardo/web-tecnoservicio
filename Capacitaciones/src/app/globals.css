@@ -238,18 +238,43 @@ html:not([data-theme="dark"]) .divide-slate-800 > :not([hidden]) ~ :not([hidden]
   border-color: #e2e8f0 !important;
 }
 
-/* Tipografía en Modo Claro sobre Superficies Claras (excluyendo expresamente fondos oscuros o clases white) */
-html[data-theme="light"] h1:not([class*="text-white"]):not(.keep-white),
-html[data-theme="light"] h2:not([class*="text-white"]):not(.keep-white),
-html[data-theme="light"] h3:not([class*="text-white"]):not(.keep-white),
-html[data-theme="light"] h4:not([class*="text-white"]):not(.keep-white),
+/* Tipografía en Modo Claro sobre Superficies Claras */
+html[data-theme="light"] h1:not(.keep-white),
+html[data-theme="light"] h2:not(.keep-white),
+html[data-theme="light"] h3:not(.keep-white),
+html[data-theme="light"] h4:not(.keep-white),
 html[data-theme="light"] th,
-html:not([data-theme="dark"]) h1:not([class*="text-white"]):not(.keep-white),
-html:not([data-theme="dark"]) h2:not([class*="text-white"]):not(.keep-white),
-html:not([data-theme="dark"]) h3:not([class*="text-white"]):not(.keep-white),
-html:not([data-theme="dark"]) h4:not([class*="text-white"]):not(.keep-white),
+html:not([data-theme="dark"]) h1:not(.keep-white),
+html:not([data-theme="dark"]) h2:not(.keep-white),
+html:not([data-theme="dark"]) h3:not(.keep-white),
+html:not([data-theme="dark"]) h4:not(.keep-white),
 html:not([data-theme="dark"]) th {
   color: #0f172a;
+}
+
+/* En Modo Claro, los textos que se encuentren en superficies que se volvieron claras deben ser OSCUROS DE ALTO CONTRASTE */
+html[data-theme="light"] .bg-slate-900 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *),
+html[data-theme="light"] .bg-slate-950 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *),
+html[data-theme="light"] .bg-white .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *),
+html:not([data-theme="dark"]) .bg-slate-900 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *),
+html:not([data-theme="dark"]) .bg-slate-950 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *) {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .bg-slate-900 .text-slate-200,
+html[data-theme="light"] .bg-slate-900 .text-slate-300,
+html[data-theme="light"] .bg-slate-950 .text-slate-200,
+html[data-theme="light"] .bg-slate-950 .text-slate-300,
+html:not([data-theme="dark"]) .bg-slate-900 .text-slate-200,
+html:not([data-theme="dark"]) .bg-slate-900 .text-slate-300 {
+  color: #1e293b !important;
+}
+
+html[data-theme="light"] .bg-slate-900 .text-slate-400,
+html[data-theme="light"] .bg-slate-950 .text-slate-400,
+html:not([data-theme="dark"]) .bg-slate-900 .text-slate-400,
+html:not([data-theme="dark"]) .bg-slate-950 .text-slate-400 {
+  color: #475569 !important;
 }
 
 /* --------------------------------------------------------------------------

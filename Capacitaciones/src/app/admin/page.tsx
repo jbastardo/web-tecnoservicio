@@ -46,15 +46,15 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Cintillo de Título y Filtros Horizontales (Widescreen Toolbar) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-300 dark:border-slate-800">
         <div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <span>Panel de Control & Inteligencia Operativa</span>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-orange-100 text-[#f4730a] border border-[#f4730a]/30 dark:bg-brand-500/20 dark:text-brand-300 dark:border-brand-500/30">
               Sala Onprotec (Capacidad: 18)
             </span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium">
             Métricas de conversión, aforo, rentabilidad ROI e integración de pagos en tiempo real.
           </p>
         </div>

@@ -34,7 +34,7 @@ export default function CheckinAdminPage() {
   const [filterAttendance, setFilterAttendance] = useState<"all" | "pending" | "attended">("all");
   const [kioskMode, setKioskMode] = useState(false);
   const [printModalOpen, setPrintModalOpen] = useState(false);
-  const [responsableMesa, setResponsableMesa] = useState("Diana Barrero / Rafael Herrera");
+  const [responsableMesa, setResponsableMesa] = useState("Diana Barrero");
   const [coordinadorEvento, setCoordinadorEvento] = useState("Coordinación OnProtec C.A.");
   const [toastMessage, setToastMessage] = useState("");
 
@@ -257,10 +257,10 @@ export default function CheckinAdminPage() {
             <UserCheck className="w-3.5 h-3.5" />
             <span>Control de Asistencia Presencial & Registro en Mesa</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <span>Lista de Asistencia & Check-in en Tiempo Real</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium">
             Toma de asistencia para el día del evento, asignación de carnet físico y generador de formato impreso oficial.
           </p>
         </div>
@@ -271,7 +271,7 @@ export default function CheckinAdminPage() {
           <select
             value={selectedTrainingId || ""}
             onChange={(e) => setSelectedTrainingId(Number(e.target.value))}
-            className="bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a] font-bold max-w-xs truncate"
+            className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a] font-bold max-w-xs truncate shadow-sm"
           >
             {trainings.map((t) => (
               <option key={t.id} value={t.id}>
