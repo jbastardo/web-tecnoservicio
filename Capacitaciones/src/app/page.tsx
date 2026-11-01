@@ -1569,13 +1569,11 @@ export default function HomePage() {
       <footer className="bg-[#2a285c] text-white py-10">
         <div className="max-w-[1640px] mx-auto px-4 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="bg-white px-3.5 py-1.5 rounded-xl shadow-sm">
-              <img
-                src="/brand/onprotec-logo-color.png"
-                alt="OnProtec"
-                className="h-7 w-auto object-contain"
-              />
-            </div>
+            <img
+              src="/brand/onprotec-logo-white.png"
+              alt="OnProtec — La Tienda del Instalador"
+              className="h-8 sm:h-9 w-auto object-contain"
+            />
             <div>
               <p className="text-sm font-black tracking-wide">
                 ONPROTEC® — LA TIENDA DEL INSTALADOR

@@ -104,7 +104,7 @@ export default function SurveyPage() {
       <div className="h-1.5 bg-gradient-to-r from-[#1a1b4b] via-[#e07b29] to-brand-500 w-full" />
 
       <header className="max-w-5xl w-full mx-auto px-4 py-4 flex items-center justify-between">
-        <OnprotecBrand subtitle="Encuesta de Satisfacción Fin de Curso" href="/" />
+        <OnprotecBrand subtitle="Encuesta de Satisfacción Fin de Curso" href="/" variant="dark" />
         <div className="flex items-center gap-2.5">
           <ThemeToggle />
           <Link

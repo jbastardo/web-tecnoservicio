@@ -44,6 +44,24 @@ h1, h2, h3, h4, .font-mont {
   background-position: 0 0, 20px 20px;
 }
 
+/* Swapper automático de Logo según el fondo / tema */
+.onprotec-logo-auto-light {
+  display: block;
+}
+.onprotec-logo-auto-dark {
+  display: none;
+}
+
+html[data-theme="dark"] .onprotec-logo-auto-light,
+.dark .onprotec-logo-auto-light {
+  display: none !important;
+}
+
+html[data-theme="dark"] .onprotec-logo-auto-dark,
+.dark .onprotec-logo-auto-dark {
+  display: block !important;
+}
+
 html[data-theme="dark"] .onprotec-hex-bg {
   background-color: #090d16;
   background-image: radial-gradient(rgba(244, 115, 10, 0.12) 1px, transparent 1px), radial-gradient(rgba(42, 40, 92, 0.25) 1px, #090d16 1px);

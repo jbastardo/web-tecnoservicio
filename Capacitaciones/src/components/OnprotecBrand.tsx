@@ -7,26 +7,44 @@ interface BrandProps {
   subtitle?: string;
   href?: string;
   compact?: boolean;
+  variant?: "auto" | "light" | "dark";
 }
 
 export function OnprotecBrand({
   subtitle = "La Tienda del Instalador · Sala de Capacitaciones",
   href = "/",
   compact = false,
+  variant = "auto",
 }: BrandProps) {
   return (
     <Link href={href} className="flex items-center gap-3 group flex-shrink-0">
-      <div className="relative flex items-center justify-center bg-white dark:bg-slate-900 rounded-xl px-2.5 py-1.5 border border-slate-200/80 dark:border-slate-800 shadow-sm group-hover:border-[#f4730a] transition">
-        <img
-          src="/brand/onprotec-logo-color.png"
-          alt="OnProtec - La Tienda del Instalador"
-          className={`${compact ? "h-6" : "h-7 sm:h-8"} w-auto object-contain dark:hidden`}
-        />
-        <img
-          src="/brand/onprotec-logo-white.png"
-          alt="OnProtec - La Tienda del Instalador"
-          className={`${compact ? "h-6" : "h-7 sm:h-8"} w-auto object-contain hidden dark:block`}
-        />
+      <div className="relative flex items-center justify-center transition">
+        {variant === "dark" ? (
+          <img
+            src="/brand/onprotec-logo-white.png"
+            alt="OnProtec - La Tienda del Instalador"
+            className={`${compact ? "h-6 sm:h-7" : "h-7 sm:h-8"} w-auto object-contain`}
+          />
+        ) : variant === "light" ? (
+          <img
+            src="/brand/onprotec-logo-color.png"
+            alt="OnProtec - La Tienda del Instalador"
+            className={`${compact ? "h-6 sm:h-7" : "h-7 sm:h-8"} w-auto object-contain`}
+          />
+        ) : (
+          <>
+            <img
+              src="/brand/onprotec-logo-color.png"
+              alt="OnProtec - La Tienda del Instalador"
+              className={`${compact ? "h-6 sm:h-7" : "h-7 sm:h-8"} w-auto object-contain onprotec-logo-auto-light`}
+            />
+            <img
+              src="/brand/onprotec-logo-white.png"
+              alt="OnProtec - La Tienda del Instalador"
+              className={`${compact ? "h-6 sm:h-7" : "h-7 sm:h-8"} w-auto object-contain onprotec-logo-auto-dark`}
+            />
+          </>
+        )}
       </div>
       <div className="hidden sm:block">
         <div className="flex items-center gap-1.5">
@@ -34,7 +52,15 @@ export function OnprotecBrand({
             Sala de Capacitaciones
           </span>
         </div>
-        <span className="text-[11px] text-slate-500 block font-semibold leading-tight mt-0.5">
+        <span
+          className={`text-[11px] block font-semibold leading-tight mt-0.5 ${
+            variant === "dark"
+              ? "text-slate-300"
+              : variant === "light"
+              ? "text-slate-500"
+              : "text-slate-500 dark:text-slate-300"
+          }`}
+        >
           {subtitle}
         </span>
       </div>

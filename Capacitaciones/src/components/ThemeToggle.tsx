@@ -12,6 +12,11 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
       const initial = saved || "light";
       setTheme(initial);
       document.documentElement.setAttribute("data-theme", initial);
+      if (initial === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
       const meta = document.querySelector('meta[name="color-scheme"]');
       if (meta) meta.setAttribute("content", initial);
     } catch {
@@ -23,6 +28,11 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
     document.documentElement.setAttribute("data-theme", next);
+    if (next === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
     try {
       localStorage.setItem("onprotec-theme", next);
       const meta = document.querySelector('meta[name="color-scheme"]');

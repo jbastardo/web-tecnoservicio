@@ -113,7 +113,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="h-2 bg-gradient-to-r from-[#1a1b4b] via-[#e07b29] to-brand-500 w-full" />
 
         <header className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <OnprotecBrand subtitle="Portal de Gestión Administrativa · www.onprotec.com" href="/" />
+          <OnprotecBrand subtitle="Portal de Gestión Administrativa · www.onprotec.com" href="/" variant="dark" />
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <Link
@@ -313,7 +313,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <nav className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 sm:px-6 lg:px-8">
         <div className="h-16 flex items-center justify-between gap-3">
           {/* Logo Oficial OnProtec */}
-          <OnprotecBrand subtitle="Gestión Sala (Aforo 18 + 1)" href="/admin" compact />
+          <OnprotecBrand subtitle="Gestión Sala (Aforo 18 + 1)" href="/admin" compact variant="dark" />
 
           {/* Menú de Navegación Horizontal Widescreen */}
           <div className="hidden xl:flex items-center gap-1 overflow-x-auto">
