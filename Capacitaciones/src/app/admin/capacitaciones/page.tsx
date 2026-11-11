@@ -20,6 +20,7 @@ import {
   Star,
   Trash2,
   Upload,
+  UploadCloud,
   Sparkles,
   MessageSquare,
 } from "lucide-react";
@@ -315,6 +316,22 @@ export default function CapacitacionesAdminPage() {
       ...prev,
       formQuestions: [...prev.formQuestions, newQ],
     }));
+  };
+
+  const addPaymentProofQuestion = () => {
+    const newQ: FormQuestion = {
+      id: `proof_q_${Date.now()}`,
+      label: "Adjuntar Comprobante de Pago (Transferencia, Zelle o Pago Móvil)",
+      placeholder: "Foto o PDF del comprobante de pago...",
+      type: "file",
+      options: [],
+      required: true,
+    };
+    setFormData((prev) => ({
+      ...prev,
+      formQuestions: [...prev.formQuestions, newQ],
+    }));
+    notify("Se añadió la sección obligatoria para que el inscrito suba su comprobante de pago.");
   };
 
   const updateFormQuestion = (idx: number, patch: Partial<FormQuestion>) => {
@@ -1228,14 +1245,25 @@ export default function CapacitacionesAdminPage() {
                         puedes redactar las preguntas específicas para este curso.
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={addFormQuestion}
-                      className="onprotec-btn-primary px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-bold flex items-center gap-1.5 flex-shrink-0"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Agregar Pregunta</span>
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={addPaymentProofQuestion}
+                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold flex items-center gap-1.5 flex-shrink-0 shadow-sm transition cursor-pointer"
+                        title="Añadir campo específico para que el participante suba su comprobante de pago"
+                      >
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        <span>+ Comprobante de Pago</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={addFormQuestion}
+                        className="onprotec-btn-primary px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-bold flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Agregar Pregunta</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
@@ -1269,13 +1297,14 @@ export default function CapacitacionesAdminPage() {
                                 onChange={(e) =>
                                   updateFormQuestion(idx, { type: e.target.value as any })
                                 }
-                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white"
+                                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-white font-semibold"
                               >
                                 <option value="text">Texto Corto</option>
                                 <option value="textarea">Párrafo / Comentario</option>
                                 <option value="select">Lista Desplegable</option>
                                 <option value="radio">Selección Única</option>
                                 <option value="checkbox">Casilla Sí / No</option>
+                                <option value="file">📎 Subir Archivo / Comprobante de Pago</option>
                               </select>
                             </div>
                             <div className="sm:col-span-3 flex items-end justify-between gap-2">
@@ -1300,6 +1329,22 @@ export default function CapacitacionesAdminPage() {
                             </div>
                           </div>
                         </div>
+
+                        {q.type === "file" && (
+                          <div className="pl-8 pt-1">
+                            <div className="p-2.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/60 flex items-start gap-2.5 text-xs text-emerald-800 dark:text-emerald-300">
+                              <UploadCloud className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <p className="font-extrabold text-emerald-900 dark:text-emerald-200">
+                                  Zona de Carga de Comprobante de Pago
+                                </p>
+                                <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+                                  El participante podrá arrastrar o adjuntar su comprobante de pago (captura, voucher bancario o PDF de transferencia / Zelle / Pago Móvil) con vista previa instantánea.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {(q.type === "select" || q.type === "radio") && (
                           <div className="pl-8">

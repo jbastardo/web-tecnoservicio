@@ -31,6 +31,9 @@ import {
   Camera,
   Server,
   ChevronRight,
+  UploadCloud,
+  FileCheck,
+  Trash2,
 } from "lucide-react";
 import { FormQuestion } from "@/types";
 import { fmtLocalDate, fmtLocalHour, formatCurrency } from "@/utils/formatUtils";
@@ -66,6 +69,7 @@ export default function HomePage() {
     city: "Caracas",
     paymentMethod: "Pabilo",
     paymentReference: "",
+    paymentProofUrl: "",
     specialNotes: "",
   });
 
@@ -1404,6 +1408,86 @@ export default function HomePage() {
                                   }
                                   className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-white outline-none"
                                 />
+                              ) : q.type === "file" ? (
+                                <div className="space-y-2">
+                                  {customAnswers[q.id] ? (
+                                    <div className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-950 border-2 border-emerald-500/80 shadow-sm">
+                                      <div className="flex items-center gap-2.5 overflow-hidden">
+                                        {customAnswers[q.id].startsWith("data:image/") ? (
+                                          <img
+                                            src={customAnswers[q.id]}
+                                            alt="Comprobante"
+                                            className="w-12 h-12 object-cover rounded-lg border border-slate-200 dark:border-slate-700 flex-shrink-0"
+                                          />
+                                        ) : (
+                                          <div className="w-12 h-12 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 flex items-center justify-center flex-shrink-0">
+                                            <FileCheck className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                                          </div>
+                                        )}
+                                        <div className="text-left truncate">
+                                          <p className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300 truncate">
+                                            Comprobante cargado correctamente
+                                          </p>
+                                          <p className="text-[10px] text-slate-500 truncate">
+                                            Listo para validación de cupo
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const next = { ...customAnswers };
+                                          delete next[q.id];
+                                          setCustomAnswers(next);
+                                          if (form.paymentProofUrl === customAnswers[q.id]) {
+                                            setForm((prev) => ({ ...prev, paymentProofUrl: "" }));
+                                          }
+                                        }}
+                                        className="p-1.5 text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
+                                        title="Eliminar archivo"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-[#f4730a] rounded-xl bg-white dark:bg-slate-950/80 cursor-pointer transition text-center group">
+                                      <UploadCloud className="w-7 h-7 text-slate-400 group-hover:text-[#f4730a] mb-1.5 transition" />
+                                      <span className="text-xs font-extrabold text-slate-700 dark:text-slate-200">
+                                        Haz clic o arrastra para adjuntar comprobante
+                                      </span>
+                                      <span className="text-[10px] text-slate-500 mt-0.5">
+                                        JPG, PNG o PDF (Máximo 8MB)
+                                      </span>
+                                      <input
+                                        type="file"
+                                        accept="image/*,application/pdf"
+                                        required={q.required && !customAnswers[q.id]}
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (!file) return;
+                                          if (file.size > 8 * 1024 * 1024) {
+                                            alert("El archivo excede los 8MB permitidos.");
+                                            return;
+                                          }
+                                          const reader = new FileReader();
+                                          reader.onload = (ev) => {
+                                            const base64 = ev.target?.result as string;
+                                            setCustomAnswers((prev) => ({
+                                              ...prev,
+                                              [q.id]: base64,
+                                            }));
+                                            setForm((prev) => ({
+                                              ...prev,
+                                              paymentProofUrl: base64,
+                                            }));
+                                          };
+                                          reader.readAsDataURL(file);
+                                        }}
+                                      />
+                                    </label>
+                                  )}
+                                </div>
                               ) : (
                                 <input
                                   type="text"
@@ -1459,6 +1543,74 @@ export default function HomePage() {
                             }
                             className="bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-white outline-none"
                           />
+                        </div>
+
+                        {/* Adjuntar Comprobante de Pago directo en Grupo 4 */}
+                        <div className="pt-2 border-t border-amber-200 dark:border-amber-500/20">
+                          <label className="block text-xs font-black text-amber-900 dark:text-amber-200 mb-1.5 flex items-center gap-1.5">
+                            <UploadCloud className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                            Adjuntar Comprobante de Pago (Voucher / Captura / PDF)
+                          </label>
+                          {form.paymentProofUrl ? (
+                            <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-400 dark:border-emerald-600 shadow-sm">
+                              <div className="flex items-center gap-2 overflow-hidden">
+                                {form.paymentProofUrl.startsWith("data:image/") ? (
+                                  <img
+                                    src={form.paymentProofUrl}
+                                    alt="Comprobante"
+                                    className="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700 flex-shrink-0"
+                                  />
+                                ) : (
+                                  <FileCheck className="w-8 h-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                )}
+                                <div className="text-left truncate">
+                                  <p className="text-xs font-black text-emerald-700 dark:text-emerald-300 truncate">
+                                    Comprobante adjuntado
+                                  </p>
+                                  <p className="text-[10px] text-slate-500 truncate">
+                                    Listo para verificación administrativa
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setForm({ ...form, paymentProofUrl: "" })}
+                                className="p-1.5 text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
+                                title="Eliminar comprobante"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="flex flex-col items-center justify-center p-3 border-2 border-dashed border-amber-300 dark:border-amber-500/40 hover:border-amber-500 rounded-xl bg-white/70 dark:bg-slate-900/60 hover:bg-white dark:hover:bg-slate-900 cursor-pointer transition text-center group">
+                              <UploadCloud className="w-5 h-5 text-amber-600 dark:text-amber-400 mb-1 group-hover:scale-110 transition-transform" />
+                              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                Clic o arrastra para subir captura o comprobante
+                              </span>
+                              <span className="text-[10px] text-slate-500 mt-0.5">
+                                JPG, PNG o PDF (Máx 8MB)
+                              </span>
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  if (file.size > 8 * 1024 * 1024) {
+                                    alert("El archivo excede los 8MB permitidos.");
+                                    return;
+                                  }
+                                  const reader = new FileReader();
+                                  reader.onload = (ev) => {
+                                    const base64 = ev.target?.result as string;
+                                    setForm((prev) => ({ ...prev, paymentProofUrl: base64 }));
+                                  };
+                                  reader.readAsDataURL(file);
+                                }}
+                              />
+                            </label>
+                          )}
                         </div>
                       </div>
                     )}

@@ -25,13 +25,13 @@ export type PaymentCurrency = "USD" | "BS";
 
 export type PabiloStatus = "pending" | "approved" | "rejected" | "manual";
 
-export type QuestionFieldType = "text" | "textarea" | "select" | "radio" | "checkbox" | "rating" | "nps";
+export type QuestionFieldType = "text" | "textarea" | "select" | "radio" | "checkbox" | "file" | "rating" | "nps";
 
 export interface FormQuestion {
   id: string;
   label: string;
   placeholder?: string;
-  type: "text" | "textarea" | "select" | "radio" | "checkbox";
+  type: "text" | "textarea" | "select" | "radio" | "checkbox" | "file";
   options?: string[]; // Para select / radio
   required: boolean;
 }

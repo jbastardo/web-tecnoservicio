@@ -395,9 +395,35 @@ export default function ParticipantesAdminPage() {
                             key={k}
                             className="text-[10px] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-medium"
                           >
-                            <strong>{k}:</strong> {String(v)}
+                            <strong>{k}:</strong>{" "}
+                            {typeof v === "string" && v.startsWith("data:") ? (
+                              <a
+                                href={v}
+                                target="_blank"
+                                rel="noreferrer"
+                                download={`adjunto-${part.trainingCode}.png`}
+                                className="text-cyan-600 dark:text-cyan-400 font-bold underline"
+                              >
+                                📎 Ver Archivo / Comprobante
+                              </a>
+                            ) : (
+                              String(v)
+                            )}
                           </span>
                         ))}
+                      </div>
+                    )}
+                    {part.paymentProofUrl && (
+                      <div className="pt-1">
+                        <a
+                          href={part.paymentProofUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          download={part.paymentProofUrl.startsWith("data:") ? `comprobante-${part.trainingCode}.png` : undefined}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 px-2 py-0.5 rounded hover:underline"
+                        >
+                          📎 Comprobante de Pago
+                        </a>
                       </div>
                     )}
                   </div>

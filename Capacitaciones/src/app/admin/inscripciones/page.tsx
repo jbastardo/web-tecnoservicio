@@ -404,9 +404,10 @@ export default function InscripcionesAdminPage() {
                             href={r.paymentProofUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-300 bg-brand-950/60 border border-brand-800/60 px-2 py-0.5 rounded hover:underline"
+                            download={r.paymentProofUrl.startsWith("data:") ? `comprobante-${r.code}.png` : undefined}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded hover:underline"
                           >
-                            📎 Comprobante Drive
+                            📎 Ver Comprobante
                           </a>
                         ) : r.paymentReference ? (
                           <span className="font-mono text-[11px] text-slate-400">{r.paymentReference}</span>
@@ -853,16 +854,36 @@ export default function InscripcionesAdminPage() {
                     </div>
 
                     {viewingDetailsReg.paymentProofUrl && (
-                      <div className="col-span-2">
-                        <a
-                          href={viewingDetailsReg.paymentProofUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs font-bold text-cyan-400 hover:underline"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          <span>Ver Comprobante de Pago Adjunto (Google Drive)</span>
-                        </a>
+                      <div className="col-span-2 p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold uppercase text-slate-400">
+                            Comprobante de Pago Adjunto
+                          </span>
+                          <a
+                            href={viewingDetailsReg.paymentProofUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            download={viewingDetailsReg.paymentProofUrl.startsWith("data:") ? `comprobante-${viewingDetailsReg.code}.png` : undefined}
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-cyan-400 hover:underline"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span>Abrir / Descargar</span>
+                          </a>
+                        </div>
+                        {viewingDetailsReg.paymentProofUrl.startsWith("data:image/") ? (
+                          <div className="relative group max-w-xs rounded-lg overflow-hidden border border-slate-700 bg-black/40">
+                            <img
+                              src={viewingDetailsReg.paymentProofUrl}
+                              alt="Comprobante de pago"
+                              className="max-h-48 w-auto object-contain mx-auto"
+                            />
+                          </div>
+                        ) : (
+                          <div className="p-2 rounded bg-slate-900 text-xs text-slate-300 flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                            <span className="truncate">{viewingDetailsReg.paymentProofUrl.slice(0, 60)}...</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

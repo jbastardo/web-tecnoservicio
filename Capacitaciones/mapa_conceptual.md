@@ -263,3 +263,11 @@ Atendiendo los requerimientos operativos de Coordinación de Sala (Diana Barrero
 7. **Corrección de Legibilidad en Panel Administrativo (Modo Claro) y Ajuste de Personal:**
    * **Legibilidad en Modo Claro:** Se eliminaron las clases de bajo contraste en `/admin/participantes`, `/admin/inscripciones`, `/admin/checkin` y `/admin/capacitaciones`. Títulos, nombres de participantes, cédulas, empresas y teléfonos ahora se muestran en tonos oscuros de alto contraste (`#0f172a`, `#1e293b`, `#0e5cd7`) sobre fondos claros, y los badges de estado (`Asistió`, `Confirmado`, `Prospecto Virgen`) utilizan fondos pastel con tipografía saturada de alta legibilidad.
    * **Depuración de Personal:** Se eliminó cualquier referencia a "Rafael Herrera", asignando la responsabilidad de coordinación y registro en mesa directamente a **Diana Barrero / Coordinación de Sala**.
+
+8. **Subida y Gestión de Comprobantes de Pago (Archivos / Vouchers en Formulario Dinámico y Registro Express):**
+   * **Constructor de Preguntas (`/admin/capacitaciones`):** Soporte nativo para preguntas de tipo `file` ("📎 Subir Archivo / Comprobante de Pago") con botón de 1 clic `+ Comprobante de Pago` en la pestaña 3.
+   * **Formulario Público (`src/app/page.tsx`):**
+     * Área interactiva con arrastrar y soltar (drag & drop) o selector de archivos para comprobantes (JPG, PNG, WEBP, PDF hasta 8MB) que genera vista previa instantánea con botón de eliminación.
+     * Disponible tanto en preguntas personalizadas dinámicas de tipo `file` como en el "Grupo 4: Reporte de Pago" para capacitaciones pagas.
+   * **Visualización Administrativa (`/admin/inscripciones` y `/admin/participantes`):**
+     * Tabla y modal de detalle permiten previsualizar miniaturas en tiempo real y abrir/descargar el voucher adjunto con un solo clic.
