@@ -129,7 +129,34 @@ export async function POST(request: Request) {
     );
     const isWaitlist = activeRegs.length >= effectiveCapacity;
 
-    // 2. Registrar o actualizar el participante en el CRM
+    // 2. Validación Anti-Duplicados: Evitar que el mismo documento (CI / RIF) se inscriba varias veces en la misma capacitación
+    const cleanDoc = docNumber ? String(docNumber).replace(/\D/g, "") : "";
+    const cleanEmail = email ? String(email).trim().toLowerCase() : "";
+
+    const alreadyRegistered = initialRegistrations.some((r) => {
+      if (Number(r.trainingId) !== Number(training.id)) return false;
+      if (r.status === "Cancelado") return false;
+      const part = initialParticipants.find((p) => Number(p.id) === Number(r.participantId));
+      if (!part) return false;
+      const partDoc = part.docNumber ? String(part.docNumber).replace(/\D/g, "") : "";
+      const partEmail = part.email ? String(part.email).trim().toLowerCase() : "";
+      return (
+        (cleanDoc && partDoc && cleanDoc === partDoc) ||
+        (cleanEmail && partEmail && cleanEmail === partEmail)
+      );
+    });
+
+    if (alreadyRegistered) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `El documento de identidad (${docType}-${docNumber}) o correo electrónico ya se encuentra registrado en esta capacitación. Si necesitas verificar tu estatus, comunícate con Diana al WhatsApp de OnProtec.`,
+        },
+        { status: 409 }
+      );
+    }
+
+    // 3. Registrar o actualizar el participante en el CRM
     let participant = initialParticipants.find(
       (p) =>
         (p.docNumber && p.docNumber.replace(/\D/g, "") === String(docNumber).replace(/\D/g, "")) ||
@@ -237,8 +264,8 @@ export async function POST(request: Request) {
         message: isWaitlist
           ? `El cupo de convocatoria (${effectiveCapacity} registrados) está completo. Has sido registrado en la Lista de Espera prioritaria.`
           : isPaidEvent
-          ? "Reserva de cupo registrada exitosamente en Sala VIP. Verificaremos tu comprobante de pago."
-          : "Pre-inscripción registrada con éxito. Nuestro equipo te contactará para reconfirmar tu puesto en sala.",
+          ? "¡Inscripción Formalmente Registrada! Tu cupo en la Sala VIP (aforo de 18 puestos) ha quedado reservado al reportar tu pago. Diana te contactará en breve con los detalles finales de acceso."
+          : "¡Pre-inscripción Recibida con Éxito! Tu solicitud ha sido registrada correctamente. Realizamos una preselección de asistentes para garantizar la rotación de participantes en sala. Diana se comunicará contigo vía WhatsApp para confirmar tu invitación formal.",
         data: {
           ...newRegistration,
           participant: {

@@ -91,18 +91,26 @@ flowchart TD
 
 ## 4. Detalle por Módulos y Lógica de Negocio
 
-### A. Control de Aforo y Gestión de Cupos (Sala Onprotec Torre América)
-* **Sede Oficial y Ubicación:** **Torre América, Piso 14, Urbanización El Recreo, Caracas, Venezuela**. La ubicación es editable por evento desde el formulario de creación/edición de capacitaciones.
+### A. Control de Aforo, Privacidad y Gestión de Cupos
+* **Sede Oficial y Política de Privacidad de Ubicación:**
+  * **Ubicación Física Real:** **Torre América, Piso 14, Urbanización El Recreo, Caracas, Venezuela** (gestionable y editable en panel privado).
+  * **Resguardo Público:** En la landing page pública **se oculta la dirección exacta y piso** para prevenir la llegada de personas no inscritas ni invitadas. Se presenta como *"Sede Corporativa OnProtec (Caracas)"*, informando al usuario que la dirección detallada y coordenadas se despachan por WhatsApp tras confirmar su invitación o pago.
 * **Aforo Físico de Sala:** Capacidad física máxima estricta de **18 puestos para participantes** y **1 puesto para el instructor**.
 * **Lógica Dual de Aforo OnProtec (Gratuito vs. Cobrado):**
   1. **Presentaciones Gratuitas (`isFree = true`):**
      * Meta de pre-inscripción ampliada de **30 hasta 40 participantes**.
      * Esta holgura permite al equipo de OnProtec (Diana) contactar y reconfirmar telefónicamente a los **18 asistentes presenciales finales**, mitigando el No-Show habitual de los eventos sin costo.
      * Solo si la pre-inscripción supera los 40 registros entra en estado **`Lista de Espera`**.
+     * **Confirmación Post-Envío:** Informa claramente que el participante está **Pre-inscrito**, explicando que se realiza una preselección de asistentes para garantizar la rotación y diversidad de técnicos en sala antes de remitir la invitación formal.
   2. **Actividades Cobradas / Pagas (`isFree = false` o `price > 0`):**
      * Aforo estricto de **solo 18 puestos VIP garantizados**.
      * Exige método de pago, referencia de transacción y **zona de carga de comprobante de pago (voucher/captura/PDF)**.
-     * Al alcanzar 18 inscritos confirmados/pagados, el registro pasa automáticamente a **`Lista de Espera`**.
+     * **Métodos de Pago Expresados:** La lista de métodos de pago en el formulario solo exhibe los expresamente configurados para ese curso.
+     * **Confirmación Post-Envío:** Notifica de inmediato que el participante está **Formalmente Inscrito** con cupo VIP asegurado.
+* **Validación Anti-Duplicados:**
+  * El sistema valida mediante normalización de caracteres que ningún número de Cédula o RIF (o correo electrónico) se registre más de una vez en la misma capacitación activa. Retorna error `409 Conflict` con indicaciones claras para contactar a Diana vía WhatsApp si requiere gestionar su registro.
+* **Sección de Preguntas del Formulario 100% Editable:**
+  * El título y la descripción de la sección técnica del formulario público son completamente editables por curso desde la pestaña de preguntas del panel administrativo (`formQuestionsTitle` y `formQuestionsDescription`).
 * **Condición de Sobrecupo y Lista de Espera:**
   $$\text{Ocupación Activa} = \text{Inscritos} + \text{Confirmados} + \text{Asistió}$$
   * Si $\text{Ocupación Activa} < \text{Capacidad Efectiva}$ (18 para pagos, 40 para gratuitos): Estado **`Inscrito`**.

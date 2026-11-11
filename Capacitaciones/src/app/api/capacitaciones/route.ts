@@ -48,6 +48,9 @@ function enrichTraining(t: any) {
         : defaultSurveyQuestions,
     coverPhotos: Array.isArray(t.coverPhotos) ? t.coverPhotos : t.coverImageUrl ? [t.coverImageUrl] : [],
     location: t.location || "Torre América, Piso 14, Urb. El Recreo, Caracas",
+    formQuestionsTitle: t.formQuestionsTitle || "Preguntas Específicas del Curso",
+    formQuestionsDescription: t.formQuestionsDescription || null,
+    paymentMethods: Array.isArray(t.paymentMethods) ? t.paymentMethods : [],
     stats: {
       confirmedCount,
       registeredCount,
@@ -123,6 +126,9 @@ export async function POST(request: Request) {
       surveyQuestions,
       location,
       isFree,
+      formQuestionsTitle,
+      formQuestionsDescription,
+      paymentMethods,
     } = body;
 
     if (!name || !instructor || !eventDate) {
@@ -184,6 +190,9 @@ export async function POST(request: Request) {
           ? surveyQuestions
           : defaultSurveyQuestions,
       location: location || "Torre América, Piso 14, Urb. El Recreo, Caracas",
+      formQuestionsTitle: formQuestionsTitle || "Preguntas Específicas del Curso",
+      formQuestionsDescription: formQuestionsDescription || null,
+      paymentMethods: Array.isArray(paymentMethods) ? paymentMethods : [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -265,6 +274,9 @@ export async function PUT(request: Request) {
       coverImageUrl: primaryCover,
       coverPhotos: photosList,
       ...(body.location !== undefined && { location: body.location }),
+      ...(body.formQuestionsTitle !== undefined && { formQuestionsTitle: body.formQuestionsTitle }),
+      ...(body.formQuestionsDescription !== undefined && { formQuestionsDescription: body.formQuestionsDescription }),
+      ...(body.paymentMethods !== undefined && { paymentMethods: body.paymentMethods }),
       ...(body.formQuestions !== undefined && { formQuestions: body.formQuestions }),
       ...(body.surveyQuestions !== undefined && {
         surveyQuestions: body.surveyQuestions,

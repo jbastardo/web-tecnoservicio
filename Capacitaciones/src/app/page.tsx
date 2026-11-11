@@ -65,6 +65,8 @@ export default function HomePage() {
   const [submitting, setSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState<any | null>(null);
 
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+
   useEffect(() => {
     fetch("/api/capacitaciones?order=desc")
       .then((res) => res.json())
@@ -85,6 +87,7 @@ export default function HomePage() {
   useEffect(() => {
     setCustomAnswers({});
     setSubmissionResult(null);
+    setShowConfirmationModal(false);
   }, [selectedTraining?.id]);
 
   const scrollToSection = (id: string) => {
@@ -129,6 +132,7 @@ export default function HomePage() {
       setSubmissionResult(data);
 
       if (data.success) {
+        setShowConfirmationModal(true);
         // Refrescar cupos
         const refreshRes = await fetch("/api/capacitaciones?order=desc");
         const refreshed = await refreshRes.json();
@@ -139,12 +143,16 @@ export default function HomePage() {
           );
           if (updatedSelected) setSelectedTraining(updatedSelected);
         }
+      } else {
+        // En caso de duplicado o error, scrollear suavemente al formulario para ver la alerta
+        scrollToSection("registro-express");
       }
     } catch (err: any) {
       setSubmissionResult({
         success: false,
         error: "Error de red al procesar tu inscripción. Por favor intenta de nuevo.",
       });
+      scrollToSection("registro-express");
     } finally {
       setSubmitting(false);
     }
@@ -168,6 +176,42 @@ export default function HomePage() {
     ? selectedTraining.formQuestions
     : [];
 
+  // Métodos de pago permitidos expresados para este curso
+  const explicitMethods =
+    Array.isArray(selectedTraining?.paymentMethods) && selectedTraining.paymentMethods.length > 0
+      ? selectedTraining.paymentMethods
+      : [];
+
+  const paymentQuestion = activeFormQuestions.find((q) =>
+    /pago|método|metodo|forma de pago/i.test(q.label) && Array.isArray(q.options) && q.options.length > 0
+  );
+  const questionMethods = paymentQuestion && paymentQuestion.options ? paymentQuestion.options : [];
+
+  const allowedPaymentMethods: string[] =
+    explicitMethods.length > 0
+      ? explicitMethods
+      : questionMethods.length > 0
+      ? questionMethods
+      : [
+          "Pago Móvil (Pabilo)",
+          "Zelle USD",
+          "Binance Pay (USDT)",
+          "Transferencia Bancaria Bs",
+          "Efectivo en Tienda OnProtec",
+        ];
+
+  // Preguntas dinámicas para la sección 2 (omitiendo la pregunta de pago si ya se seleccionó en el bloque de cobro)
+  const displayFormQuestions = activeFormQuestions.filter(
+    (q) => !/método de pago|metodo de pago|forma de pago/i.test(q.label)
+  );
+
+  // Sincronizar el método de pago por defecto si no es parte de la lista permitida
+  useEffect(() => {
+    if (allowedPaymentMethods.length > 0 && !allowedPaymentMethods.includes(form.paymentMethod)) {
+      setForm((prev) => ({ ...prev, paymentMethod: allowedPaymentMethods[0] }));
+    }
+  }, [selectedTraining?.id, allowedPaymentMethods.length]);
+
   const openTrainings = trainings.filter(
     (t) => t.status === "Planificado" || t.status === "En Publicidad"
   );
@@ -175,19 +219,23 @@ export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#f8f9fc] dark:bg-[#0b0e17] text-[#1a1c29] dark:text-slate-100 transition-colors duration-200">
       {/* =====================================================================
-          1. CINTILLO OFICIAL ONPROTEC (SEDE TORRE AMÉRICA PISO 14, EL RECREO)
+          1. CINTILLO OFICIAL ONPROTEC (SEDE PRIVADA CORPORATIVA CARACAS)
       ===================================================================== */}
-      <div className="w-full bg-[#f4730a] text-white py-2 px-4 text-center text-[11px] sm:text-xs font-black tracking-wider uppercase shadow-sm">
+      <div className="w-full bg-[#f4730a] text-white py-2.5 px-4 text-center text-[11px] sm:text-xs font-black tracking-wider uppercase shadow-sm">
         <div className="max-w-[1580px] mx-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
           <span className="flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-            SEDE OFICIAL: TORRE AMÉRICA, PISO 14, URB. EL RECREO, CARACAS
+            <Lock className="w-3.5 h-3.5 flex-shrink-0" />
+            SEDE CORPORATIVA ONPROTEC (CARACAS) • ACCESO EXCLUSIVO CON PREVIA INVITACIÓN / CONFIRMACIÓN
           </span>
           <span className="hidden md:inline opacity-60">•</span>
-          <span className="hidden sm:inline-flex items-center gap-1.5 bg-black/15 px-2.5 py-0.5 rounded-full">
-            <Sparkles className="w-3.5 h-3.5" />
-            SALA VIP ONPROTEC® — AFORO EXCLUSIVO 18 PARTICIPANTES HANDS-ON
-          </span>
+          <button
+            type="button"
+            onClick={() => scrollToSection("registro-express")}
+            className="inline-flex items-center gap-1.5 bg-black/20 hover:bg-black/40 px-3 py-0.5 rounded-full transition cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#fdff00]" />
+            <span className="underline font-bold">👉 Clic aquí para Inscribirte en Sala VIP</span>
+          </button>
         </div>
       </div>
 
@@ -203,8 +251,8 @@ export default function HomePage() {
                 SALA DE CAPACITACIONES
               </span>
               <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-[#f4730a]" />
-                Torre América, Piso 14, El Recreo
+                <Lock className="w-3 h-3 text-[#f4730a]" />
+                Sede OnProtec Caracas (Acceso Privado)
               </span>
             </div>
           </div>
@@ -254,8 +302,8 @@ export default function HomePage() {
                 SALA TÉCNICA VIP
               </span>
               <span className="text-xs font-extrabold text-[#2a285c] dark:text-slate-200 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-[#f4730a]" />
-                Torre América, Piso 14, Urbanización El Recreo, Caracas
+                <Lock className="w-3.5 h-3.5 text-[#f4730a]" />
+                Sede Corporativa OnProtec Caracas (Acceso Exclusivo con Invitación)
               </span>
             </div>
 
@@ -270,23 +318,35 @@ export default function HomePage() {
             </div>
 
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 font-medium leading-relaxed max-w-3xl">
-              Nuestra sala de capacitaciones corporativa en la{" "}
-              <strong className="text-[#2a285c] dark:text-white font-bold">
-                Torre América (Piso 14, El Recreo)
-              </strong>{" "}
-              está diseñada para dominar tecnologías de CCTV, Redes, Control de Acceso y Energía con{" "}
+              Nuestra sala de capacitaciones corporativa en Caracas está equipada con tecnología de punta para dominar tecnologías de CCTV, Redes, Control de Acceso y Energía con{" "}
               <strong className="text-[#f4730a]">equipos reales energizados en vivo</strong>. Aforo VIP limitado a 18 puestos de trabajo individuales para máxima interacción con instructores certificados.
             </p>
+
+            {/* CTA GIGANTE DE ALTA VISIBILIDAD PARA ENCONTRAR LA INSCRIPCIÓN AL INSTANTE */}
+            <div className="pt-2 flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                onClick={() => scrollToSection("registro-express")}
+                className="inline-flex items-center gap-3 bg-[#f4730a] hover:bg-[#ef7922] text-white text-sm sm:text-base font-black uppercase tracking-wider px-7 py-4 rounded-2xl shadow-xl shadow-[#f4730a]/35 hover:shadow-2xl hover:shadow-[#f4730a]/50 hover:-translate-y-0.5 transition-all cursor-pointer animate-pulse hover:animate-none"
+              >
+                <span>✍️ ¡Completar Formulario de Inscripción Ahora!</span>
+                <ArrowRight className="w-5 h-5" />
+              </button>
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-[#f4730a]" />
+                <span>Cupos limitados por aforo técnico individual</span>
+              </div>
+            </div>
 
             {/* 3 Insignias de Prestigio */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 max-w-3xl">
               <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/10 text-[#f4730a] flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-5 h-5" />
+                  <Lock className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">Torre América, Piso 14</p>
-                  <p className="text-[11px] text-slate-500">Urb. El Recreo, Caracas</p>
+                  <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">Sede Corporativa Caracas</p>
+                  <p className="text-[11px] text-slate-500">Piso y coordenadas enviados tras confirmación</p>
                 </div>
               </div>
 
@@ -408,13 +468,11 @@ export default function HomePage() {
                           📍 Sede Presencial
                         </span>
                         <p className="text-sm font-black text-[#2a285c] dark:text-white flex items-center gap-1">
-                          <MapPin className="w-4 h-4 text-[#f4730a] flex-shrink-0" />
-                          <span>
-                            {selectedTraining.location || "Torre América, Piso 14, Urb. El Recreo, Caracas"}
-                          </span>
+                          <Lock className="w-4 h-4 text-[#f4730a] flex-shrink-0" />
+                          <span>Sede Corporativa OnProtec (Caracas)</span>
                         </p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">
-                          Sala de Capacitaciones OnProtec®
+                        <p className="text-[10px] text-slate-500 mt-1 leading-snug">
+                          🔒 Dirección exacta y piso se suministran vía WhatsApp/correo a participantes confirmados.
                         </p>
                       </div>
                     </div>
@@ -532,8 +590,8 @@ export default function HomePage() {
                       {selectedTraining ? fmtLocalDate(selectedTraining.eventDate || selectedTraining.startDate) : ""}
                     </span>
                     <span className="flex items-center gap-1 text-[11px] text-slate-300">
-                      <MapPin className="w-3.5 h-3.5 text-[#f4730a]" />
-                      Torre América, Piso 14
+                      <Lock className="w-3.5 h-3.5 text-[#f4730a]" />
+                      Sede OnProtec Caracas (Acceso Privado)
                     </span>
                   </div>
                 </div>
@@ -651,15 +709,22 @@ export default function HomePage() {
                           />
                         </div>
 
-                        {/* GRUPO 2: PREGUNTAS TÉCNICAS DEL CURSO */}
-                        {activeFormQuestions.length > 0 && (
+                        {/* GRUPO 2: PREGUNTAS ESPECÍFICAS DE LA CAPACITACIÓN (TOTALMENTE EDITABLE) */}
+                        {displayFormQuestions.length > 0 && (
                           <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
-                            <label className="block text-xs font-black uppercase tracking-wider text-[#2a285c] dark:text-slate-200">
-                              2. Perfil Técnico para el Instructor ({activeFormQuestions.length})
-                            </label>
+                            <div>
+                              <label className="block text-xs font-black uppercase tracking-wider text-[#2a285c] dark:text-slate-200">
+                                2. {selectedTraining?.formQuestionsTitle || "Preguntas Específicas del Curso"} ({displayFormQuestions.length})
+                              </label>
+                              {selectedTraining?.formQuestionsDescription && (
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                                  {selectedTraining.formQuestionsDescription}
+                                </p>
+                              )}
+                            </div>
 
                             <div className="space-y-2.5 bg-slate-50 dark:bg-slate-900/90 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800">
-                              {activeFormQuestions.map((q) => (
+                              {displayFormQuestions.map((q) => (
                                 <div key={q.id}>
                                   <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
                                     {q.label} {q.required && <span className="text-[#f4730a]">*</span>}
@@ -762,11 +827,11 @@ export default function HomePage() {
                                 onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
                                 className="bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white outline-none"
                               >
-                                <option value="Pabilo">Pago Móvil (Pabilo)</option>
-                                <option value="Zelle">Zelle USD</option>
-                                <option value="Binance">Binance Pay (USDT)</option>
-                                <option value="Transferencia">Transferencia Bancaria Bs</option>
-                                <option value="Efectivo">Efectivo en Tienda OnProtec</option>
+                                {allowedPaymentMethods.map((m) => (
+                                  <option key={m} value={m}>
+                                    {m}
+                                  </option>
+                                ))}
                               </select>
 
                               <input
@@ -878,7 +943,7 @@ export default function HomePage() {
               ¿Por qué formarte en la Sala VIP OnProtec?
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2">
-              Diseñamos un entorno corporativo en Torre América (Piso 14, El Recreo) para que el aprendizaje sea 100% práctico y aplicable a proyectos reales.
+              Diseñamos un entorno corporativo exclusivo en nuestra sede de Caracas para que el aprendizaje sea 100% práctico y aplicable a proyectos reales.
             </p>
           </div>
 
@@ -903,7 +968,7 @@ export default function HomePage() {
                 Aforo Exclusivo de 18 Puestos
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                Garantizamos atención personalizada del ponente en un ambiente climatizado, cómodo y profesional ubicado en el Piso 14 de la Torre América.
+                Garantizamos atención personalizada del ponente en un ambiente corporativo climatizado, cómodo y profesional.
               </p>
             </div>
 
@@ -953,8 +1018,8 @@ export default function HomePage() {
               OnProtec® | Sala de Capacitaciones — La Tienda del Instalador
             </p>
             <p className="text-xs text-slate-300 flex items-center justify-center md:justify-start gap-1.5 keep-white">
-              <MapPin className="w-3.5 h-3.5 text-[#f4730a]" />
-              Torre América, Piso 14, Urbanización El Recreo, Caracas, Venezuela.
+              <Lock className="w-3.5 h-3.5 text-[#f4730a]" />
+              Sede Corporativa OnProtec • Caracas, Venezuela (Acceso exclusivo con invitación confirmada).
             </p>
             <p className="text-[11px] text-slate-400">
               RIF: J-40685449-2 • Contacto: ventas@onprotec.com | WhatsApp: +58 412 9635648
@@ -980,6 +1045,152 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* =====================================================================
+          8. BOTÓN FLOTANTE STICKY PARA MÓVIL (FÁCIL ACCESO A INSCRIPCIÓN)
+      ===================================================================== */}
+      <div className="lg:hidden fixed bottom-4 left-4 right-4 z-40">
+        <button
+          type="button"
+          onClick={() => scrollToSection("registro-express")}
+          className="w-full bg-[#f4730a] hover:bg-[#ef7922] text-white font-black py-3.5 px-4 rounded-2xl shadow-2xl shadow-[#f4730a]/40 flex items-center justify-center gap-2 text-sm uppercase tracking-wider transition-all"
+        >
+          <span>✍️ Inscribirme en la Capacitación</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* =====================================================================
+          9. MODAL EJECUTIVO DE CONFIRMACIÓN POST-ENVÍO (PAGAS VS. GRATUITAS)
+      ===================================================================== */}
+      {showConfirmationModal && submissionResult?.success && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="bg-white dark:bg-[#13182b] border-2 border-slate-300 dark:border-slate-700 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            {/* Header del Modal según si es cobrada o gratuita */}
+            {isPaidCourse ? (
+              <div className="text-center space-y-3">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center shadow-inner">
+                  <CheckCircle2 className="w-10 h-10" />
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40">
+                  ✓ FORMALMENTE INSCRITO • CUPO VIP GARANTIZADO
+                </span>
+                <h3 className="text-2xl font-black text-[#2a285c] dark:text-white">
+                  ¡Inscripción Formalmente Confirmada!
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                  Hemos recibido tus datos y tu reporte de pago exitosamente. Tu cupo en la Sala VIP (aforo estricto de 18 puestos) ha quedado reservado y formalmente garantizado al reportar tu comprobante.
+                </p>
+                <div className="p-3.5 bg-emerald-50/80 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl text-left text-xs space-y-1">
+                  <p className="font-extrabold text-emerald-900 dark:text-emerald-200">
+                    ¿Qué sigue a continuación?
+                  </p>
+                  <p className="text-emerald-800 dark:text-emerald-300 text-[11px] leading-snug">
+                    Nuestro equipo verificará el comprobante de pago. Diana se comunicará contigo vía WhatsApp en breve para confirmar los detalles finales y enviarte las instrucciones privadas de acceso a la sala.
+                  </p>
+                </div>
+              </div>
+            ) : submissionResult.isWaitlist ? (
+              <div className="text-center space-y-3">
+                <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center">
+                  <Clock className="w-10 h-10" />
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300">
+                  🟠 REGISTRADO EN LISTA DE ESPERA
+                </span>
+                <h3 className="text-2xl font-black text-[#2a285c] dark:text-white">
+                  Convocatoria al Límite
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                  La convocatoria para esta capacitación ha alcanzado su capacidad máxima. Has quedado registrado con prioridad en nuestra Lista de Espera.
+                </p>
+                <div className="p-3.5 bg-amber-50/80 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-2xl text-left text-xs">
+                  <p className="text-amber-800 dark:text-amber-300 text-[11px] leading-snug">
+                    Si algún participante cancela su asistencia o se abre una nueva fecha, Diana te contactará prioritariamente.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center space-y-3">
+                <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-500/20 text-[#f4730a] mx-auto flex items-center justify-center shadow-inner">
+                  <Sparkles className="w-10 h-10" />
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-orange-100 text-orange-900 border border-orange-300 dark:bg-orange-500/20 dark:text-orange-300 dark:border-orange-500/40">
+                  📋 PRE-INSCRIPCIÓN REGISTRADA • EN PRESELECCIÓN
+                </span>
+                <h3 className="text-2xl font-black text-[#2a285c] dark:text-white">
+                  ¡Pre-inscripción Recibida con Éxito!
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                  Tus datos han sido registrados en nuestro sistema de convocatoria. En OnProtec realizamos una preselección de los asistentes para asegurar la rotación de participantes y permitir que nuevos instaladores e integradores aprovechen los cupos en sala.
+                </p>
+                <div className="p-3.5 bg-orange-50/80 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 rounded-2xl text-left text-xs space-y-1.5">
+                  <p className="font-extrabold text-[#2a285c] dark:text-white">
+                    Próximo Paso:
+                  </p>
+                  <p className="text-slate-700 dark:text-slate-300 text-[11px] leading-snug">
+                    Pronto serás contactado por Diana vía WhatsApp para confirmar tu invitación formal con mayores detalles.
+                  </p>
+                  <p className="text-[11px] text-[#f4730a] font-bold flex items-center gap-1">
+                    <Lock className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>La dirección exacta y piso de la sede corporativa se suministrarán únicamente a los participantes con invitación formal confirmada.</span>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Ficha Resumen del Registro */}
+            <div className="mt-4 p-3 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs space-y-1.5 font-medium">
+              <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-[11px]">
+                <span>Nro. de Registro:</span>
+                <strong className="font-mono text-slate-800 dark:text-white">
+                  #{submissionResult.data?.id || "N/A"}
+                </strong>
+              </div>
+              <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-[11px]">
+                <span>Participante:</span>
+                <strong className="text-slate-800 dark:text-white">{form.name} ({form.docType}-{form.docNumber})</strong>
+              </div>
+              <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-[11px]">
+                <span>Capacitación:</span>
+                <strong className="text-slate-800 dark:text-white truncate max-w-[240px]">
+                  {selectedTraining?.code} • {selectedTraining?.name}
+                </strong>
+              </div>
+              <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-[11px]">
+                <span>Fecha del Evento:</span>
+                <strong className="text-[#f4730a]">
+                  {selectedTraining ? fmtLocalDate(selectedTraining.eventDate) : ""}
+                </strong>
+              </div>
+            </div>
+
+            {/* Acciones */}
+            <div className="mt-5 space-y-2">
+              <a
+                href={`https://wa.me/584129635648?text=${encodeURIComponent(
+                  `Hola Diana, acabo de completar mi ${
+                    isPaidCourse ? "inscripción" : "pre-inscripción"
+                  } para la capacitación ${selectedTraining?.code} - ${selectedTraining?.name}. Mi nombre es ${form.name} (CI: ${form.docType}-${form.docNumber}).`
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition"
+              >
+                <Phone className="w-4 h-4" />
+                <span>Contactar a Diana por WhatsApp</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowConfirmationModal(false)}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition"
+              >
+                Aceptar y Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

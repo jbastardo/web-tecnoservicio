@@ -84,6 +84,9 @@ export interface Training {
   surveyQuestions?: SurveyQuestion[]; // Preguntas de la encuesta al final del curso
   location?: string | null; // Sede / Ubicación del evento (editable)
   isFree?: boolean; // Flag explícito de gratuidad / pago
+  formQuestionsTitle?: string | null; // Título personalizado de la sección de preguntas técnicas/específicas
+  formQuestionsDescription?: string | null; // Descripción o instrucción editable de la sección de preguntas
+  paymentMethods?: string[] | null; // Lista de métodos de pago habilitados expresados en el formulario
   createdAt?: string;
   updatedAt?: string;
 }

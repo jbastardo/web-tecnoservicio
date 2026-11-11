@@ -85,6 +85,15 @@ export default function CapacitacionesAdminPage() {
     presentationNotes: "",
     coverImageUrl: "",
     coverPhotos: [] as string[],
+    formQuestionsTitle: "Preguntas Específicas del Curso",
+    formQuestionsDescription: "",
+    paymentMethods: [
+      "Pago Móvil (Pabilo)",
+      "Zelle USD",
+      "Binance Pay (USDT)",
+      "Transferencia Bancaria Bs",
+      "Efectivo en Tienda OnProtec",
+    ] as string[],
     formQuestions: [...defaultFormQuestions] as FormQuestion[],
     surveyQuestions: [...defaultSurveyQuestions] as SurveyQuestion[],
   });
@@ -159,6 +168,15 @@ export default function CapacitacionesAdminPage() {
         "📌 Nota para la Presentación: Capacitación práctica presencial en la Sala de Capacitaciones OnProtec (Aforo limitado a 18 participantes + 1 instructor).",
       coverImageUrl: "/brand/onprotec-hero-banner.avif",
       coverPhotos: ["/brand/onprotec-hero-banner.avif"],
+      formQuestionsTitle: "Preguntas Específicas del Curso",
+      formQuestionsDescription: "",
+      paymentMethods: [
+        "Pago Móvil (Pabilo)",
+        "Zelle USD",
+        "Binance Pay (USDT)",
+        "Transferencia Bancaria Bs",
+        "Efectivo en Tienda OnProtec",
+      ],
       formQuestions: JSON.parse(JSON.stringify(defaultFormQuestions)),
       surveyQuestions: JSON.parse(JSON.stringify(defaultSurveyQuestions)),
     });
@@ -200,6 +218,18 @@ export default function CapacitacionesAdminPage() {
       presentationNotes: t.presentationNotes || "",
       coverImageUrl: t.coverImageUrl || photos[0] || "",
       coverPhotos: photos,
+      formQuestionsTitle: t.formQuestionsTitle || "Preguntas Específicas del Curso",
+      formQuestionsDescription: t.formQuestionsDescription || "",
+      paymentMethods:
+        Array.isArray(t.paymentMethods) && t.paymentMethods.length > 0
+          ? t.paymentMethods
+          : [
+              "Pago Móvil (Pabilo)",
+              "Zelle USD",
+              "Binance Pay (USDT)",
+              "Transferencia Bancaria Bs",
+              "Efectivo en Tienda OnProtec",
+            ],
       formQuestions:
         Array.isArray(t.formQuestions) && t.formQuestions.length > 0
           ? JSON.parse(JSON.stringify(t.formQuestions))
@@ -238,6 +268,9 @@ export default function CapacitacionesAdminPage() {
         presentationNotes: formData.presentationNotes,
         coverImageUrl: formData.coverImageUrl || formData.coverPhotos[0] || null,
         coverPhotos: formData.coverPhotos,
+        formQuestionsTitle: formData.formQuestionsTitle,
+        formQuestionsDescription: formData.formQuestionsDescription,
+        paymentMethods: formData.paymentMethods,
         formQuestions: formData.formQuestions,
         surveyQuestions: formData.surveyQuestions,
       };
@@ -1181,6 +1214,50 @@ export default function CapacitacionesAdminPage() {
                         />
                       </div>
                     </div>
+
+                    {/* Métodos de Pago Expresados para el Curso Cobrado */}
+                    {!formData.isFree && (
+                      <div className="p-3.5 bg-slate-950 rounded-xl border border-amber-500/40 space-y-2">
+                        <label className="block text-xs font-bold text-amber-300">
+                          💳 Métodos de Pago Expresados en el Formulario (Selecciona los válidos):
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            "Pago Móvil (Pabilo)",
+                            "Zelle USD",
+                            "Binance Pay (USDT)",
+                            "Transferencia Bancaria Bs",
+                            "Efectivo en Tienda OnProtec",
+                          ].map((method) => {
+                            const isSelected = (formData.paymentMethods || []).includes(method);
+                            return (
+                              <button
+                                key={method}
+                                type="button"
+                                onClick={() => {
+                                  const currentMethods = formData.paymentMethods || [];
+                                  const next = isSelected
+                                    ? currentMethods.filter((m) => m !== method)
+                                    : [...currentMethods, method];
+                                  setFormData({ ...formData, paymentMethods: next });
+                                }}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                                  isSelected
+                                    ? "bg-amber-500 text-amber-950 border-amber-400 shadow-sm"
+                                    : "bg-slate-900 border-slate-700 text-slate-400 hover:text-white"
+                                }`}
+                              >
+                                {isSelected ? "✓ " : "+ "}
+                                {method}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <p className="text-[10px] text-slate-400">
+                          Solo los métodos seleccionados aquí aparecerán en la lista desplegable del formulario de inscripción.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -1376,6 +1453,44 @@ export default function CapacitacionesAdminPage() {
                         <Plus className="w-3.5 h-3.5" />
                         <span>Agregar Pregunta</span>
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Edición del Título y Descripción de la Sección en el Formulario Público */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 p-4 bg-slate-900 border border-slate-800 rounded-2xl">
+                    <div className="sm:col-span-6">
+                      <label className="block text-xs font-bold text-slate-200 mb-1">
+                        Título de la Sección en el Formulario Público *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="ej. Preguntas Específicas del Curso"
+                        value={formData.formQuestionsTitle || ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, formQuestionsTitle: e.target.value })
+                        }
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-[#f4730a]"
+                      />
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        Este título se muestra en el Paso 2 del formulario público (editable a tu gusto).
+                      </span>
+                    </div>
+                    <div className="sm:col-span-6">
+                      <label className="block text-xs font-bold text-slate-200 mb-1">
+                        Instrucción o Descripción de la Sección (Opcional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="ej. Por favor responde para adaptar el temario a tu perfil"
+                        value={formData.formQuestionsDescription || ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, formQuestionsDescription: e.target.value })
+                        }
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:border-[#f4730a]"
+                      />
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        Texto de ayuda que acompaña al título para orientar al participante.
+                      </span>
                     </div>
                   </div>
 

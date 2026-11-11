@@ -44,6 +44,9 @@ export const trainings = pgTable(
     formQuestions: jsonb("form_questions").$type<FormQuestion[]>().default([]).notNull(), // Preguntas del formulario de inscripción
     surveyQuestions: jsonb("survey_questions").$type<SurveyQuestion[]>().default([]).notNull(), // Preguntas de la encuesta final
     location: text("location").default("Torre América, Piso 14, Urb. El Recreo, Caracas"), // Ubicación física del evento
+    formQuestionsTitle: text("form_questions_title").default("Preguntas Específicas del Curso"), // Título de la sección de preguntas del formulario
+    formQuestionsDescription: text("form_questions_description"), // Instrucción editable de la sección
+    paymentMethods: jsonb("payment_methods").$type<string[]>().default([]).notNull(), // Métodos de pago expresados para el curso
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
