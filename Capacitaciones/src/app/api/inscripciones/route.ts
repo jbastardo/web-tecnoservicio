@@ -150,7 +150,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: `El documento de identidad (${docType}-${docNumber}) o correo electrónico ya se encuentra registrado en esta capacitación. Si necesitas verificar tu estatus, comunícate con Diana al WhatsApp de OnProtec.`,
+          error: `El documento de identidad (${docType}-${docNumber}) o correo electrónico ya se encuentra registrado en esta capacitación. Si necesitas verificar tu estatus, comunícate con el equipo de OnProtec por WhatsApp.`,
         },
         { status: 409 }
       );
@@ -264,8 +264,8 @@ export async function POST(request: Request) {
         message: isWaitlist
           ? `El cupo de convocatoria (${effectiveCapacity} registrados) está completo. Has sido registrado en la Lista de Espera prioritaria.`
           : isPaidEvent
-          ? "¡Inscripción Formalmente Registrada! Tu cupo en la Sala VIP (aforo de 18 puestos) ha quedado reservado al reportar tu pago. Diana te contactará en breve con los detalles finales de acceso."
-          : "¡Pre-inscripción Recibida con Éxito! Tu solicitud ha sido registrada correctamente. Realizamos una preselección de asistentes para garantizar la rotación de participantes en sala. Diana se comunicará contigo vía WhatsApp para confirmar tu invitación formal.",
+          ? "¡Inscripción Formalmente Registrada! Tu cupo en la Sala VIP (aforo de 18 puestos) ha quedado reservado al reportar tu pago. El equipo de OnProtec te contactará en breve con los detalles finales de acceso."
+          : "¡Pre-inscripción Recibida con Éxito! Tu solicitud ha sido registrada correctamente. Realizamos una preselección de asistentes para garantizar la rotación de participantes en sala. El equipo de OnProtec se comunicará contigo vía WhatsApp para confirmar tu invitación formal.",
         data: {
           ...newRegistration,
           participant: {

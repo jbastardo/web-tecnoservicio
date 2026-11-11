@@ -1124,7 +1124,7 @@ export default function HomePage() {
                     ¿Qué sigue a continuación?
                   </p>
                   <p className="text-emerald-800 dark:text-emerald-300 text-[11px] leading-snug">
-                    Nuestro equipo verificará el comprobante de pago. Diana se comunicará contigo vía WhatsApp en breve para confirmar los detalles finales y enviarte las instrucciones privadas de acceso a la sala.
+                    Nuestro equipo verificará el comprobante de pago. El equipo de OnProtec se comunicará contigo vía WhatsApp en breve para confirmar los detalles finales y enviarte las instrucciones privadas de acceso a la sala.
                   </p>
                 </div>
               </div>
@@ -1144,7 +1144,7 @@ export default function HomePage() {
                 </p>
                 <div className="p-3.5 bg-amber-50/80 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-2xl text-left text-xs">
                   <p className="text-amber-800 dark:text-amber-300 text-[11px] leading-snug">
-                    Si algún participante cancela su asistencia o se abre una nueva fecha, Diana te contactará prioritariamente.
+                    Si algún participante cancela su asistencia o se abre una nueva fecha, el equipo de OnProtec te contactará prioritariamente.
                   </p>
                 </div>
               </div>
@@ -1167,7 +1167,7 @@ export default function HomePage() {
                     Próximo Paso:
                   </p>
                   <p className="text-slate-700 dark:text-slate-300 text-[11px] leading-snug">
-                    Pronto serás contactado por Diana vía WhatsApp para confirmar tu invitación formal con mayores detalles.
+                    Pronto serás contactado por el equipo de OnProtec vía WhatsApp para confirmar tu invitación formal con mayores detalles.
                   </p>
                   <p className="text-[11px] text-[#f4730a] font-bold flex items-center gap-1">
                     <Lock className="w-3.5 h-3.5 flex-shrink-0" />
@@ -1207,16 +1207,16 @@ export default function HomePage() {
             <div className="mt-5 space-y-2">
               <a
                 href={`https://wa.me/584129635648?text=${encodeURIComponent(
-                  `Hola Diana, acabo de completar mi ${
+                  `Hola equipo de OnProtec, acabo de completar mi ${
                     isPaidCourse ? "inscripción" : "pre-inscripción"
                   } para la capacitación ${selectedTraining?.code} - ${selectedTraining?.name}. Mi nombre es ${form.name} (CI: ${form.docType}-${form.docNumber}).`
                 )}`}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition"
+                className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition cursor-pointer"
               >
                 <Phone className="w-4 h-4" />
-                <span>Contactar a Diana por WhatsApp</span>
+                <span>Contactar al Equipo de OnProtec por WhatsApp</span>
               </a>
               <button
                 type="button"

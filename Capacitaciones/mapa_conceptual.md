@@ -99,7 +99,7 @@ flowchart TD
 * **Lógica Dual de Aforo OnProtec (Gratuito vs. Cobrado):**
   1. **Presentaciones Gratuitas (`isFree = true`):**
      * Meta de pre-inscripción ampliada de **30 hasta 40 participantes**.
-     * Esta holgura permite al equipo de OnProtec (Diana) contactar y reconfirmar telefónicamente a los **18 asistentes presenciales finales**, mitigando el No-Show habitual de los eventos sin costo.
+     * Esta holgura permite al equipo de OnProtec contactar y reconfirmar telefónicamente a los **18 asistentes presenciales finales**, mitigando el No-Show habitual de los eventos sin costo.
      * Solo si la pre-inscripción supera los 40 registros entra en estado **`Lista de Espera`**.
      * **Confirmación Post-Envío:** Informa claramente que el participante está **Pre-inscrito**, explicando que se realiza una preselección de asistentes para garantizar la rotación y diversidad de técnicos en sala antes de remitir la invitación formal.
   2. **Actividades Cobradas / Pagas (`isFree = false` o `price > 0`):**
@@ -108,7 +108,7 @@ flowchart TD
      * **Métodos de Pago Expresados:** La lista de métodos de pago en el formulario solo exhibe los expresamente configurados para ese curso.
      * **Confirmación Post-Envío:** Notifica de inmediato que el participante está **Formalmente Inscrito** con cupo VIP asegurado.
 * **Validación Anti-Duplicados:**
-  * El sistema valida mediante normalización de caracteres que ningún número de Cédula o RIF (o correo electrónico) se registre más de una vez en la misma capacitación activa. Retorna error `409 Conflict` con indicaciones claras para contactar a Diana vía WhatsApp si requiere gestionar su registro.
+  * El sistema valida mediante normalización de caracteres que ningún número de Cédula o RIF (o correo electrónico) se registre más de una vez en la misma capacitación activa. Retorna error `409 Conflict` con indicaciones claras para contactar al equipo de OnProtec vía WhatsApp si requiere gestionar su registro.
 * **Sección de Preguntas del Formulario 100% Editable:**
   * El título y la descripción de la sección técnica del formulario público son completamente editables por curso desde la pestaña de preguntas del panel administrativo (`formQuestionsTitle` y `formQuestionsDescription`).
 * **Condición de Sobrecupo y Lista de Espera:**
