@@ -82,6 +82,8 @@ export interface Training {
   coverPhotos?: string[]; // Galería de fotos para la portada
   formQuestions?: FormQuestion[]; // Preguntas redactadas del formulario de inscripción
   surveyQuestions?: SurveyQuestion[]; // Preguntas de la encuesta al final del curso
+  location?: string | null; // Sede / Ubicación del evento (editable)
+  isFree?: boolean; // Flag explícito de gratuidad / pago
   createdAt?: string;
   updatedAt?: string;
 }

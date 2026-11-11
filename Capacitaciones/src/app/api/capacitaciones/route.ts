@@ -10,7 +10,10 @@ import {
 import { qrService } from "@/services/qrService";
 
 function enrichTraining(t: any) {
-  const maxCap = Number(t.maxCapacity) || 18;
+  const isPaid = Number(t.price) > 0 || t.isFree === false;
+  const isFree = !isPaid;
+  // Regla OnProtec: Cursos cobrados tienen aforo estricto de 18. Cursos gratuitos permiten hasta 40 pre-inscripciones para reconfirmar 18 físicos.
+  const maxCap = isPaid ? 18 : Math.max(Number(t.maxCapacity) || 40, 40);
   const regs = initialRegistrations.filter((r) => Number(r.trainingId) === Number(t.id));
   const confirmedCount = regs.filter((r) => r.status === "Confirmado").length;
   const registeredCount = regs.filter((r) => r.status === "Inscrito").length;
@@ -34,7 +37,9 @@ function enrichTraining(t: any) {
 
   return {
     ...t,
+    isFree,
     maxCapacity: maxCap,
+    physicalRoomCapacity: 18,
     formQuestions:
       t.formQuestions && t.formQuestions.length > 0 ? t.formQuestions : defaultFormQuestions,
     surveyQuestions:
@@ -42,6 +47,7 @@ function enrichTraining(t: any) {
         ? t.surveyQuestions
         : defaultSurveyQuestions,
     coverPhotos: Array.isArray(t.coverPhotos) ? t.coverPhotos : t.coverImageUrl ? [t.coverImageUrl] : [],
+    location: t.location || "Torre América, Piso 14, Urb. El Recreo, Caracas",
     stats: {
       confirmedCount,
       registeredCount,
@@ -115,6 +121,8 @@ export async function POST(request: Request) {
       coverPhotos,
       formQuestions,
       surveyQuestions,
+      location,
+      isFree,
     } = body;
 
     if (!name || !instructor || !eventDate) {
@@ -141,6 +149,8 @@ export async function POST(request: Request) {
       ? [coverImageUrl]
       : [];
 
+    const isFreeVal = isFree !== undefined ? Boolean(isFree) : Number(price || 0) === 0;
+
     const newTraining = {
       id: newId,
       name,
@@ -152,10 +162,11 @@ export async function POST(request: Request) {
       adStartDate: adStartDate || null,
       adCosts: parseFloat(adCosts) || 0,
       associatedCosts: parseFloat(associatedCosts) || 0,
-      maxCapacity: parseInt(maxCapacity) || 18,
+      maxCapacity: parseInt(maxCapacity) || (isFreeVal ? 40 : 18),
+      isFree: isFreeVal,
       instructorCapacity: 1,
       relatedSkus: Array.isArray(relatedSkus) ? relatedSkus : [],
-      price: parseFloat(price) || 0,
+      price: isFreeVal ? 0 : parseFloat(price) || 0,
       currency: currency || "USD",
       status: (status as any) || ("Planificado" as const),
       surveyUrl,
@@ -172,6 +183,7 @@ export async function POST(request: Request) {
         Array.isArray(surveyQuestions) && surveyQuestions.length > 0
           ? surveyQuestions
           : defaultSurveyQuestions,
+      location: location || "Torre América, Piso 14, Urb. El Recreo, Caracas",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -241,6 +253,7 @@ export async function PUT(request: Request) {
       ...(body.maxCapacity !== undefined && {
         maxCapacity: parseInt(body.maxCapacity) || 18,
       }),
+      ...(body.isFree !== undefined && { isFree: Boolean(body.isFree) }),
       ...(body.price !== undefined && { price: parseFloat(body.price) || 0 }),
       ...(body.currency !== undefined && { currency: body.currency }),
       ...(body.status !== undefined && { status: body.status }),
@@ -251,6 +264,7 @@ export async function PUT(request: Request) {
       }),
       coverImageUrl: primaryCover,
       coverPhotos: photosList,
+      ...(body.location !== undefined && { location: body.location }),
       ...(body.formQuestions !== undefined && { formQuestions: body.formQuestions }),
       ...(body.surveyQuestions !== undefined && {
         surveyQuestions: body.surveyQuestions,

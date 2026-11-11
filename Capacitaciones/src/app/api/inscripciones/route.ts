@@ -116,14 +116,18 @@ export async function POST(request: Request) {
       );
     }
 
-    // 1. Verificar el aforo de la sala de capacitaciones (18 cupos)
-    const maxCap = Number(training.maxCapacity) || 18;
+    // 1. Regla de Aforo OnProtec:
+    // - Si la actividad es cobrada (paga): aforo estricto de 18 puestos VIP garantizados.
+    // - Si la presentación es gratuita: se permite pre-inscribir de 30 a 40 participantes para que el equipo
+    //   reconfirme telefónicamente a los 18 que asistirán físicamente a la sala (compensando el No-Show).
+    const isPaidEvent = Number(training.price) > 0 || training.isFree === false;
+    const effectiveCapacity = isPaidEvent ? 18 : Math.max(Number(training.maxCapacity) || 40, 40);
     const activeRegs = initialRegistrations.filter(
       (r) =>
         Number(r.trainingId) === Number(training.id) &&
         ["Inscrito", "Confirmado", "Asistió"].includes(r.status)
     );
-    const isWaitlist = activeRegs.length >= maxCap;
+    const isWaitlist = activeRegs.length >= effectiveCapacity;
 
     // 2. Registrar o actualizar el participante en el CRM
     let participant = initialParticipants.find(
@@ -201,7 +205,7 @@ export async function POST(request: Request) {
       specialNotes:
         specialNotes ||
         customAnswers?.specialExpectations ||
-        (isWaitlist ? `Generado en lista de espera (Cupo > ${maxCap})` : null),
+        (isWaitlist ? `Generado en lista de espera (Cupo > ${effectiveCapacity})` : null),
       experienceLevel: resolvedExp,
       carnetNumber: body.carnetNumber || null,
       customAnswers: customAnswers || {},
@@ -231,8 +235,10 @@ export async function POST(request: Request) {
       {
         success: true,
         message: isWaitlist
-          ? `El aforo de ${maxCap} cupos está lleno. Has sido registrado con éxito en la Lista de Espera prioritaria.`
-          : "Inscripción registrada exitosamente en la Sala de Capacitaciones OnProtec.",
+          ? `El cupo de convocatoria (${effectiveCapacity} registrados) está completo. Has sido registrado en la Lista de Espera prioritaria.`
+          : isPaidEvent
+          ? "Reserva de cupo registrada exitosamente en Sala VIP. Verificaremos tu comprobante de pago."
+          : "Pre-inscripción registrada con éxito. Nuestro equipo te contactará para reconfirmar tu puesto en sala.",
         data: {
           ...newRegistration,
           participant: {

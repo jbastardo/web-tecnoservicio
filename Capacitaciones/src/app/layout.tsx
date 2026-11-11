@@ -39,6 +39,11 @@ export default async function RootLayout({
               try {
                 var savedTheme = localStorage.getItem('onprotec-theme') || 'light';
                 document.documentElement.setAttribute('data-theme', savedTheme);
+                if (savedTheme === 'dark') {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
                 var m = document.querySelector('meta[name="color-scheme"]');
                 if (m) m.setAttribute('content', savedTheme);
               } catch (e) {}

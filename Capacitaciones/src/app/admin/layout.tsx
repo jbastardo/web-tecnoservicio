@@ -305,7 +305,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[#f8f9fc] dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col">
       {/* Franja Corporativa OnProtec Navy + Naranja */}
       <div className="h-1 bg-gradient-to-r from-[#1a1b4b] via-[#e07b29] to-brand-500 w-full" />
 

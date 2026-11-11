@@ -43,6 +43,7 @@ export const trainings = pgTable(
     coverPhotos: jsonb("cover_photos").$type<string[]>().default([]).notNull(), // Galería de fotos para portada
     formQuestions: jsonb("form_questions").$type<FormQuestion[]>().default([]).notNull(), // Preguntas del formulario de inscripción
     surveyQuestions: jsonb("survey_questions").$type<SurveyQuestion[]>().default([]).notNull(), // Preguntas de la encuesta final
+    location: text("location").default("Torre América, Piso 14, Urb. El Recreo, Caracas"), // Ubicación física del evento
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },

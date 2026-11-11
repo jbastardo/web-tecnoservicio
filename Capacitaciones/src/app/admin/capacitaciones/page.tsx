@@ -21,6 +21,7 @@ import {
   Trash2,
   Upload,
   UploadCloud,
+  MapPin,
   Sparkles,
   MessageSquare,
 } from "lucide-react";
@@ -73,10 +74,12 @@ export default function CapacitacionesAdminPage() {
     adStartDate: "",
     adCosts: "0",
     associatedCosts: "0",
-    maxCapacity: "18",
+    maxCapacity: "40",
+    isFree: true,
     price: "0",
     currency: "USD",
     status: "Planificado",
+    location: "Torre América, Piso 14, Urb. El Recreo, Caracas",
     selectedSkus: [] as string[],
     description: "",
     presentationNotes: "",
@@ -144,10 +147,12 @@ export default function CapacitacionesAdminPage() {
       adStartDate: "",
       adCosts: "0",
       associatedCosts: "0",
-      maxCapacity: "18",
+      maxCapacity: "40",
+      isFree: true,
       price: "0",
       currency: "USD",
       status: "Planificado",
+      location: "Torre América, Piso 14, Urb. El Recreo, Caracas",
       selectedSkus: [],
       description: "",
       presentationNotes:
@@ -172,6 +177,8 @@ export default function CapacitacionesAdminPage() {
         : t.coverImageUrl
         ? [t.coverImageUrl]
         : [];
+    const isFreeVal =
+      t.isFree !== undefined ? Boolean(t.isFree) : Number(t.price ?? 0) === 0;
     setFormData({
       name: t.name || "",
       code: t.code || "",
@@ -182,10 +189,12 @@ export default function CapacitacionesAdminPage() {
       adStartDate: toDatetimeLocalValue(t.adStartDate),
       adCosts: String(t.adCosts ?? 0),
       associatedCosts: String(t.associatedCosts ?? 0),
-      maxCapacity: String(t.maxCapacity ?? 18),
+      maxCapacity: String(t.maxCapacity ?? (isFreeVal ? 40 : 18)),
+      isFree: isFreeVal,
       price: String(t.price ?? 0),
       currency: t.currency || "USD",
       status: t.status || "Planificado",
+      location: t.location || "Torre América, Piso 14, Urb. El Recreo, Caracas",
       selectedSkus: Array.isArray(t.relatedSkus) ? t.relatedSkus : [],
       description: t.description || "",
       presentationNotes: t.presentationNotes || "",
@@ -219,9 +228,11 @@ export default function CapacitacionesAdminPage() {
         adCosts: formData.adCosts,
         associatedCosts: formData.associatedCosts,
         maxCapacity: formData.maxCapacity,
-        price: formData.price,
+        isFree: formData.isFree,
+        price: formData.isFree ? 0 : formData.price,
         currency: formData.currency,
         status: formData.status,
+        location: formData.location,
         relatedSkus: formData.selectedSkus,
         description: formData.description,
         presentationNotes: formData.presentationNotes,
@@ -1014,59 +1025,161 @@ export default function CapacitacionesAdminPage() {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-slate-300 font-semibold mb-1">
-                        Aforo Máximo Sala
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={50}
-                        value={formData.maxCapacity}
-                        onChange={(e) => setFormData({ ...formData, maxCapacity: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-bold"
-                      />
-                    </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3 pt-2 border-t border-slate-800">
-                    <div>
-                      <label className="block text-slate-300 font-semibold mb-1">
-                        Precio Entrada ($)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={formData.price}
-                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-300 font-semibold mb-1">
-                        Costo Publicidad ($)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={formData.adCosts}
-                        onChange={(e) => setFormData({ ...formData, adCosts: e.target.value })}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-300 font-semibold mb-1">
-                        Costos Refrigerio/Log ($)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={formData.associatedCosts}
-                        onChange={(e) =>
-                          setFormData({ ...formData, associatedCosts: e.target.value })
+                  {/* Sede / Ubicación Física del Evento */}
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-[#f4730a]" />
+                        Sede / Ubicación Física del Evento
+                      </span>
+                      <span className="text-[11px] text-slate-400 font-normal">
+                        Editable si es presencial, hotel o auditorio externo
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Torre América, Piso 14, Urb. El Recreo, Caracas"
+                      value={formData.location}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-medium focus:border-brand-500"
+                    />
+                  </div>
+
+                  {/* MODALIDAD DE ACCESO Y COBRO (REGLA DE NEGOCIO ONPROTEC) */}
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                    <label className="block text-xs font-black uppercase tracking-wider text-amber-400">
+                      Modalidad de Cobro & Política de Aforo (Regla OnProtec)
+                    </label>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            isFree: true,
+                            price: "0",
+                            maxCapacity: "40",
+                          }))
                         }
-                        className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2 text-white"
-                      />
+                        className={`p-3.5 rounded-xl border-2 text-left transition cursor-pointer flex flex-col justify-between ${
+                          formData.isFree
+                            ? "bg-emerald-950/40 border-emerald-500 text-white shadow-md shadow-emerald-900/20"
+                            : "bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-black text-emerald-400 flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                            🟢 EVENTO GRATUITO
+                          </span>
+                          <span className="text-[10px] font-mono font-bold bg-emerald-900/60 text-emerald-200 px-2 py-0.5 rounded">
+                            Cupo: 40 Pre-inscritos
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 leading-snug">
+                          Convocatoria abierta de <strong>hasta 40 registrados</strong> para contactar y reconfirmar los <strong>18 cupos físicos en sala</strong> (compensa la tasa habitual de No-Show).
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            isFree: false,
+                            price: prev.price === "0" ? "40" : prev.price,
+                            maxCapacity: "18",
+                          }))
+                        }
+                        className={`p-3.5 rounded-xl border-2 text-left transition cursor-pointer flex flex-col justify-between ${
+                          !formData.isFree
+                            ? "bg-amber-950/40 border-amber-500 text-white shadow-md shadow-amber-900/20"
+                            : "bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-black text-amber-400 flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                            🔵 ACTIVIDAD COBRADA (PAGA)
+                          </span>
+                          <span className="text-[10px] font-mono font-bold bg-amber-900/60 text-amber-200 px-2 py-0.5 rounded">
+                            Aforo Estricto: 18
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-300 leading-snug">
+                          Requiere pago y comprobante. <strong>Solo 18 puestos VIP garantizados</strong> (el puesto 19 pasa automáticamente a lista de espera).
+                        </p>
+                      </button>
+                    </div>
+
+                    {/* Inputs condicionales según la modalidad */}
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
+                      <div>
+                        <label className="block text-slate-300 text-xs font-semibold mb-1">
+                          Inversión / Precio ($)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          disabled={formData.isFree}
+                          value={formData.isFree ? "0" : formData.price}
+                          onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                          className={`w-full bg-slate-900 border rounded-xl p-2.5 text-white font-mono font-bold ${
+                            formData.isFree
+                              ? "border-slate-800 text-slate-500 cursor-not-allowed"
+                              : "border-amber-400 text-amber-300"
+                          }`}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-300 text-xs font-semibold mb-1">
+                          Límite de Inscripciones
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={60}
+                          value={formData.maxCapacity}
+                          onChange={(e) => setFormData({ ...formData, maxCapacity: e.target.value })}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-bold font-mono"
+                        />
+                        <span className="text-[10px] text-slate-400 block mt-0.5">
+                          {formData.isFree ? "Meta pre-registro (40)" : "18 en sala"}
+                        </span>
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-300 text-xs font-semibold mb-1">
+                          Costo Publicidad ($)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={formData.adCosts}
+                          onChange={(e) => setFormData({ ...formData, adCosts: e.target.value })}
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-300 text-xs font-semibold mb-1">
+                          Refrigerio / Logística ($)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={formData.associatedCosts}
+                          onChange={(e) =>
+                            setFormData({ ...formData, associatedCosts: e.target.value })
+                          }
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-mono"
+                        />
+                      </div>
                     </div>
                   </div>
 

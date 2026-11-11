@@ -36,6 +36,7 @@ const ddlStatements = [
     "cover_photos" JSONB NOT NULL DEFAULT '[]'::jsonb,
     "form_questions" JSONB NOT NULL DEFAULT '[]'::jsonb,
     "survey_questions" JSONB NOT NULL DEFAULT '[]'::jsonb,
+    "location" TEXT DEFAULT 'Torre América, Piso 14, Urb. El Recreo, Caracas',
     "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
   );`,
@@ -54,6 +55,7 @@ const ddlStatements = [
   `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "cover_photos" JSONB DEFAULT '[]'::jsonb;`,
   `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "form_questions" JSONB DEFAULT '[]'::jsonb;`,
   `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "survey_questions" JSONB DEFAULT '[]'::jsonb;`,
+  `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "location" TEXT DEFAULT 'Torre América, Piso 14, Urb. El Recreo, Caracas';`,
 
   // 2. Tabla: Participants (Participantes)
   `CREATE TABLE IF NOT EXISTS "participants" (

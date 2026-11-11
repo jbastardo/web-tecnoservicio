@@ -14,51 +14,39 @@ import {
   Sparkles,
   MapPin,
   ExternalLink,
-  FileText,
-  QrCode,
-  Phone,
-  Image as ImageIcon,
-  Cpu,
-  Award,
-  Zap,
-  Search,
-  CheckCircle2,
-  Building2,
-  UserCheck,
-  Radio,
   Lock,
-  Wifi,
-  Camera,
-  Server,
-  ChevronRight,
+  ChevronDown,
   UploadCloud,
   FileCheck,
   Trash2,
+  CheckCircle2,
+  Building2,
+  Phone,
+  Mail,
+  Award,
+  Zap,
 } from "lucide-react";
 import { FormQuestion } from "@/types";
 import { fmtLocalDate, fmtLocalHour, formatCurrency } from "@/utils/formatUtils";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { OnprotecBrand, ONPROTEC_PARTNER_BRANDS } from "@/components/OnprotecBrand";
+import { OnprotecBrand } from "@/components/OnprotecBrand";
 
-const ONPROTEC_CATEGORIES = [
-  { id: "all", label: "TODOS LOS CURSOS", pillLabel: "TODAS", icon: Sparkles },
-  { id: "REDES", label: "REDES & WIFI", pillLabel: "REDES", icon: Wifi, match: ["tp-link", "omada", "ubiquiti", "unifi", "redes", "mikrotik", "ruijie"] },
-  { id: "CCTV", label: "CCTV & VIDEOVIGILANCIA", pillLabel: "CCTV", icon: Camera, match: ["hikvision", "dahua", "dolynk", "hikcentral", "ezviz", "cctv", "camara"] },
-  { id: "SEGURIDAD", label: "SEGURIDAD & ACCESO", pillLabel: "SEGURIDAD", icon: ShieldCheck, match: ["watchguard", "seguridad", "acceso", "alarma", "biometrico", "zkteco"] },
-  { id: "COMPUTACION", label: "ENERGÍA & COMPUTACIÓN", pillLabel: "COMPUTACIÓN", icon: Server, match: ["marsriva", "ups", "energia", "computacion", "servidor"] },
+const PARTNER_BRANDS = [
+  { name: "Dahua Technology", logo: "https://onprotec.tiendasellibri.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTk1Mzk0NiwicHVyIjoiYmxvYl9pZCJ9fQ==--c4bf3b2f8a846cbfbc52fa86d1a10408ca422f25/dahua-logo.png" },
+  { name: "Hikvision", logo: "https://onprotec.tiendasellibri.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTk1Mzk0NywicHVyIjoiYmxvYl9pZCJ9fQ==--93b1368731d77a83da7080e729a75661b17b6e3f/hikvision-logo.png" },
+  { name: "TP-Link Omada", logo: "https://onprotec.tiendasellibri.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTk1Mzk0OCwicHVyIjoiYmxvYl9pZCJ9fQ==--6c8e31a8ca9e2e6fa87d559868f763f0d440ad81/tplink-logo.png" },
+  { name: "Ubiquiti UniFi", logo: "https://onprotec.tiendasellibri.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTk1Mzk0OSwicHVyIjoiYmxvYl9pZCJ9fQ==--89f2cf05d9e504be09d435f3d3ca24d852a55928/ubiquiti-logo.png" },
+  { name: "EZVIZ", logo: "https://onprotec.tiendasellibri.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTk1Mzk1MCwicHVyIjoiYmxvYl9pZCJ9fQ==--3bc66df4ae1c10ee0fa6fc304494191d8e1329ee/ezviz-logo.png" },
+  { name: "WatchGuard", logo: "https://onprotec.tiendasellibri.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTk1Mzk1MSwicHVyIjoiYmxvYl9pZCJ9fQ==--a08eec9e31d87f7b3df6e3aaee21ad434a9f3900/watchguard-logo.png" },
+  { name: "Marsriva", logo: "https://onprotec.tiendasellibri.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTk1Mzk1MiwicHVyIjoiYmxvYl9pZCJ9fQ==--3336d3f23a59df713f0406df77d0774a3f23927d/marsriva-logo.png" },
 ];
 
 export default function HomePage() {
   const [trainings, setTrainings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTraining, setSelectedTraining] = useState<any | null>(null);
-  const [activeCoverIdx, setActiveCoverIdx] = useState(0);
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [brandFilter, setBrandFilter] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusTab, setStatusTab] = useState<"open" | "all">("open");
 
-  // Formulario de Fricción Cero con Etiquetas Flotantes (Floating Labels)
+  // Formulario de Fricción Cero con Etiquetas Flotantes
   const [form, setForm] = useState({
     name: "",
     docType: "V",
@@ -73,9 +61,7 @@ export default function HomePage() {
     specialNotes: "",
   });
 
-  // Respuestas a las preguntas redactadas del formulario
   const [customAnswers, setCustomAnswers] = useState<Record<string, any>>({});
-
   const [submitting, setSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState<any | null>(null);
 
@@ -85,7 +71,6 @@ export default function HomePage() {
       .then((data) => {
         if (data.success && data.data.length > 0) {
           setTrainings(data.data);
-          // Priorizar el evento Planificado o más reciente (ej. CAP-2026-039)
           const planned =
             data.data.find(
               (t: any) => t.status === "Planificado" || t.status === "En Publicidad"
@@ -98,7 +83,6 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    setActiveCoverIdx(0);
     setCustomAnswers({});
     setSubmissionResult(null);
   }, [selectedTraining?.id]);
@@ -108,11 +92,6 @@ export default function HomePage() {
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  };
-
-  const handleSelectAndRegister = (training: any) => {
-    setSelectedTraining(training);
-    scrollToSection("registro-express");
   };
 
   const isSelectedTrainingOpen =
@@ -127,7 +106,7 @@ export default function HomePage() {
       setSubmissionResult({
         success: false,
         error:
-          "Esta capacitación ya culminó su ciclo. Las inscripciones se encuentran cerradas.",
+          "Esta capacitación ya finalizó o las inscripciones se encuentran cerradas. Por favor selecciona una capacitación abierta.",
       });
       return;
     }
@@ -148,8 +127,11 @@ export default function HomePage() {
 
       const data = await res.json();
       setSubmissionResult(data);
+
       if (data.success) {
-        const refreshed = await fetch("/api/capacitaciones?order=desc").then((r) => r.json());
+        // Refrescar cupos
+        const refreshRes = await fetch("/api/capacitaciones?order=desc");
+        const refreshed = await refreshRes.json();
         if (refreshed.success) {
           setTrainings(refreshed.data);
           const updatedSelected = refreshed.data.find(
@@ -159,958 +141,381 @@ export default function HomePage() {
         }
       }
     } catch (err: any) {
-      setSubmissionResult({ success: false, error: err.message || "Error al registrar" });
+      setSubmissionResult({
+        success: false,
+        error: "Error de red al procesar tu inscripción. Por favor intenta de nuevo.",
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const filteredTrainings = trainings.filter((t) => {
-    const isPlanned = t.status === "Planificado" || t.status === "En Publicidad";
-    if (statusTab === "open" && !isPlanned) {
-      return false;
-    }
+  // Regla de Negocio: Actividad Paga vs Convocatoria Gratuita
+  const isPaidCourse = Boolean(
+    selectedTraining &&
+      (Number(selectedTraining.price) > 0 || selectedTraining.isFree === false)
+  );
 
-    const textBlob = `${t.title || ""} ${t.brand || ""} ${t.topic || ""} ${t.code || ""}`.toLowerCase();
-
-    if (searchQuery.trim() !== "" && !textBlob.includes(searchQuery.toLowerCase().trim())) {
-      return false;
-    }
-
-    if (brandFilter !== "all" && !(t.brand || "").toLowerCase().includes(brandFilter.toLowerCase())) {
-      return false;
-    }
-
-    if (categoryFilter !== "all") {
-      const cat = ONPROTEC_CATEGORIES.find((c) => c.id === categoryFilter);
-      if (cat?.match && !cat.match.some((kw) => textBlob.includes(kw))) {
-        return false;
-      }
-    }
-
-    return true;
-  });
-
-  const coverGallery: string[] = selectedTraining
-    ? Array.isArray(selectedTraining.coverPhotos) && selectedTraining.coverPhotos.length > 0
-      ? selectedTraining.coverPhotos
-      : selectedTraining.coverImageUrl
-      ? [selectedTraining.coverImageUrl]
-      : []
-    : [];
+  // Aforo según la regla: si es cobrada son 18 puestos estrictos, si es gratuita permite hasta 40 pre-inscripciones
+  const maxSeats = isPaidCourse ? 18 : Math.max(Number(selectedTraining?.maxCapacity) || 40, 40);
+  const occupiedSeats = Number(
+    selectedTraining?.stats?.totalOccupied ?? selectedTraining?.occupiedCount ?? 0
+  );
+  const availableSeats = Math.max(0, maxSeats - occupiedSeats);
+  const occupancyPct = Math.min(100, Math.round((occupiedSeats / maxSeats) * 100));
 
   const activeFormQuestions: FormQuestion[] = Array.isArray(selectedTraining?.formQuestions)
     ? selectedTraining.formQuestions
     : [];
 
-  const maxSeats = Number(selectedTraining?.maxCapacity || 18);
-  const occupiedSeats = Number(selectedTraining?.occupiedCount || 0);
-  const availableSeats = Math.max(0, maxSeats - occupiedSeats);
-  const occupancyPct = Math.min(100, Math.round((occupiedSeats / maxSeats) * 100));
+  const openTrainings = trainings.filter(
+    (t) => t.status === "Planificado" || t.status === "En Publicidad"
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f8f9fc] dark:bg-[#0b0e17] text-[#1a1c29] dark:text-slate-100 transition-colors duration-200">
       {/* =====================================================================
-          1. CINTILLO SUPERIOR OFICIAL ONPROTEC.COM (#f4730a)
+          1. CINTILLO OFICIAL ONPROTEC (SEDE TORRE AMÉRICA PISO 14, EL RECREO)
       ===================================================================== */}
-      <div className="w-full bg-[#f4730a] text-white py-2 px-4 text-center text-[11px] sm:text-xs font-extrabold tracking-wider uppercase shadow-sm">
-        <div className="max-w-[1640px] mx-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
-          <span>
-            DELIVERY EN CARACAS GRATIS PARA COMPRAS MAYORES A 50$ EN PÁGINA WEB
+      <div className="w-full bg-[#f4730a] text-white py-2 px-4 text-center text-[11px] sm:text-xs font-black tracking-wider uppercase shadow-sm">
+        <div className="max-w-[1580px] mx-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
+          <span className="flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+            SEDE OFICIAL: TORRE AMÉRICA, PISO 14, URB. EL RECREO, CARACAS
           </span>
           <span className="hidden md:inline opacity-60">•</span>
           <span className="hidden sm:inline-flex items-center gap-1.5 bg-black/15 px-2.5 py-0.5 rounded-full">
             <Sparkles className="w-3.5 h-3.5" />
-            SALA DE CAPACITACIONES EXCLUSIVA ONPROTEC® — AFORO VIP 18 INSTALADORES
+            SALA VIP ONPROTEC® — AFORO EXCLUSIVO 18 PARTICIPANTES HANDS-ON
           </span>
         </div>
       </div>
 
       {/* =====================================================================
-          2. HEADER CORPORATIVO ONPROTEC.COM (FONDO BLANCO PURO + BUSCADOR + NAV)
+          2. HEADER EJECUTIVO LIMPIO (SIN SATURACIÓN NI EFECTO CABINA DE AVIÓN)
       ===================================================================== */}
       <header className="sticky top-0 z-50 bg-white/95 dark:bg-[#111526]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 shadow-[0_4px_20px_rgba(42,40,92,0.05)]">
-        <div className="max-w-[1640px] mx-auto px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
-          {/* Logo Oficial */}
-          <OnprotecBrand />
-
-          {/* Barra de Búsqueda Estilo OnProtec.com */}
-          <div className="flex-1 max-w-md mx-auto hidden lg:block">
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar certificación, marca (Dahua, Hikvision, Omada) o código..."
-                className="w-full bg-[#f3f4f6] dark:bg-slate-900 border border-transparent focus:border-[#f4730a] focus:bg-white dark:focus:bg-slate-900 rounded-full pl-5 pr-11 py-2.5 text-xs font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 outline-none transition-all"
-              />
-              <Search className="w-4 h-4 text-slate-500 absolute right-4 top-1/2 -translate-y-1/2" />
+        <div className="max-w-[1580px] mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <OnprotecBrand />
+            <div className="hidden lg:block pl-3.5 border-l border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#f4730a] block">
+                SALA DE CAPACITACIONES
+              </span>
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-[#f4730a]" />
+                Torre América, Piso 14, El Recreo
+              </span>
             </div>
           </div>
 
-          {/* Acciones Derecha */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <a
-              href="#registro-express"
-              className="hidden sm:inline-flex items-center gap-2 bg-[#f4730a] hover:bg-[#ef7922] text-white text-xs font-extrabold uppercase tracking-wider px-5 py-2.5 rounded-full shadow-md shadow-[#f4730a]/25 transition-all hover:-translate-y-0.5"
+          <div className="flex items-center gap-3 sm:gap-4">
+            <button
+              type="button"
+              onClick={() => scrollToSection("registro-express")}
+              className="inline-flex items-center gap-2 bg-[#f4730a] hover:bg-[#ef7922] text-white text-xs sm:text-sm font-black uppercase tracking-wider px-5 py-2.5 rounded-full shadow-md shadow-[#f4730a]/25 transition-all cursor-pointer hover:-translate-y-0.5"
             >
-              Asegura tu cupo
+              <span>Asegurar Cupo</span>
               <ArrowRight className="w-3.5 h-3.5" />
-            </a>
+            </button>
 
             <a
               href="https://www.onprotec.com"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2a285c] dark:text-slate-200 hover:text-[#f4730a] px-3 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 transition-colors"
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-[#2a285c] dark:text-slate-200 hover:text-[#f4730a] px-3.5 py-2 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 transition-colors"
             >
-              Tienda Web <ExternalLink className="w-3.5 h-3.5 text-[#f4730a]" />
+              <span>Tienda OnProtec</span>
+              <ExternalLink className="w-3 h-3 text-[#f4730a]" />
             </a>
 
             <ThemeToggle />
 
             <Link
               href="/admin"
-              className="inline-flex items-center gap-1.5 text-xs font-extrabold text-white bg-[#2a285c] hover:bg-[#1f1d47] px-4 py-2.5 rounded-full transition-all shadow-sm"
+              className="inline-flex items-center gap-1.5 text-xs font-extrabold text-white bg-[#2a285c] hover:bg-[#1f1d47] px-3.5 py-2 rounded-full transition-all shadow-sm"
+              title="Panel Administrativo"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#f4730a]" />
-              <span>Gestión Admin</span>
+              <span className="hidden md:inline">Admin</span>
             </Link>
           </div>
-        </div>
-
-        {/* Sub-barra de Navegación centrada idéntica a onprotec.com */}
-        <div className="border-t border-slate-100 dark:border-slate-800/80 bg-white dark:bg-[#111526]">
-          <nav className="max-w-[1640px] mx-auto px-4 sm:px-8 py-2 flex items-center justify-center gap-5 sm:gap-8 overflow-x-auto text-xs font-bold text-[#1a1c29] dark:text-slate-300 whitespace-nowrap">
-            <button
-              type="button"
-              onClick={() => scrollToSection("hero-sala")}
-              className="hover:text-[#f4730a] transition-colors py-1"
-            >
-              Inicio Sala VIP
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection("propuesta-valor")}
-              className="hover:text-[#f4730a] transition-colors py-1"
-            >
-              ¿Por qué Certificarte?
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection("calendario-temario")}
-              className="hover:text-[#f4730a] transition-colors py-1 flex items-center gap-1"
-            >
-              <span className="w-2 h-2 rounded-full bg-[#f4730a]" />
-              Calendario & Temario
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection("metodologia-timeline")}
-              className="hover:text-[#f4730a] transition-colors py-1"
-            >
-              Línea de Tiempo
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection("registro-express")}
-              className="text-[#f4730a] font-extrabold transition-colors py-1"
-            >
-              Inscripción Express
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection("marcas-autoridad")}
-              className="hover:text-[#f4730a] transition-colors py-1"
-            >
-              Marcas & Certificaciones
-            </button>
-            <a
-              href="https://onprotec.com/lp/onprotec"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-[#f4730a] transition-colors py-1 hidden md:inline"
-            >
-              Catálogo OnProtec
-            </a>
-          </nav>
         </div>
       </header>
 
       {/* =====================================================================
-          3. HERO SECTION (IMPACTO, ENGANCHE Y EXCLUSIVIDAD DE SALA)
-          Inspirado directamente en el banner hexagonal de www.onprotec.com
+          3. HERO CORPORATIVO: CARTA DE PRESENTACIÓN DE LA SALA VIP
       ===================================================================== */}
-      <section
-        id="hero-sala"
-        className="relative onprotec-hex-bg border-b border-slate-200/80 dark:border-slate-800 overflow-hidden"
-      >
-        {/* Decoración sutil */}
-        <div className="max-w-[1640px] mx-auto px-4 sm:px-8 pt-8 pb-12 lg:py-14">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-            {/* COLUMNA IZQUIERDA (7 cols): IDENTIDAD DE MARCA + PROPUESTA DE ALTO IMPACTO */}
-            <div className="lg:col-span-7 space-y-6">
-              {/* Badge Superior de Exclusividad */}
-              <div className="inline-flex flex-wrap items-center gap-2.5 bg-white dark:bg-slate-900 border border-[#f4730a]/30 rounded-full pl-2 pr-4 py-1.5 shadow-sm">
-                <span className="bg-[#f4730a] text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full">
-                  EXCLUSIVO PRESENCIAL
-                </span>
-                <span className="text-xs font-extrabold text-[#2a285c] dark:text-slate-200">
-                  Sala de Capacitaciones OnProtec® • Solo 18 Puestos de Laboratorio
-                </span>
-              </div>
+      <section className="relative onprotec-hex-bg border-b border-slate-200/80 dark:border-slate-800 py-10 lg:py-14 overflow-hidden">
+        <div className="max-w-[1580px] mx-auto px-4 sm:px-8">
+          <div className="max-w-4xl space-y-4">
+            <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-[#f4730a]/40 rounded-full pl-2.5 pr-4 py-1 shadow-sm">
+              <span className="bg-[#f4730a] text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full">
+                SALA TÉCNICA VIP
+              </span>
+              <span className="text-xs font-extrabold text-[#2a285c] dark:text-slate-200 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-[#f4730a]" />
+                Torre América, Piso 14, Urbanización El Recreo, Caracas
+              </span>
+            </div>
 
-              {/* Encabezado icónico "La tienda del INSTALADOR" + Título persuasivo */}
-              <div className="space-y-3">
-                <div className="inline-block">
-                  <p className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.2em] text-[#2a285c] dark:text-slate-300 mb-1">
-                    CENTRO DE ENTRENAMIENTO TÉCNICO CERTIFICADO
-                  </p>
-                  <h1 className="text-3xl sm:text-5xl xl:text-[54px] font-black tracking-tight leading-[1.06] text-[#1a1c29] dark:text-white">
-                    La{" "}
-                    <span className="text-[#f4730a] font-black">tienda</span>{" "}
-                    del{" "}
-                    <span className="text-stroke-orange tracking-wider">
-                      INSTALADOR
-                    </span>
-                  </h1>
-                  <div className="onprotec-dotted-line mt-2 w-full max-w-lg" />
-                </div>
+            <div>
+              <p className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.2em] text-[#f4730a] mb-1">
+                CENTRO DE ENTRENAMIENTO & CERTIFICACIÓN TÉCNICA ONPROTEC®
+              </p>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#1a1c29] dark:text-white leading-[1.1]">
+                La formación práctica definitiva para{" "}
+                <span className="text-[#f4730a]">Instaladores e Integradores</span> en Caracas
+              </h1>
+            </div>
 
-                <h2 className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-[#2a285c] dark:text-slate-100 leading-snug pt-2">
-                  Domina las arquitecturas líderes del mercado con{" "}
-                  <span className="text-[#f4730a] underline decoration-[#f4730a]/40 decoration-wavy underline-offset-4">
-                    equipos reales en vivo
-                  </span>{" "}
-                  y multiplica la rentabilidad de tus proyectos.
-                </h2>
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 font-medium leading-relaxed max-w-3xl">
+              Nuestra sala de capacitaciones corporativa en la{" "}
+              <strong className="text-[#2a285c] dark:text-white font-bold">
+                Torre América (Piso 14, El Recreo)
+              </strong>{" "}
+              está diseñada para dominar tecnologías de CCTV, Redes, Control de Acceso y Energía con{" "}
+              <strong className="text-[#f4730a]">equipos reales energizados en vivo</strong>. Aforo VIP limitado a 18 puestos de trabajo individuales para máxima interacción con instructores certificados.
+            </p>
 
-                <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed font-medium">
-                  Diseñamos una sala técnica de estándar corporativo para integradores, ingenieros y técnicos que buscan pasar de la teoría a la práctica real. Configura soluciones{" "}
-                  <strong className="text-[#2a285c] dark:text-white font-bold">
-                    Dahua, Hikvision, TP-Link Omada, Ubiquiti, WatchGuard y Marsriva
-                  </strong>{" "}
-                  junto a especialistas certificados de fábrica.
-                </p>
-              </div>
-
-              {/* CTAs Principales de Alta Conversión + Indicador de Escasez */}
-              <div className="flex flex-wrap items-center gap-4 pt-2">
-                <button
-                  type="button"
-                  onClick={() => scrollToSection("registro-express")}
-                  className="inline-flex items-center justify-center gap-3 bg-[#f4730a] hover:bg-[#ef7922] text-white font-black text-sm sm:text-base uppercase tracking-wider px-8 py-4 rounded-2xl shadow-[0_12px_30px_rgba(244,115,10,0.35)] hover:shadow-[0_16px_36px_rgba(244,115,10,0.5)] transition-all transform hover:-translate-y-0.5 cursor-pointer"
-                >
-                  <span>Asegura tu cupo ahora</span>
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => scrollToSection("calendario-temario")}
-                  className="inline-flex items-center justify-center gap-2 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-[#2a285c] dark:text-white border-2 border-[#2a285c]/15 dark:border-slate-700 font-extrabold text-sm px-6 py-4 rounded-2xl transition-all cursor-pointer"
-                >
-                  <Calendar className="w-4 h-4 text-[#f4730a]" />
-                  <span>Explorar Temario y Fechas</span>
-                </button>
-              </div>
-
-              {/* Micro-métricas de Autoridad */}
-              <div className="grid grid-cols-3 gap-4 pt-4 max-w-xl border-t border-slate-200/80 dark:border-slate-800">
-                <div>
-                  <p className="text-2xl sm:text-3xl font-black text-[#f4730a]">18 + 1</p>
-                  <p className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                    Aforo VIP (18 Técnicos + 1 Instructor)
-                  </p>
+            {/* 3 Insignias de Prestigio */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 max-w-3xl">
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/10 text-[#f4730a] flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-2xl sm:text-3xl font-black text-[#2a285c] dark:text-white">100%</p>
-                  <p className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                    Práctico con Equipos Energizados
-                  </p>
+                  <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">Torre América, Piso 14</p>
+                  <p className="text-[11px] text-slate-500">Urb. El Recreo, Caracas</p>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/10 text-[#2a285c] dark:text-cyan-400 flex items-center justify-center flex-shrink-0">
+                  <Users className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400">+38</p>
-                  <p className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-                    Cohortes Certificadas en Caracas
-                  </p>
+                  <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">18 Puestos VIP</p>
+                  <p className="text-[11px] text-slate-500">Hardware energizado</p>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">Certificación Oficial</p>
+                  <p className="text-[11px] text-slate-500">Respaldo de Fabricantes</p>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
 
-            {/* COLUMNA DERECHA (5 cols): TARJETA DESTACADA DEL PRÓXIMO EVENTO EN SALA */}
-            <div className="lg:col-span-5">
-              {selectedTraining ? (
-                <div className="bg-white dark:bg-[#13182b] rounded-3xl border-2 border-[#f4730a]/30 shadow-[0_20px_60px_rgba(42,40,92,0.12)] overflow-hidden">
-                  {/* Cabecera Navy Corporativa */}
-                  <div className="bg-[#2a285c] text-white px-6 py-4 flex items-center justify-between gap-3 keep-white">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#fdff00] animate-ping" />
-                      <span className="text-[11px] font-black uppercase tracking-widest text-[#fdff00] keep-white">
-                        CONVOCATORIA ACTIVA DESTACADA
-                      </span>
-                    </div>
-                    <span className="text-xs font-mono font-bold bg-white/15 text-white px-3 py-1 rounded-full keep-white">
-                      {selectedTraining.code}
+      {/* =====================================================================
+          4. SECCIÓN PRINCIPAL: CONVOCATORIA ACTIVA & REGISTRO EXPRESS (WIDESCREEN 7 / 5)
+      ===================================================================== */}
+      <section id="registro-express" className="py-12 lg:py-16 flex-1">
+        <div className="max-w-[1580px] mx-auto px-4 sm:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+            {/* -------------------------------------------------------------
+                COLUMNA IZQUIERDA (7 cols): CONVOCATORIA ACTUAL EN SALA VIP
+            ------------------------------------------------------------- */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Selector Limpio si existen varias capacitaciones abiertas */}
+              {openTrainings.length > 1 && (
+                <div className="bg-white dark:bg-[#13182b] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#f4730a]" />
+                    <span className="text-xs font-extrabold text-[#2a285c] dark:text-white">
+                      Convocatorias Disponibles:
                     </span>
                   </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {openTrainings.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setSelectedTraining(t)}
+                        className={`text-xs px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                          selectedTraining?.id === t.id
+                            ? "bg-[#f4730a] text-white shadow-sm"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                        }`}
+                      >
+                        {t.code} • {t.brand || "OnProtec"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                  {/* Galería / Banner Visual del Evento */}
-                  <div className="relative h-52 sm:h-60 bg-slate-900 overflow-hidden">
-                    <img
-                      src={
-                        coverGallery[activeCoverIdx] ||
-                        "/brand/onprotec-hero-1920.webp"
-                      }
-                      alt={selectedTraining.name || selectedTraining.title || "Capacitación"}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#1a183b]/95 via-[#1a183b]/40 to-transparent" />
-
-                    {/* Miniaturas si tiene varias fotos de portada */}
-                    {coverGallery.length > 1 && (
-                      <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/50 backdrop-blur-md p-1.5 rounded-xl">
-                        {coverGallery.map((url, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => setActiveCoverIdx(idx)}
-                            className={`w-9 h-7 rounded-lg overflow-hidden border-2 transition-all ${
-                              activeCoverIdx === idx
-                                ? "border-[#f4730a] scale-105"
-                                : "border-white/30 opacity-70"
-                            }`}
-                          >
-                            <img src={url} alt="" className="w-full h-full object-cover" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="absolute bottom-3 left-5 right-5 flex items-end justify-between gap-3">
-                      <div>
-                        <span className="inline-block bg-[#f4730a] text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md mb-1.5">
-                          {selectedTraining.brand || "ONPROTEC"}
-                        </span>
-                        <h3 className="text-lg sm:text-xl font-black text-white leading-tight line-clamp-2 keep-white">
-                          {selectedTraining.name || selectedTraining.title}
-                        </h3>
-                      </div>
+              {/* Ficha Ejecutiva del Evento Seleccionado */}
+              {selectedTraining ? (
+                <div className="bg-white dark:bg-[#13182b] rounded-3xl border-2 border-slate-200/90 dark:border-slate-800 shadow-md overflow-hidden">
+                  {/* Cabecera del Evento */}
+                  <div className="bg-[#2a285c] text-white p-6 sm:p-7 keep-white">
+                    <div className="flex items-center justify-between gap-3 mb-2.5 flex-wrap">
+                      <span className="text-xs font-mono font-bold bg-white/15 px-3 py-1 rounded-full text-[#fdff00] keep-white border border-white/20">
+                        {selectedTraining.code}
+                      </span>
+                      <span
+                        className={`text-[10px] font-black uppercase px-3 py-1 rounded-full ${
+                          isPaidCourse
+                            ? "bg-amber-400 text-amber-950 font-black"
+                            : "bg-emerald-400 text-emerald-950 font-black"
+                        }`}
+                      >
+                        {isPaidCourse
+                          ? `INVERSIÓN: ${formatCurrency(selectedTraining.price)}`
+                          : "100% GRATUITO • PRE-INSCRIPCIÓN"}
+                      </span>
                     </div>
+
+                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white keep-white leading-snug">
+                      {selectedTraining.name || selectedTraining.title}
+                    </h2>
+
+                    <p className="text-xs text-slate-200 mt-2 flex items-center gap-1.5 keep-white">
+                      <span>Instructor:</span>
+                      <strong className="text-[#fdff00] font-bold">
+                        {selectedTraining.instructor || "Especialista Certificado OnProtec"}
+                      </strong>
+                    </p>
                   </div>
 
-                  {/* Cuerpo de la Tarjeta Hero */}
-                  <div className="p-6 space-y-4">
-                    {/* Nota de Presentación */}
-                    {selectedTraining.presentationNotes && (
-                      <div className="bg-orange-50/90 dark:bg-[#f4730a]/10 border-l-4 border-[#f4730a] p-3.5 rounded-r-xl text-xs text-slate-700 dark:text-slate-200 font-medium leading-relaxed">
-                        {selectedTraining.presentationNotes}
+                  {/* Ficha de Información de Convocatoria */}
+                  <div className="p-6 sm:p-7 space-y-5">
+                    {/* Cuadrícula de Datos Clave (Fecha, Horario, Ubicación y Costo) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                        <span className="text-[10px] font-extrabold uppercase text-slate-400 block mb-1">
+                          📅 Fecha y Horario
+                        </span>
+                        <p className="text-sm font-black text-[#2a285c] dark:text-white">
+                          {fmtLocalDate(selectedTraining.eventDate || selectedTraining.startDate)}
+                        </p>
+                        <p className="text-xs font-bold text-[#f4730a] mt-0.5 flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          {fmtLocalHour(selectedTraining.eventDate || selectedTraining.startDate)} (Hora Caracas)
+                        </p>
                       </div>
-                    )}
 
-                    {/* Fechas, Horario y Especialista */}
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="bg-slate-50 dark:bg-slate-900/90 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                        <span className="text-[10px] font-bold uppercase text-slate-400 block">
-                          Fecha (Caracas)
+                      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                        <span className="text-[10px] font-extrabold uppercase text-slate-400 block mb-1">
+                          📍 Sede Presencial
                         </span>
-                        <span className="font-extrabold text-[#2a285c] dark:text-white flex items-center gap-1.5 mt-0.5">
-                          <Calendar className="w-3.5 h-3.5 text-[#f4730a]" />
-                          {fmtLocalDate(selectedTraining.startDate)}
-                        </span>
-                      </div>
-                      <div className="bg-slate-50 dark:bg-slate-900/90 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                        <span className="text-[10px] font-bold uppercase text-slate-400 block">
-                          Inversión
-                        </span>
-                        <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm block mt-0.5">
-                          {selectedTraining.isFree
-                            ? "100% GRATUITO"
-                            : formatCurrency(selectedTraining.price)}
-                        </span>
+                        <p className="text-sm font-black text-[#2a285c] dark:text-white flex items-center gap-1">
+                          <MapPin className="w-4 h-4 text-[#f4730a] flex-shrink-0" />
+                          <span>
+                            {selectedTraining.location || "Torre América, Piso 14, Urb. El Recreo, Caracas"}
+                          </span>
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Sala de Capacitaciones OnProtec®
+                        </p>
                       </div>
                     </div>
 
-                    {/* Termómetro de Escasez de Cupos en Vivo */}
-                    <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800">
-                      <div className="flex items-center justify-between text-xs mb-2">
-                        <span className="font-extrabold text-[#2a285c] dark:text-slate-200 flex items-center gap-1.5">
+                    {/* Termómetro de Cupos & Política de Aforo */}
+                    <div className="p-4 rounded-2xl bg-orange-50/70 dark:bg-orange-500/10 border border-[#f4730a]/30 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold">
+                        <span className="text-[#2a285c] dark:text-slate-200 flex items-center gap-1.5">
                           <Users className="w-4 h-4 text-[#f4730a]" />
-                          Disponibilidad en Sala (Máx. {maxSeats})
+                          {isPaidCourse
+                            ? "Aforo Estricto de Sala (18 puestos VIP)"
+                            : "Pre-inscripción Abierta (Meta: hasta 40 registrados)"}
                         </span>
                         <span
-                          className={`font-black px-2.5 py-0.5 rounded-full text-[11px] ${
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-black ${
                             availableSeats > 0
-                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
                               : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
                           }`}
                         >
                           {availableSeats > 0
-                            ? `¡Quedan ${availableSeats} cupos libres!`
-                            : "Aforo completo (Lista de Espera)"}
+                            ? isPaidCourse
+                              ? `${availableSeats} puestos libres de 18`
+                              : `${occupiedSeats} de ${maxSeats} pre-inscritos`
+                            : "Lista de espera activa"}
                         </span>
                       </div>
+
                       <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-[#f4730a] to-[#2a285c] rounded-full transition-all duration-500"
-                          style={{ width: `${Math.max(12, occupancyPct)}%` }}
+                          style={{ width: `${Math.max(10, occupancyPct)}%` }}
                         />
                       </div>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 font-semibold">
-                        <span>{occupiedSeats} inscritos confirmados</span>
-                        <span>Speaker: {selectedTraining.instructor || "Especialista OnProtec"}</span>
-                      </div>
-                    </div>
 
-                    <button
-                      type="button"
-                      onClick={() => scrollToSection("registro-express")}
-                      className="w-full bg-[#f4730a] hover:bg-[#ef7922] text-white font-black text-sm uppercase tracking-wider py-4 rounded-xl shadow-lg shadow-[#f4730a]/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <span>Reservar mi Asiento en {selectedTraining.code}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          </div>
-
-          {/* =================================================================
-              PÍLDORAS NARANJAS DE CATEGORÍAS (IDÉNTICAS A WWW.ONPROTEC.COM)
-          ================================================================= */}
-          <div className="mt-10 pt-8 border-t border-slate-200/70 dark:border-slate-800/80">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
-                FILTRAR CAPACITACIONES POR VERTICAL TECNOLÓGICA ONPROTEC®
-              </span>
-              <span className="text-[11px] font-mono font-bold text-slate-400">
-                RIF: J-40685449-2
-              </span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-              {ONPROTEC_CATEGORIES.map((cat) => {
-                const Icon = cat.icon;
-                const isActive = categoryFilter === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => {
-                      setCategoryFilter(cat.id);
-                      scrollToSection("calendario-temario");
-                    }}
-                    className={`group relative flex items-center justify-between px-5 py-3.5 rounded-full font-black text-xs sm:text-sm tracking-wider uppercase transition-all cursor-pointer shadow-sm ${
-                      isActive
-                        ? "bg-[#2a285c] text-white ring-4 ring-[#f4730a]/30 scale-[1.02] keep-white"
-                        : "bg-[#f4730a] hover:bg-[#ef7922] text-white hover:-translate-y-0.5 shadow-[#f4730a]/20 keep-white"
-                    }`}
-                  >
-                    <span className="truncate text-white keep-white">{cat.pillLabel}</span>
-                    <span
-                      className={`w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 ${
-                        isActive ? "bg-[#f4730a] text-white" : "bg-white/20 text-white"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =====================================================================
-          4. SECCIÓN DE PROPUESTA DE VALOR (POR QUÉ FORMARTE EN ONPROTEC)
-          Espacio en blanco generoso + Cuadrícula de alto valor técnico
-      ===================================================================== */}
-      <section
-        id="propuesta-valor"
-        className="py-16 lg:py-20 bg-white dark:bg-[#0f1322] border-b border-slate-200/70 dark:border-slate-800"
-      >
-        <div className="max-w-[1640px] mx-auto px-4 sm:px-8">
-          <div className="max-w-3xl mx-auto text-center space-y-3 mb-12">
-            <span className="inline-block text-[11px] font-black uppercase tracking-[0.2em] text-[#f4730a] bg-orange-50 dark:bg-[#f4730a]/10 px-3.5 py-1 rounded-full">
-              ESTÁNDAR CORPORATIVO DE FORMACIÓN
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-[#2a285c] dark:text-white tracking-tight">
-              ¿Por qué la Sala de Capacitaciones OnProtec® es diferente?
-            </h2>
-            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 font-medium">
-              No somos un webinar pasivo. Entrenamos a los mejores instaladores e integradores de Venezuela en un entorno controlado de laboratorio físico.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Card 1 */}
-            <div className="group bg-[#f8f9fc] dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-900 rounded-3xl p-7 border border-slate-200/80 dark:border-slate-800 hover:border-[#f4730a] transition-all duration-300 shadow-sm hover:shadow-[0_16px_40px_rgba(244,115,10,0.10)]">
-              <div className="w-14 h-14 rounded-2xl bg-[#f4730a] text-white flex items-center justify-center mb-5 shadow-md shadow-[#f4730a]/25 group-hover:scale-105 transition-transform">
-                <Cpu className="w-7 h-7" />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#f4730a]">
-                01 • LABORATORIO VIVO
-              </span>
-              <h3 className="text-lg font-extrabold text-[#2a285c] dark:text-white mt-1 mb-2">
-                Equipos Energizados en Vivo
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                Cada sesión utiliza cámaras, grabadores NVR, routers empresariales, firewalls y respaldos energizados del inventario oficial de{" "}
-                <strong className="text-[#2a285c] dark:text-slate-200">www.onprotec.com</strong>.
-              </p>
-            </div>
-
-            {/* Card 2 */}
-            <div className="group bg-[#f8f9fc] dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-900 rounded-3xl p-7 border border-slate-200/80 dark:border-slate-800 hover:border-[#f4730a] transition-all duration-300 shadow-sm hover:shadow-[0_16px_40px_rgba(244,115,10,0.10)]">
-              <div className="w-14 h-14 rounded-2xl bg-[#2a285c] text-white flex items-center justify-center mb-5 shadow-md shadow-[#2a285c]/25 group-hover:scale-105 transition-transform">
-                <Users className="w-7 h-7 text-[#fdff00]" />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#2a285c] dark:text-indigo-400">
-                02 • AFORO VIP ESTRICTO
-              </span>
-              <h3 className="text-lg font-extrabold text-[#2a285c] dark:text-white mt-1 mb-2">
-                18 Cupos + 1 Especialista
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                Garantizamos atención personalizada 1 a 1. Nuestro algoritmo cierra el salón al inscrito #18 y activa lista de espera inteligente con prioridad para nuevas fechas.
-              </p>
-            </div>
-
-            {/* Card 3 */}
-            <div className="group bg-[#f8f9fc] dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-900 rounded-3xl p-7 border border-slate-200/80 dark:border-slate-800 hover:border-[#f4730a] transition-all duration-300 shadow-sm hover:shadow-[0_16px_40px_rgba(244,115,10,0.10)]">
-              <div className="w-14 h-14 rounded-2xl bg-[#f4730a] text-white flex items-center justify-center mb-5 shadow-md shadow-[#f4730a]/25 group-hover:scale-105 transition-transform">
-                <Award className="w-7 h-7" />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#f4730a]">
-                03 • ACREDITACIÓN OFICIAL
-              </span>
-              <h3 className="text-lg font-extrabold text-[#2a285c] dark:text-white mt-1 mb-2">
-                Historial y Certificación Técnica
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                Check-in automatizado por código QR en puerta, evaluación final digital y registro permanente en el directorio de instaladores certificados OnProtec.
-              </p>
-            </div>
-
-            {/* Card 4 */}
-            <div className="group bg-[#f8f9fc] dark:bg-slate-900/90 hover:bg-white dark:hover:bg-slate-900 rounded-3xl p-7 border border-slate-200/80 dark:border-slate-800 hover:border-[#f4730a] transition-all duration-300 shadow-sm hover:shadow-[0_16px_40px_rgba(244,115,10,0.10)]">
-              <div className="w-14 h-14 rounded-2xl bg-[#2a285c] text-white flex items-center justify-center mb-5 shadow-md shadow-[#2a285c]/25 group-hover:scale-105 transition-transform">
-                <Zap className="w-7 h-7 text-[#f4730a]" />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#2a285c] dark:text-indigo-400">
-                04 • RENTABILIDAD COMERCIAL
-              </span>
-              <h3 className="text-lg font-extrabold text-[#2a285c] dark:text-white mt-1 mb-2">
-                Precios de Distribuidor & Cashea
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                Acceso directo a asesores comerciales, precios especiales para proyectos, soporte post-venta y facilidades de compra con{" "}
-                <strong className="text-[#1a1c29] dark:text-yellow-300">Cashea</strong> en tienda.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =====================================================================
-          5. ORGANIZACIÓN DE LA INFORMACIÓN E INSCRIPCIÓN DE FRICCIÓN CERO
-          Layout Horizontal Widescreen: Izquierda (Catálogo, Insignias, Línea de Tiempo)
-          + Derecha Sticky (Formulario Corporativo con Etiquetas Flotantes)
-      ===================================================================== */}
-      <section id="calendario-temario" className="py-16 lg:py-20 flex-1">
-        <div className="max-w-[1640px] mx-auto px-4 sm:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-            {/* ===============================================================
-                COLUMNA IZQUIERDA (7 cols): CATÁLOGO + DETALLE VISUAL + TIMELINE
-            =============================================================== */}
-            <div className="lg:col-span-7 space-y-10">
-              {/* Encabezado y Filtros Rápidos por Marca */}
-              <div className="bg-white dark:bg-[#13182b] rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                  <div>
-                    <span className="text-[11px] font-black uppercase tracking-widest text-[#f4730a]">
-                      AGENDA OFICIAL AMERICA/CARACAS (UTC-4)
-                    </span>
-                    <h2 className="text-2xl sm:text-3xl font-black text-[#2a285c] dark:text-white mt-0.5">
-                      Selecciona tu Certificación Técnica
-                    </h2>
-                  </div>
-
-                  {/* Filtro de Marcas */}
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                    {["all", "Dahua", "Hikvision", "TP-Link", "Ubiquiti", "WatchGuard", "EZVIZ"].map(
-                      (b) => (
-                        <button
-                          key={b}
-                          type="button"
-                          onClick={() => setBrandFilter(b)}
-                          className={`text-xs px-3.5 py-1.5 rounded-full font-bold transition-all cursor-pointer ${
-                            brandFilter === b
-                              ? "bg-[#f4730a] text-white shadow-sm"
-                              : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
-                          }`}
-                        >
-                          {b === "all" ? "Todas las Marcas" : b}
-                        </button>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                {/* Pestañas de Convocatorias Abiertas vs Histórico */}
-                <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-3 border-b border-slate-200/80 dark:border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStatusTab("open");
-                        const openOne = trainings.find((t) => t.status === "Planificado" || t.status === "En Publicidad");
-                        if (openOne) setSelectedTraining(openOne);
-                      }}
-                      className={`text-xs px-4 py-2 rounded-xl font-extrabold flex items-center gap-2 transition cursor-pointer ${
-                        statusTab === "open"
-                          ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
-                      }`}
-                    >
-                      <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
-                      <span>Convocatorias Abiertas ({trainings.filter((t) => t.status === "Planificado" || t.status === "En Publicidad").length})</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setStatusTab("all")}
-                      className={`text-xs px-4 py-2 rounded-xl font-extrabold flex items-center gap-2 transition cursor-pointer ${
-                        statusTab === "all"
-                          ? "bg-[#2a285c] text-white shadow-md shadow-[#2a285c]/20 keep-white"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
-                      }`}
-                    >
-                      <span className={statusTab === "all" ? "text-white keep-white" : ""}>
-                        Histórico de Talleres ({trainings.length})
-                      </span>
-                    </button>
-                  </div>
-
-                  <span className="text-[11px] font-semibold text-slate-400">
-                    {statusTab === "open"
-                      ? "Mostrando eventos con cupos activos"
-                      : "Archivo histórico (inscripciones cerradas)"}
-                  </span>
-                </div>
-
-                {/* Grid Escaneable de Capacitaciones con Insignias (Badges) */}
-                {loading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[1, 2, 3, 4].map((n) => (
-                      <div
-                        key={n}
-                        className="h-44 rounded-2xl bg-slate-100 dark:bg-slate-800/50 animate-pulse"
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[540px] overflow-y-auto pr-1">
-                    {filteredTrainings.map((t) => {
-                      const isSelected = selectedTraining?.id === t.id;
-                      const max = Number(t.maxCapacity || 18);
-                      const occ = Number(t.occupiedCount || 0);
-                      const avail = Math.max(0, max - occ);
-                      const pct = Math.min(100, Math.round((occ / max) * 100));
-                      const isPlanned =
-                        t.status === "Planificado" || t.status === "En Publicidad";
-
-                      return (
-                        <div
-                          key={t.id}
-                          onClick={() => setSelectedTraining(t)}
-                          className={`group cursor-pointer rounded-2xl p-5 transition-all border-2 flex flex-col justify-between ${
-                            isSelected
-                              ? "bg-orange-50/60 dark:bg-[#f4730a]/10 border-[#f4730a] shadow-md"
-                              : "bg-[#f8f9fc] dark:bg-slate-900/70 border-slate-200/80 dark:border-slate-800 hover:border-[#2a285c]/40"
-                          }`}
-                        >
-                          <div>
-                            <div className="flex items-center justify-between gap-2 mb-2.5">
-                              <span className="text-[10px] font-mono font-extrabold px-2.5 py-0.5 rounded-md bg-[#2a285c] text-white keep-white">
-                                {t.code}
-                              </span>
-                              <div className="flex items-center gap-1.5">
-                                {isPlanned && (
-                                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[#fdff00] text-[#1a1c29]">
-                                    INSCRIPCIÓN ABIERTA
-                                  </span>
-                                )}
-                                <span
-                                  className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full ${
-                                    t.isFree
-                                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
-                                      : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
-                                  }`}
-                                >
-                                  {t.isFree ? "GRATIS" : formatCurrency(t.price)}
-                                </span>
-                              </div>
-                            </div>
-
-                            <h3 className="text-sm font-extrabold text-[#1a1c29] dark:text-white group-hover:text-[#f4730a] transition-colors line-clamp-2 mb-2">
-                              {t.title}
-                            </h3>
-
-                            {/* Insignias Escaneables */}
-                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400 font-semibold mb-3">
-                              <span className="inline-flex items-center gap-1 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200/70 dark:border-slate-700">
-                                <Calendar className="w-3 h-3 text-[#f4730a]" />
-                                {fmtLocalDate(t.startDate)}
-                              </span>
-                              <span className="inline-flex items-center gap-1 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200/70 dark:border-slate-700">
-                                <Clock className="w-3 h-3 text-[#2a285c] dark:text-indigo-400" />
-                                {fmtLocalHour(t.startDate)}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Barra de Cupos y Botón Rápido */}
-                          <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800">
-                            <div className="flex items-center justify-between text-[11px] mb-1">
-                              <span className="text-slate-500 font-semibold">
-                                Ocupación: {occ}/{max}
-                              </span>
-                              <span
-                                className={`font-extrabold ${
-                                  avail > 0
-                                    ? "text-emerald-600 dark:text-emerald-400"
-                                    : "text-amber-600 dark:text-amber-400"
-                                }`}
-                              >
-                                {avail > 0 ? `${avail} cupos libres` : "Lista de espera"}
-                              </span>
-                            </div>
-                            <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${
-                                  avail > 0 ? "bg-[#f4730a]" : "bg-amber-500"
-                                }`}
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* FICHA TÉCNICA ESCANEABLE DEL CURSO SELECCIONADO */}
-              {selectedTraining && (
-                <div className="bg-white dark:bg-[#13182b] rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-6">
-                  <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200/70 dark:border-slate-800 pb-5">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <span className="bg-[#f4730a] text-white text-[11px] font-black uppercase px-3 py-1 rounded-full">
-                          {selectedTraining.brand || "ONPROTEC"}
-                        </span>
-                        <span className="bg-[#2a285c] text-white text-[11px] font-mono font-bold px-3 py-1 rounded-full keep-white">
-                          {selectedTraining.code}
-                        </span>
-                        <span className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 text-[11px] font-extrabold px-3 py-1 rounded-full">
-                          Modalidad Presencial Hands-On
-                        </span>
-                      </div>
-                      <h3 className="text-xl sm:text-2xl font-black text-[#2a285c] dark:text-white">
-                        {selectedTraining.name || selectedTraining.title}
-                      </h3>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/checkin/${selectedTraining.id}`}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-[#2a285c] dark:text-slate-200 hover:bg-[#f4730a] hover:text-white transition-colors"
-                      >
-                        <QrCode className="w-4 h-4" />
-                        Check-in QR
-                      </Link>
-                      <Link
-                        href={`/encuesta/${selectedTraining.id}`}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-[#2a285c] dark:text-slate-200 hover:bg-[#2a285c] hover:text-white transition-colors"
-                      >
-                        <FileText className="w-4 h-4" />
-                        Encuesta Final
-                      </Link>
-                    </div>
-                  </div>
-
-                  {/* Insignias de Ubicación, Fecha, Horario y Speaker */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
-                    <div className="p-4 rounded-2xl bg-[#f8f9fc] dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
-                        FECHA DEL EVENTO
-                      </span>
-                      <p className="text-sm font-black text-[#2a285c] dark:text-white mt-1 flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4 text-[#f4730a]" />
-                        {fmtLocalDate(selectedTraining.startDate)}
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
+                        {isPaidCourse ? (
+                          <>
+                            <strong>Inscripción con asiento garantizado:</strong> Solo 18 puestos VIP disponibles con verificación de comprobante de pago.
+                          </>
+                        ) : (
+                          <>
+                            <strong>Convocatoria abierta para reconfirmación:</strong> Se permite registrar hasta 40 participantes para reconfirmar telefónicamente a los <strong>18 asistentes físicos</strong> que ingresarán a sala (compensando el No-Show habitual).
+                          </>
+                        )}
                       </p>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-[#f8f9fc] dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
-                        HORARIO OFICIAL (UTC-4)
-                      </span>
-                      <p className="text-sm font-black text-[#2a285c] dark:text-white mt-1 flex items-center gap-1.5">
-                        <Clock className="w-4 h-4 text-[#f4730a]" />
-                        {fmtLocalHour(selectedTraining.startDate)} -{" "}
-                        {fmtLocalHour(selectedTraining.endDate)}
-                      </p>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-[#f8f9fc] dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
-                        INSTRUCTOR CERTIFICADO
-                      </span>
-                      <p className="text-sm font-black text-[#2a285c] dark:text-white mt-1 truncate">
-                        {selectedTraining.instructor || "Ing. Especialista OnProtec"}
-                      </p>
-                    </div>
-
-                    <div className="p-4 rounded-2xl bg-[#f8f9fc] dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
-                        UBICACIÓN FÍSICA
-                      </span>
-                      <p className="text-xs font-extrabold text-[#2a285c] dark:text-white mt-1 flex items-center gap-1">
-                        <MapPin className="w-4 h-4 text-[#f4730a] shrink-0" />
-                        Los Chaguaramos, Caracas
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Nota de Presentación Destacada */}
-                  {selectedTraining.presentationNotes && (
-                    <div className="p-5 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50/50 dark:from-[#f4730a]/15 dark:to-slate-900 border border-[#f4730a]/30">
-                      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#f4730a] mb-1.5">
-                        <Sparkles className="w-4 h-4" />
-                        Alcance Técnico y Nota de Presentación
-                      </div>
-                      <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed font-medium">
+                    {/* Nota de Presentación del Instructor */}
+                    {selectedTraining.presentationNotes && (
+                      <div className="bg-slate-50 dark:bg-slate-900 border-l-4 border-[#2a285c] p-4 rounded-r-2xl text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                        <p className="font-extrabold text-[#2a285c] dark:text-white text-[11px] uppercase tracking-wider mb-1">
+                          Nota del Instructor:
+                        </p>
                         {selectedTraining.presentationNotes}
+                      </div>
+                    )}
+
+                    {/* Beneficios Incluidos */}
+                    <div className="pt-2">
+                      <p className="text-xs font-black uppercase tracking-wider text-[#2a285c] dark:text-white mb-2.5">
+                        ¿Qué incluye tu participación en sala?
                       </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700 dark:text-slate-300 font-medium">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                          <span>Equipos en vivo energizados en cada puesto</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                          <span>Certificado de participación oficial OnProtec</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                          <span>Coffee break ejecutivo y networking técnico</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                          <span>Precios especiales en tienda y compras Cashea</span>
+                        </div>
+                      </div>
                     </div>
-                  )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 text-center text-slate-500">
+                  Cargando capacitaciones...
                 </div>
               )}
-
-              {/* =============================================================
-                  LÍNEA DE TIEMPO VISUAL (TIMELINE DE LA JORNADA EN SALA)
-              ============================================================= */}
-              <div
-                id="metodologia-timeline"
-                className="bg-white dark:bg-[#13182b] rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 shadow-sm"
-              >
-                <div className="mb-6">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-[#f4730a]">
-                    ESTRUCTURA DE APRENDIZAJE PRÁCTICO
-                  </span>
-                  <h3 className="text-xl sm:text-2xl font-black text-[#2a285c] dark:text-white mt-0.5">
-                    Línea de Tiempo de tu Jornada en la Sala OnProtec®
-                  </h3>
-                </div>
-
-                <div className="relative pl-6 sm:pl-8 border-l-2 border-dashed border-[#f4730a]/50 space-y-6">
-                  {/* Paso 1 */}
-                  <div className="relative">
-                    <div className="absolute -left-[35px] sm:-left-[43px] top-0.5 w-6 h-6 rounded-full bg-[#f4730a] text-white text-xs font-black flex items-center justify-center ring-4 ring-orange-100 dark:ring-slate-900">
-                      1
-                    </div>
-                    <div className="bg-[#f8f9fc] dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800">
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                        <h4 className="text-sm font-extrabold text-[#2a285c] dark:text-white">
-                          Acreditación QR & Kit de Bienvenida
-                        </h4>
-                        <span className="text-[11px] font-black text-[#f4730a] bg-orange-50 dark:bg-[#f4730a]/10 px-2.5 py-0.5 rounded-full">
-                          08:30 AM – 09:00 AM
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">
-                        Validación instantánea con código QR en recepción, asignación de estación de trabajo entre las 18 mesas técnicas y entrega de material de apoyo.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Paso 2 */}
-                  <div className="relative">
-                    <div className="absolute -left-[35px] sm:-left-[43px] top-0.5 w-6 h-6 rounded-full bg-[#2a285c] text-white text-xs font-black flex items-center justify-center ring-4 ring-indigo-100 dark:ring-slate-900 keep-white">
-                      2
-                    </div>
-                    <div className="bg-[#f8f9fc] dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800">
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                        <h4 className="text-sm font-extrabold text-[#2a285c] dark:text-white">
-                          Arquitectura de Soluciones & Dimensionamiento
-                        </h4>
-                        <span className="text-[11px] font-black text-[#2a285c] dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-0.5 rounded-full">
-                          09:00 AM – 10:30 AM
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">
-                        Análisis del portafolio actualizado, topologías recomendadas por fábrica, errores comunes en campo y cómo cotizar proyectos de alta rentabilidad.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Paso 3 */}
-                  <div className="relative">
-                    <div className="absolute -left-[35px] sm:-left-[43px] top-0.5 w-6 h-6 rounded-full bg-[#f4730a] text-white text-xs font-black flex items-center justify-center ring-4 ring-orange-100 dark:ring-slate-900">
-                      3
-                    </div>
-                    <div className="bg-[#f8f9fc] dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800">
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                        <h4 className="text-sm font-extrabold text-[#2a285c] dark:text-white">
-                          Laboratorio Hands-On con Equipos en Vivo
-                        </h4>
-                        <span className="text-[11px] font-black text-[#f4730a] bg-orange-50 dark:bg-[#f4730a]/10 px-2.5 py-0.5 rounded-full">
-                          10:45 AM – 12:00 PM
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">
-                        Configuración en vivo, puesta en marcha, aprovisionamiento en la nube (DoLynk Care / Hik-Partner Pro / Omada Cloud) y pruebas de diagnóstico.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Paso 4 */}
-                  <div className="relative">
-                    <div className="absolute -left-[35px] sm:-left-[43px] top-0.5 w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-black flex items-center justify-center ring-4 ring-emerald-100 dark:ring-slate-900">
-                      4
-                    </div>
-                    <div className="bg-[#f8f9fc] dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800">
-                      <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                        <h4 className="text-sm font-extrabold text-[#2a285c] dark:text-white">
-                          Evaluación QR, Networking & Beneficios de Distribuidor
-                        </h4>
-                        <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-0.5 rounded-full">
-                          12:00 PM – 12:30 PM
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">
-                        Encuesta de satisfacción digital, acreditación en tu expediente histórico de participante y beneficios exclusivos en mostrador OnProtec®.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
-            {/* ===============================================================
-                COLUMNA DERECHA STICKY (5 cols): FRICCIÓN CERO EN EL REGISTRO
-                Etiquetas Flotantes (Floating Labels) + Agrupación Lógica
-            =============================================================== */}
-            <div id="registro-express" className="lg:col-span-5 lg:sticky lg:top-28">
-              <div className="bg-white dark:bg-[#13182b] rounded-3xl border-2 border-[#2a285c]/15 dark:border-slate-800 shadow-[0_24px_60px_rgba(42,40,92,0.10)] overflow-hidden">
-                {/* Cabecera del Formulario con Fecha, Hora y Aforo */}
-                <div className="bg-gradient-to-r from-[#2a285c] via-[#24224f] to-[#1f1d47] text-white p-6 keep-white">
-                  <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap">
+            {/* -------------------------------------------------------------
+                COLUMNA DERECHA (5 cols): FORMULARIO DE REGISTRO SIN FRICCIÓN
+            ------------------------------------------------------------- */}
+            <div className="lg:col-span-5 lg:sticky lg:top-24">
+              <div className="bg-white dark:bg-[#13182b] rounded-3xl border-2 border-[#2a285c]/15 dark:border-slate-800 shadow-[0_20px_50px_rgba(42,40,92,0.10)] overflow-hidden">
+                {/* Cabecera del Formulario con Fecha y Sede */}
+                <div className="bg-gradient-to-r from-[#2a285c] to-[#1f1d47] text-white p-6 keep-white">
+                  <div className="flex items-center justify-between gap-2 mb-2">
                     <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-[#f4730a] text-white px-3 py-1 rounded-full keep-white shadow-sm">
-                      <Lock className="w-3 h-3" /> REGISTRO RÁPIDO SIN FRICCIÓN
+                      <Lock className="w-3 h-3" /> FORMULARIO OFICIAL
                     </span>
                     {selectedTraining && (
                       <span className="text-xs font-mono font-bold text-[#fdff00] keep-white bg-white/10 px-2.5 py-0.5 rounded-lg border border-white/20">
@@ -1118,643 +523,340 @@ export default function HomePage() {
                       </span>
                     )}
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-black tracking-tight text-white keep-white leading-tight">
-                    {selectedTraining
-                      ? (selectedTraining.name || selectedTraining.title)
-                      : "Asegura tu Asiento en la Sala VIP"}
+                  <h3 className="text-lg sm:text-xl font-black text-white keep-white leading-tight">
+                    {selectedTraining ? selectedTraining.name || selectedTraining.title : "Reserva tu Cupo en Sala VIP"}
                   </h3>
-
-                  {/* Ficha Destacada de Fecha, Horario y Sede del Evento */}
-                  {selectedTraining && (
-                    <div className="mt-3.5 p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white space-y-2.5 keep-white">
-                      <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
-                        <span className="inline-flex items-center gap-1.5 font-black text-[#fdff00]">
-                          <Calendar className="w-4 h-4 text-[#fdff00] flex-shrink-0" />
-                          <span>
-                            {fmtLocalDate(selectedTraining.eventDate || selectedTraining.startDate)}
-                          </span>
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 font-bold text-slate-200">
-                          <Clock className="w-4 h-4 text-cyan-300 flex-shrink-0" />
-                          <span>
-                            {fmtLocalHour(selectedTraining.eventDate || selectedTraining.startDate)}
-                          </span>
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-[11px] pt-2 border-t border-white/15 text-slate-300 flex-wrap gap-2">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-[#f4730a] flex-shrink-0" />
-                          <span>Sala OnProtec (Boleíta Sur, Caracas)</span>
-                        </span>
-                        <span className="font-extrabold text-[#fdff00]">
-                          {availableSeats > 0
-                            ? `${availableSeats} de ${maxSeats} cupos disponibles`
-                            : "Lista de Espera Activa"}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  <div className="mt-2.5 pt-2 border-t border-white/15 flex items-center justify-between text-xs text-slate-200 keep-white">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-[#fdff00]" />
+                      {selectedTraining ? fmtLocalDate(selectedTraining.eventDate || selectedTraining.startDate) : ""}
+                    </span>
+                    <span className="flex items-center gap-1 text-[11px] text-slate-300">
+                      <MapPin className="w-3.5 h-3.5 text-[#f4730a]" />
+                      Torre América, Piso 14
+                    </span>
+                  </div>
                 </div>
 
-                <div className="p-6 sm:p-7">
+                <div className="p-6">
                   {!isSelectedTrainingOpen ? (
-                    <div className="p-6 sm:p-8 rounded-2xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 text-center space-y-4">
-                      <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 mx-auto flex items-center justify-center">
-                        <Lock className="w-7 h-7" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                          CAPACITACIÓN FINALIZADA
-                        </span>
-                        <h4 className="text-base font-extrabold text-[#2a285c] dark:text-white mt-2">
-                          Inscripciones Cerradas para este Evento
-                        </h4>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 max-w-sm mx-auto mt-1 leading-relaxed">
-                          Este curso culminó su ciclo formativo presencial ({selectedTraining ? fmtLocalDate(selectedTraining.startDate) : "Fecha pasada"}). No admite nuevas inscripciones.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const openOne =
-                            trainings.find(
-                              (t) => t.status === "Planificado" || t.status === "En Publicidad"
-                            ) || trainings[0];
-                          setSelectedTraining(openOne);
-                          setStatusTab("open");
-                        }}
-                        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#f4730a] hover:bg-[#ef7922] text-white font-extrabold text-xs shadow-md shadow-[#f4730a]/25 transition cursor-pointer"
-                      >
-                        <span>Ver Convocatoria Abierta Actual</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
+                    <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 text-center space-y-3">
+                      <Lock className="w-8 h-8 text-amber-500 mx-auto" />
+                      <h4 className="text-base font-extrabold text-[#2a285c] dark:text-white">
+                        Inscripciones Cerradas para este Evento
+                      </h4>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        Este curso ya culminó o se encuentra en estado cerrado. Selecciona otra capacitación abierta en el listado.
+                      </p>
                     </div>
                   ) : (
                     <>
-                      {/* Mensaje de Confirmación Post-Registro */}
-                  {submissionResult && (
-                    <div
-                      className={`mb-6 p-5 rounded-2xl border-2 ${
-                        submissionResult.success
-                          ? submissionResult.data?.isOverbooked
-                            ? "bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-500/10 dark:border-amber-500/40 dark:text-amber-200"
-                            : "bg-emerald-50 border-emerald-300 text-emerald-900 dark:bg-emerald-500/10 dark:border-emerald-500/40 dark:text-emerald-200"
-                          : "bg-rose-50 border-rose-300 text-rose-900 dark:bg-rose-500/10 dark:border-rose-500/40 dark:text-rose-200"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {submissionResult.success ? (
-                          submissionResult.data?.isOverbooked ? (
-                            <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
-                          ) : (
-                            <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
-                          )
-                        ) : (
-                          <AlertTriangle className="w-6 h-6 text-rose-600 shrink-0 mt-0.5" />
-                        )}
-                        <div className="space-y-1 text-xs">
-                          <p className="font-black text-sm">
-                            {submissionResult.message || submissionResult.error}
-                          </p>
-                          {submissionResult.data && (
-                            <p className="font-bold">
-                              Posición asignada en Sala:{" "}
-                              <span className="underline">
-                                #{submissionResult.data.seatPosition} de{" "}
-                                {submissionResult.data.maxCapacity}
-                              </span>{" "}
-                              ({submissionResult.data.status})
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Barra de Confirmación de Capacitación y Fecha Exacta */}
-                    {selectedTraining && (
-                      <div className="p-3.5 rounded-2xl bg-orange-50/80 dark:bg-orange-500/10 border border-[#f4730a]/30 flex items-center justify-between gap-3">
-                        <div className="space-y-0.5">
-                          <span className="text-[10px] font-black uppercase text-[#f4730a] tracking-wider block">
-                            Capacitación Seleccionada ({selectedTraining.code})
-                          </span>
-                          <p className="font-extrabold text-xs text-[#2a285c] dark:text-white line-clamp-1">
-                            {selectedTraining.name || selectedTraining.title}
-                          </p>
-                          <div className="flex items-center gap-3 text-[11px] font-bold text-slate-700 dark:text-slate-300 pt-0.5">
-                            <span className="flex items-center gap-1 text-[#f4730a]">
-                              <Calendar className="w-3.5 h-3.5" />
-                              {fmtLocalDate(selectedTraining.eventDate || selectedTraining.startDate)}
-                            </span>
-                            <span className="flex items-center gap-1 text-slate-500">
-                              <Clock className="w-3.5 h-3.5" />
-                              {fmtLocalHour(selectedTraining.eventDate || selectedTraining.startDate)}
-                            </span>
-                          </div>
-                        </div>
-                        <span className="text-xs font-black px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[#2a285c] dark:text-white flex-shrink-0 shadow-sm">
-                          {Number(selectedTraining.price) > 0 ? formatCurrency(selectedTraining.price) : "Gratis"}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* GRUPO 1: IDENTIFICACIÓN DEL PARTICIPANTE */}
-                    <div className="space-y-3.5">
-                      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#2a285c] dark:text-slate-200">
-                        <span className="w-5 h-5 rounded-full bg-[#f4730a] text-white text-[11px] flex items-center justify-center">
-                          1
-                        </span>
-                        Identificación del Instalador / Participante
-                      </div>
-
-                      {/* Floating Label: Nombre y Apellido */}
-                      <div className="relative">
-                        <input
-                          id="fl-name"
-                          type="text"
-                          required
-                          placeholder=" "
-                          value={form.name}
-                          onChange={(e) => setForm({ ...form, name: e.target.value })}
-                          className="peer w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] focus:bg-white dark:focus:bg-slate-900 rounded-xl px-4 pt-5 pb-2 text-sm font-bold text-slate-900 dark:text-white outline-none transition-all"
-                        />
-                        <label
-                          htmlFor="fl-name"
-                          className="pointer-events-none absolute left-4 top-2 text-[10px] font-extrabold uppercase tracking-wider text-[#f4730a] transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-extrabold peer-focus:text-[#f4730a]"
+                      {/* Mensaje de Resultado de Inscripción */}
+                      {submissionResult && (
+                        <div
+                          className={`mb-5 p-4 rounded-2xl border-2 ${
+                            submissionResult.success
+                              ? "bg-emerald-50 border-emerald-300 text-emerald-900 dark:bg-emerald-500/10 dark:border-emerald-500/40 dark:text-emerald-200"
+                              : "bg-rose-50 border-rose-300 text-rose-900 dark:bg-rose-500/10 dark:border-rose-500/40 dark:text-rose-200"
+                          }`}
                         >
-                          Nombre y Apellido Completo *
-                        </label>
-                      </div>
-
-                      {/* Cédula / RIF y Teléfono WhatsApp */}
-                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                        <div className="sm:col-span-6 flex gap-1.5">
-                          <select
-                            aria-label="Tipo de documento"
-                            value={form.docType}
-                            onChange={(e) => setForm({ ...form, docType: e.target.value })}
-                            className="bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-2.5 py-3 text-xs font-black text-[#2a285c] dark:text-white outline-none"
-                          >
-                            <option value="V">V-</option>
-                            <option value="E">E-</option>
-                            <option value="J">J-</option>
-                            <option value="P">P-</option>
-                          </select>
-                          <div className="relative flex-1">
-                            <input
-                              id="fl-doc"
-                              type="text"
-                              required
-                              placeholder=" "
-                              value={form.docNumber}
-                              onChange={(e) => setForm({ ...form, docNumber: e.target.value })}
-                              className="peer w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] focus:bg-white dark:focus:bg-slate-900 rounded-xl px-3.5 pt-5 pb-2 text-sm font-bold text-slate-900 dark:text-white outline-none transition-all"
-                            />
-                            <label
-                              htmlFor="fl-doc"
-                              className="pointer-events-none absolute left-3.5 top-2 text-[10px] font-extrabold uppercase tracking-wider text-[#f4730a] transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-extrabold peer-focus:text-[#f4730a]"
-                            >
-                              Cédula / RIF *
-                            </label>
-                          </div>
-                        </div>
-
-                        <div className="sm:col-span-6 relative">
-                          <input
-                            id="fl-phone"
-                            type="tel"
-                            required
-                            placeholder=" "
-                            value={form.phone}
-                            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                            className="peer w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] focus:bg-white dark:focus:bg-slate-900 rounded-xl px-3.5 pt-5 pb-2 text-sm font-bold text-slate-900 dark:text-white outline-none transition-all"
-                          />
-                          <label
-                            htmlFor="fl-phone"
-                            className="pointer-events-none absolute left-3.5 top-2 text-[10px] font-extrabold uppercase tracking-wider text-[#f4730a] transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-extrabold peer-focus:text-[#f4730a]"
-                          >
-                            WhatsApp (0412/0414) *
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* GRUPO 2: CONTACTO Y EMPRESA INTEGRADORA */}
-                    <div className="space-y-3.5 pt-2 border-t border-slate-200/70 dark:border-slate-800">
-                      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#2a285c] dark:text-slate-200">
-                        <span className="w-5 h-5 rounded-full bg-[#2a285c] text-white text-[11px] flex items-center justify-center keep-white">
-                          2
-                        </span>
-                        Contacto & Empresa Integradora
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="relative">
-                          <input
-                            id="fl-email"
-                            type="email"
-                            placeholder=" "
-                            value={form.email}
-                            onChange={(e) => setForm({ ...form, email: e.target.value })}
-                            className="peer w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] focus:bg-white dark:focus:bg-slate-900 rounded-xl px-3.5 pt-5 pb-2 text-sm font-bold text-slate-900 dark:text-white outline-none transition-all"
-                          />
-                          <label
-                            htmlFor="fl-email"
-                            className="pointer-events-none absolute left-3.5 top-2 text-[10px] font-extrabold uppercase tracking-wider text-[#f4730a] transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-extrabold peer-focus:text-[#f4730a]"
-                          >
-                            Correo Electrónico
-                          </label>
-                        </div>
-
-                        <div className="relative">
-                          <input
-                            id="fl-company"
-                            type="text"
-                            placeholder=" "
-                            value={form.company}
-                            onChange={(e) => setForm({ ...form, company: e.target.value })}
-                            className="peer w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] focus:bg-white dark:focus:bg-slate-900 rounded-xl px-3.5 pt-5 pb-2 text-sm font-bold text-slate-900 dark:text-white outline-none transition-all"
-                          />
-                          <label
-                            htmlFor="fl-company"
-                            className="pointer-events-none absolute left-3.5 top-2 text-[10px] font-extrabold uppercase tracking-wider text-[#f4730a] transition-all peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-xs peer-placeholder-shown:font-semibold peer-placeholder-shown:text-slate-400 peer-focus:top-2 peer-focus:text-[10px] peer-focus:font-extrabold peer-focus:text-[#f4730a]"
-                          >
-                            Empresa / Integrador
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* GRUPO 3: PREGUNTAS DINÁMICAS PERSONALIZADAS DE LA CAPACITACIÓN */}
-                    {activeFormQuestions.length > 0 && (
-                      <div className="space-y-3.5 pt-2 border-t border-slate-200/70 dark:border-slate-800">
-                        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#f4730a]">
-                          <span className="w-5 h-5 rounded-full bg-[#f4730a] text-white text-[11px] flex items-center justify-center">
-                            3
-                          </span>
-                          Perfil Técnico para el Instructor ({activeFormQuestions.length})
-                        </div>
-
-                        <div className="space-y-3 bg-[#f8f9fc] dark:bg-slate-900/90 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800">
-                          {activeFormQuestions.map((q) => (
-                            <div key={q.id}>
-                              <label className="block text-xs font-extrabold text-[#2a285c] dark:text-slate-200 mb-1.5">
-                                {q.label}{" "}
-                                {q.required && <span className="text-[#f4730a]">*</span>}
-                              </label>
-
-                              {q.type === "select" && Array.isArray(q.options) ? (
-                                <select
-                                  required={q.required}
-                                  value={customAnswers[q.id] || ""}
-                                  onChange={(e) =>
-                                    setCustomAnswers({
-                                      ...customAnswers,
-                                      [q.id]: e.target.value,
-                                    })
-                                  }
-                                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 dark:text-white outline-none"
-                                >
-                                  <option value="">Selecciona una opción...</option>
-                                  {q.options.map((opt, idx) => (
-                                    <option key={idx} value={opt}>
-                                      {opt}
-                                    </option>
-                                  ))}
-                                </select>
-                              ) : (q.type as string) === "yesno" || q.type === "radio" ? (
-                                <div className="grid grid-cols-2 gap-2">
-                                  {(Array.isArray(q.options) && q.options.length > 0 ? q.options : ["Sí", "No"]).map((opt) => (
-                                    <button
-                                      key={opt}
-                                      type="button"
-                                      onClick={() =>
-                                        setCustomAnswers({
-                                          ...customAnswers,
-                                          [q.id]: opt,
-                                        })
-                                      }
-                                      className={`py-2 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
-                                        customAnswers[q.id] === opt
-                                          ? "bg-[#f4730a] border-[#f4730a] text-white shadow-sm"
-                                          : "bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
-                                      }`}
-                                    >
-                                      {opt}
-                                    </button>
-                                  ))}
-                                </div>
-                              ) : q.type === "textarea" ? (
-                                <textarea
-                                  rows={2}
-                                  required={q.required}
-                                  placeholder={q.placeholder || "Escribe tu respuesta..."}
-                                  value={customAnswers[q.id] || ""}
-                                  onChange={(e) =>
-                                    setCustomAnswers({
-                                      ...customAnswers,
-                                      [q.id]: e.target.value,
-                                    })
-                                  }
-                                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-white outline-none"
-                                />
-                              ) : q.type === "file" ? (
-                                <div className="space-y-2">
-                                  {customAnswers[q.id] ? (
-                                    <div className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-950 border-2 border-emerald-500/80 shadow-sm">
-                                      <div className="flex items-center gap-2.5 overflow-hidden">
-                                        {customAnswers[q.id].startsWith("data:image/") ? (
-                                          <img
-                                            src={customAnswers[q.id]}
-                                            alt="Comprobante"
-                                            className="w-12 h-12 object-cover rounded-lg border border-slate-200 dark:border-slate-700 flex-shrink-0"
-                                          />
-                                        ) : (
-                                          <div className="w-12 h-12 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 flex items-center justify-center flex-shrink-0">
-                                            <FileCheck className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-                                          </div>
-                                        )}
-                                        <div className="text-left truncate">
-                                          <p className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300 truncate">
-                                            Comprobante cargado correctamente
-                                          </p>
-                                          <p className="text-[10px] text-slate-500 truncate">
-                                            Listo para validación de cupo
-                                          </p>
-                                        </div>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const next = { ...customAnswers };
-                                          delete next[q.id];
-                                          setCustomAnswers(next);
-                                          if (form.paymentProofUrl === customAnswers[q.id]) {
-                                            setForm((prev) => ({ ...prev, paymentProofUrl: "" }));
-                                          }
-                                        }}
-                                        className="p-1.5 text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
-                                        title="Eliminar archivo"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-[#f4730a] rounded-xl bg-white dark:bg-slate-950/80 cursor-pointer transition text-center group">
-                                      <UploadCloud className="w-7 h-7 text-slate-400 group-hover:text-[#f4730a] mb-1.5 transition" />
-                                      <span className="text-xs font-extrabold text-slate-700 dark:text-slate-200">
-                                        Haz clic o arrastra para adjuntar comprobante
-                                      </span>
-                                      <span className="text-[10px] text-slate-500 mt-0.5">
-                                        JPG, PNG o PDF (Máximo 8MB)
-                                      </span>
-                                      <input
-                                        type="file"
-                                        accept="image/*,application/pdf"
-                                        required={q.required && !customAnswers[q.id]}
-                                        className="hidden"
-                                        onChange={(e) => {
-                                          const file = e.target.files?.[0];
-                                          if (!file) return;
-                                          if (file.size > 8 * 1024 * 1024) {
-                                            alert("El archivo excede los 8MB permitidos.");
-                                            return;
-                                          }
-                                          const reader = new FileReader();
-                                          reader.onload = (ev) => {
-                                            const base64 = ev.target?.result as string;
-                                            setCustomAnswers((prev) => ({
-                                              ...prev,
-                                              [q.id]: base64,
-                                            }));
-                                            setForm((prev) => ({
-                                              ...prev,
-                                              paymentProofUrl: base64,
-                                            }));
-                                          };
-                                          reader.readAsDataURL(file);
-                                        }}
-                                      />
-                                    </label>
-                                  )}
-                                </div>
-                              ) : (
-                                <input
-                                  type="text"
-                                  required={q.required}
-                                  placeholder={q.placeholder || "Tu respuesta..."}
-                                  value={customAnswers[q.id] || ""}
-                                  onChange={(e) =>
-                                    setCustomAnswers({
-                                      ...customAnswers,
-                                      [q.id]: e.target.value,
-                                    })
-                                  }
-                                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 dark:text-white outline-none"
-                                />
+                          <div className="flex items-start gap-2.5 text-xs">
+                            {submissionResult.success ? (
+                              <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                            ) : (
+                              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                            )}
+                            <div>
+                              <p className="font-extrabold text-sm">
+                                {submissionResult.message || submissionResult.error}
+                              </p>
+                              {submissionResult.data && (
+                                <p className="text-xs mt-1">
+                                  Nro. de Registro: #{submissionResult.data.id} • Estado: {submissionResult.data.status}
+                                </p>
                               )}
                             </div>
-                          ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* GRUPO 4: REPORTE DE PAGO (SI EL CURSO ES PAGO O TIENE PRECIO) */}
-                    {selectedTraining && (Number(selectedTraining.price) > 0 || selectedTraining.isFree === false) ? (
-                      <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-black text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                            <CreditCard className="w-4 h-4" />
-                            Inversión de Certificación
-                          </span>
-                          <span className="text-base font-black text-amber-900 dark:text-amber-200">
-                            {formatCurrency(selectedTraining.price)}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          <select
-                            value={form.paymentMethod}
-                            onChange={(e) =>
-                              setForm({ ...form, paymentMethod: e.target.value })
-                            }
-                            className="bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-white outline-none"
-                          >
-                            <option value="Pabilo">Pago Móvil (Pabilo)</option>
-                            <option value="Zelle">Zelle USD</option>
-                            <option value="Binance">Binance Pay (USDT)</option>
-                            <option value="Transferencia">Transferencia Bs</option>
-                            <option value="Efectivo">Efectivo en Tienda OnProtec</option>
-                          </select>
+                      <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* GRUPO 1: DATOS DEL PARTICIPANTE */}
+                        <div className="space-y-3">
+                          <label className="block text-xs font-black uppercase tracking-wider text-[#2a285c] dark:text-slate-200">
+                            1. Datos del Instalador / Participante
+                          </label>
+
+                          <div>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Nombre y Apellido Completo *"
+                              value={form.name}
+                              onChange={(e) => setForm({ ...form, name: e.target.value })}
+                              className="w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-12 gap-2">
+                            <div className="col-span-4">
+                              <select
+                                value={form.docType}
+                                onChange={(e) => setForm({ ...form, docType: e.target.value })}
+                                className="w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-2.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                              >
+                                <option value="V">V-</option>
+                                <option value="E">E-</option>
+                                <option value="J">J-</option>
+                                <option value="P">P-</option>
+                              </select>
+                            </div>
+                            <div className="col-span-8">
+                              <input
+                                type="text"
+                                required
+                                placeholder="Cédula / RIF *"
+                                value={form.docNumber}
+                                onChange={(e) => setForm({ ...form, docNumber: e.target.value })}
+                                className="w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input
+                              type="tel"
+                              required
+                              placeholder="WhatsApp (0412/0414) *"
+                              value={form.phone}
+                              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                              className="w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                            />
+                            <input
+                              type="email"
+                              required
+                              placeholder="Correo Electrónico *"
+                              value={form.email}
+                              onChange={(e) => setForm({ ...form, email: e.target.value })}
+                              className="w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                            />
+                          </div>
+
                           <input
                             type="text"
-                            placeholder="Nro. Referencia Bancaria"
-                            value={form.paymentReference}
-                            onChange={(e) =>
-                              setForm({ ...form, paymentReference: e.target.value })
-                            }
-                            className="bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-white outline-none"
+                            placeholder="Empresa / Emprendimiento (Opcional)"
+                            value={form.company}
+                            onChange={(e) => setForm({ ...form, company: e.target.value })}
+                            className="w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none"
                           />
                         </div>
 
-                        {/* Adjuntar Comprobante de Pago directo en Grupo 4 */}
-                        <div className="pt-2 border-t border-amber-200 dark:border-amber-500/20">
-                          <label className="block text-xs font-black text-amber-900 dark:text-amber-200 mb-1.5 flex items-center gap-1.5">
-                            <UploadCloud className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                            Adjuntar Comprobante de Pago (Voucher / Captura / PDF)
-                          </label>
-                          {form.paymentProofUrl ? (
-                            <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-400 dark:border-emerald-600 shadow-sm">
-                              <div className="flex items-center gap-2 overflow-hidden">
-                                {form.paymentProofUrl.startsWith("data:image/") ? (
-                                  <img
-                                    src={form.paymentProofUrl}
-                                    alt="Comprobante"
-                                    className="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700 flex-shrink-0"
-                                  />
-                                ) : (
-                                  <FileCheck className="w-8 h-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-                                )}
-                                <div className="text-left truncate">
-                                  <p className="text-xs font-black text-emerald-700 dark:text-emerald-300 truncate">
-                                    Comprobante adjuntado
-                                  </p>
-                                  <p className="text-[10px] text-slate-500 truncate">
-                                    Listo para verificación administrativa
-                                  </p>
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setForm({ ...form, paymentProofUrl: "" })}
-                                className="p-1.5 text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
-                                title="Eliminar comprobante"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <label className="flex flex-col items-center justify-center p-3 border-2 border-dashed border-amber-300 dark:border-amber-500/40 hover:border-amber-500 rounded-xl bg-white/70 dark:bg-slate-900/60 hover:bg-white dark:hover:bg-slate-900 cursor-pointer transition text-center group">
-                              <UploadCloud className="w-5 h-5 text-amber-600 dark:text-amber-400 mb-1 group-hover:scale-110 transition-transform" />
-                              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                Clic o arrastra para subir captura o comprobante
-                              </span>
-                              <span className="text-[10px] text-slate-500 mt-0.5">
-                                JPG, PNG o PDF (Máx 8MB)
-                              </span>
-                              <input
-                                type="file"
-                                accept="image/*,application/pdf"
-                                className="hidden"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (!file) return;
-                                  if (file.size > 8 * 1024 * 1024) {
-                                    alert("El archivo excede los 8MB permitidos.");
-                                    return;
-                                  }
-                                  const reader = new FileReader();
-                                  reader.onload = (ev) => {
-                                    const base64 = ev.target?.result as string;
-                                    setForm((prev) => ({ ...prev, paymentProofUrl: base64 }));
-                                  };
-                                  reader.readAsDataURL(file);
-                                }}
-                              />
+                        {/* GRUPO 2: PREGUNTAS TÉCNICAS DEL CURSO */}
+                        {activeFormQuestions.length > 0 && (
+                          <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                            <label className="block text-xs font-black uppercase tracking-wider text-[#2a285c] dark:text-slate-200">
+                              2. Perfil Técnico para el Instructor ({activeFormQuestions.length})
                             </label>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      /* ZONA OPCIONAL SI EL CURSO ES GRATIS O SI DESEA ADJUNTAR ARCHIVO */
-                      !activeFormQuestions.some((q) => q.type === "file") && (
-                        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
-                          <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                            <UploadCloud className="w-3.5 h-3.5 text-[#f4730a]" />
-                            ¿Deseas adjuntar algún comprobante o documento de soporte? (Opcional)
-                          </label>
-                          {form.paymentProofUrl ? (
-                            <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400 dark:border-emerald-600 shadow-sm">
-                              <div className="flex items-center gap-2 overflow-hidden">
-                                {form.paymentProofUrl.startsWith("data:image/") ? (
-                                  <img
-                                    src={form.paymentProofUrl}
-                                    alt="Comprobante"
-                                    className="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700 flex-shrink-0"
-                                  />
-                                ) : (
-                                  <FileCheck className="w-8 h-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-                                )}
-                                <div className="text-left truncate">
-                                  <p className="text-xs font-black text-emerald-700 dark:text-emerald-300 truncate">
-                                    Documento adjuntado
-                                  </p>
+
+                            <div className="space-y-2.5 bg-slate-50 dark:bg-slate-900/90 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800">
+                              {activeFormQuestions.map((q) => (
+                                <div key={q.id}>
+                                  <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                                    {q.label} {q.required && <span className="text-[#f4730a]">*</span>}
+                                  </label>
+
+                                  {q.type === "select" && Array.isArray(q.options) ? (
+                                    <select
+                                      required={q.required}
+                                      value={customAnswers[q.id] || ""}
+                                      onChange={(e) =>
+                                        setCustomAnswers({ ...customAnswers, [q.id]: e.target.value })
+                                      }
+                                      className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white outline-none"
+                                    >
+                                      <option value="">Selecciona una opción...</option>
+                                      {q.options.map((opt, i) => (
+                                        <option key={i} value={opt}>
+                                          {opt}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  ) : q.type === "file" ? (
+                                    <div className="space-y-2">
+                                      {customAnswers[q.id] ? (
+                                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-emerald-500">
+                                          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 truncate">
+                                            <FileCheck className="w-4 h-4 flex-shrink-0" />
+                                            Archivo cargado exitosamente
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const next = { ...customAnswers };
+                                              delete next[q.id];
+                                              setCustomAnswers(next);
+                                            }}
+                                            className="text-rose-500 hover:text-rose-700 p-1"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl cursor-pointer hover:border-[#f4730a] text-xs font-bold text-slate-600 dark:text-slate-400">
+                                          <UploadCloud className="w-4 h-4 text-[#f4730a]" />
+                                          <span>Clic para adjuntar archivo o comprobante (Máx 8MB)</span>
+                                          <input
+                                            type="file"
+                                            accept="image/*,application/pdf"
+                                            required={q.required}
+                                            className="hidden"
+                                            onChange={(e) => {
+                                              const f = e.target.files?.[0];
+                                              if (!f) return;
+                                              const reader = new FileReader();
+                                              reader.onload = (ev) => {
+                                                const b64 = ev.target?.result as string;
+                                                setCustomAnswers((prev) => ({ ...prev, [q.id]: b64 }));
+                                                setForm((prev) => ({ ...prev, paymentProofUrl: b64 }));
+                                              };
+                                              reader.readAsDataURL(f);
+                                            }}
+                                          />
+                                        </label>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <input
+                                      type="text"
+                                      required={q.required}
+                                      placeholder={q.placeholder || "Escribe tu respuesta..."}
+                                      value={customAnswers[q.id] || ""}
+                                      onChange={(e) =>
+                                        setCustomAnswers({ ...customAnswers, [q.id]: e.target.value })
+                                      }
+                                      className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white outline-none"
+                                    />
+                                  )}
                                 </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setForm({ ...form, paymentProofUrl: "" })}
-                                className="p-1.5 text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              ))}
                             </div>
-                          ) : (
-                            <label className="flex items-center justify-center gap-2 p-2.5 border border-dashed border-slate-300 dark:border-slate-700 hover:border-[#f4730a] rounded-xl bg-white dark:bg-slate-950/80 cursor-pointer transition text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-[#f4730a]">
-                              <UploadCloud className="w-4 h-4" />
-                              <span>Clic para adjuntar archivo o soporte (JPG, PNG o PDF)</span>
+                          </div>
+                        )}
+
+                        {/* GRUPO 3: REPORTE DE PAGO (SOLO SI EL CURSO ES COBRADO) */}
+                        {isPaidCourse && (
+                          <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-black text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                                <CreditCard className="w-4 h-4" />
+                                Inversión de Certificación
+                              </span>
+                              <span className="text-base font-black text-amber-900 dark:text-amber-200">
+                                {formatCurrency(selectedTraining.price)}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <select
+                                value={form.paymentMethod}
+                                onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
+                                className="bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white outline-none"
+                              >
+                                <option value="Pabilo">Pago Móvil (Pabilo)</option>
+                                <option value="Zelle">Zelle USD</option>
+                                <option value="Binance">Binance Pay (USDT)</option>
+                                <option value="Transferencia">Transferencia Bancaria Bs</option>
+                                <option value="Efectivo">Efectivo en Tienda OnProtec</option>
+                              </select>
+
                               <input
-                                type="file"
-                                accept="image/*,application/pdf"
-                                className="hidden"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (!file) return;
-                                  if (file.size > 8 * 1024 * 1024) {
-                                    alert("El archivo excede los 8MB permitidos.");
-                                    return;
-                                  }
-                                  const reader = new FileReader();
-                                  reader.onload = (ev) => {
-                                    const base64 = ev.target?.result as string;
-                                    setForm((prev) => ({ ...prev, paymentProofUrl: base64 }));
-                                  };
-                                  reader.readAsDataURL(file);
-                                }}
+                                type="text"
+                                placeholder="Nro. Referencia Bancaria"
+                                value={form.paymentReference}
+                                onChange={(e) => setForm({ ...form, paymentReference: e.target.value })}
+                                className="bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white outline-none"
                               />
-                            </label>
+                            </div>
+
+                            {/* Carga de Comprobante de Pago */}
+                            <div className="pt-2 border-t border-amber-200 dark:border-amber-500/20">
+                              <label className="block text-xs font-black text-amber-900 dark:text-amber-200 mb-1.5 flex items-center gap-1.5">
+                                <UploadCloud className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                Adjuntar Comprobante de Pago (Voucher / Captura / PDF)
+                              </label>
+
+                              {form.paymentProofUrl ? (
+                                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-400 dark:border-emerald-600 shadow-sm">
+                                  <div className="flex items-center gap-2 truncate">
+                                    {form.paymentProofUrl.startsWith("data:image/") ? (
+                                      <img
+                                        src={form.paymentProofUrl}
+                                        alt="Comprobante"
+                                        className="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700 flex-shrink-0"
+                                      />
+                                    ) : (
+                                      <FileCheck className="w-8 h-8 text-emerald-600 flex-shrink-0" />
+                                    )}
+                                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 truncate">
+                                      Comprobante adjuntado listo
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setForm({ ...form, paymentProofUrl: "" })}
+                                    className="p-1.5 text-rose-500 hover:text-rose-700"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <label className="flex flex-col items-center justify-center p-3 border-2 border-dashed border-amber-300 dark:border-amber-500/40 hover:border-amber-500 rounded-xl bg-white/70 dark:bg-slate-900/60 cursor-pointer transition text-center">
+                                  <UploadCloud className="w-5 h-5 text-amber-600 mb-1" />
+                                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                    Clic o arrastra para subir captura de pago
+                                  </span>
+                                  <span className="text-[10px] text-slate-500">JPG, PNG o PDF (Máx 8MB)</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      const reader = new FileReader();
+                                      reader.onload = (ev) => {
+                                        setForm((prev) => ({
+                                          ...prev,
+                                          paymentProofUrl: ev.target?.result as string,
+                                        }));
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }}
+                                  />
+                                </label>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Botón de Confirmación Principal */}
+                        <button
+                          type="submit"
+                          disabled={submitting || !selectedTraining}
+                          className="w-full py-4 px-6 rounded-2xl bg-[#f4730a] hover:bg-[#ef7922] disabled:opacity-50 text-white font-black text-sm uppercase tracking-wider shadow-[0_12px_28px_rgba(244,115,10,0.35)] hover:shadow-[0_16px_32px_rgba(244,115,10,0.50)] transition-all flex items-center justify-center gap-2 cursor-pointer mt-2"
+                        >
+                          {submitting ? (
+                            <span>Procesando Registro...</span>
+                          ) : availableSeats === 0 ? (
+                            <span>Ingresar a Lista de Espera</span>
+                          ) : isPaidCourse ? (
+                            <span>Confirmar Reserva y Enviar Comprobante</span>
+                          ) : (
+                            <span>Completar Pre-Inscripción Gratuita</span>
                           )}
-                        </div>
-                      )
-                    )}
-
-                    {/* BOTÓN ANCHO DE CONFIRMACIÓN DE ALTA CONVERSIÓN */}
-                    <button
-                      type="submit"
-                      disabled={submitting || !selectedTraining}
-                      className="w-full py-4 px-6 rounded-2xl bg-[#f4730a] hover:bg-[#ef7922] disabled:opacity-50 text-white font-black text-sm sm:text-base uppercase tracking-wider shadow-[0_12px_30px_rgba(244,115,10,0.35)] hover:shadow-[0_16px_35px_rgba(244,115,10,0.50)] transition-all flex items-center justify-center gap-2.5 cursor-pointer"
-                    >
-                      {submitting ? (
-                        <span>Procesando Reserva en Sala...</span>
-                      ) : availableSeats === 0 ? (
-                        <>
-                          <span>Ingresar a Lista de Espera Prioritaria</span>
-                          <ArrowRight className="w-5 h-5" />
-                        </>
-                      ) : (
-                        <>
-                          <span>Confirmar mi Cupo Ahora</span>
-                          <ArrowRight className="w-5 h-5" />
-                        </>
-                      )}
-                    </button>
-
-                    <p className="text-[11px] text-center text-slate-500 dark:text-slate-400 font-medium">
-                      🔒 Tus datos quedan vinculados a tu expediente histórico de certificaciones en{" "}
-                      <strong className="text-[#2a285c] dark:text-slate-200">OnProtec®</strong>.
-                    </p>
-                  </form>
-                  </>
+                        </button>
+                      </form>
+                    </>
                   )}
                 </div>
               </div>
@@ -1764,131 +866,120 @@ export default function HomePage() {
       </section>
 
       {/* =====================================================================
-          6. PRUEBA SOCIAL Y AUTORIDAD: ECOSISTEMA DE MARCAS Y CERTIFICACIONES
+          5. ¿POR QUÉ CERTIFICARTE EN LA SALA VIP ONPROTEC? (3 TARJETAS MINIMALISTAS)
       ===================================================================== */}
-      <section
-        id="marcas-autoridad"
-        className="py-14 bg-white dark:bg-[#0f1322] border-t border-slate-200/80 dark:border-slate-800"
-      >
-        <div className="max-w-[1640px] mx-auto px-4 sm:px-8">
+      <section className="py-12 lg:py-16 bg-white dark:bg-[#111526] border-t border-slate-200/80 dark:border-slate-800">
+        <div className="max-w-[1580px] mx-auto px-4 sm:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
-            <span className="text-[11px] font-black uppercase tracking-[0.2em] text-[#f4730a]">
-              RESPALDO TECNOLÓGICO Y AUTORIDAD DE FÁBRICA
+            <span className="text-xs font-black uppercase tracking-widest text-[#f4730a]">
+              INFRAESTRUCTURA DE ALTO RENDIMIENTO
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-[#2a285c] dark:text-white mt-1">
-              Marcas Líderes que Certificamos en Nuestra Sala
+              ¿Por qué formarte en la Sala VIP OnProtec?
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Distribuidor autorizado en Venezuela con garantía oficial, stock inmediato y soporte de ingeniería.
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2">
+              Diseñamos un entorno corporativo en Torre América (Piso 14, El Recreo) para que el aprendizaje sea 100% práctico y aplicable a proyectos reales.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
-            {ONPROTEC_PARTNER_BRANDS.map((brand) => (
-              <button
-                key={brand.name}
-                type="button"
-                onClick={() => {
-                  setBrandFilter(brand.name.split(" ")[0]);
-                  scrollToSection("calendario-temario");
-                }}
-                className="group bg-[#f8f9fc] dark:bg-slate-900 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 hover:border-[#f4730a] rounded-2xl p-4 text-center transition-all shadow-xs hover:shadow-md cursor-pointer flex flex-col items-center justify-center"
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-6 rounded-3xl bg-[#f8f9fc] dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-orange-100 dark:bg-orange-500/10 text-[#f4730a] flex items-center justify-center">
+                <Zap className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black text-[#2a285c] dark:text-white">
+                Equipos Energizados en Vivo
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                Sin simuladores ni teoría abstracta. Cada instalador interactúa con cámaras IP, NVRs, biométricos, switches administrables y routers configurados en tiempo real.
+              </p>
+            </div>
+
+            <div className="p-6 rounded-3xl bg-[#f8f9fc] dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-500/10 text-[#2a285c] dark:text-cyan-400 flex items-center justify-center">
+                <Users className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black text-[#2a285c] dark:text-white">
+                Aforo Exclusivo de 18 Puestos
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                Garantizamos atención personalizada del ponente en un ambiente climatizado, cómodo y profesional ubicado en el Piso 14 de la Torre América.
+              </p>
+            </div>
+
+            <div className="p-6 rounded-3xl bg-[#f8f9fc] dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Building2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black text-[#2a285c] dark:text-white">
+                Ecosistema Comercial & Cashea
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                Acceso a precios de distribuidor para proyectos, asesoría post-capacitación y financiamiento con Cashea directamente en nuestra tienda oficial.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          6. MARCAS ALIADAS OFICIALES
+      ===================================================================== */}
+      <section className="py-10 bg-[#f8f9fc] dark:bg-[#0b0e17] border-t border-slate-200/80 dark:border-slate-800 text-center">
+        <div className="max-w-[1580px] mx-auto px-4 sm:px-8">
+          <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-6">
+            TECNOLOGÍAS Y MARCAS OFICIALES CERTIFICADAS EN SALA ONPROTEC®
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 opacity-70 hover:opacity-100 transition-opacity">
+            {PARTNER_BRANDS.map((brand, i) => (
+              <span
+                key={i}
+                className="text-xs sm:text-sm font-extrabold text-[#2a285c] dark:text-slate-300 tracking-wide bg-white dark:bg-slate-900 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm"
               >
-                <div className="w-10 h-10 rounded-xl bg-[#2a285c]/5 dark:bg-white/5 group-hover:bg-[#f4730a]/10 flex items-center justify-center mb-2 transition-colors">
-                  <ShieldCheck className="w-5 h-5 text-[#2a285c] dark:text-[#f4730a]" />
-                </div>
-                <span className="text-xs font-black text-[#2a285c] dark:text-white group-hover:text-[#f4730a] transition-colors">
-                  {brand.name}
-                </span>
-                <span className="text-[10px] font-semibold text-slate-400 mt-0.5">
-                  {brand.category}
-                </span>
-              </button>
+                {brand.name}
+              </span>
             ))}
           </div>
         </div>
       </section>
 
       {/* =====================================================================
-          7. CINTILLO OFICIAL "COMPRA CON CASHEA" EXTRAÍDO DE WWW.ONPROTEC.COM
+          7. FOOTER CORPORATIVO OFICIAL
       ===================================================================== */}
-      <div className="cashea-banner">
-        <a
-          href="http://wa.me/584129635648"
-          target="_blank"
-          rel="noreferrer"
-          className="cashea-banner-link"
-        >
-          <img
-            src="/brand/icono-cashea.png"
-            alt="Icono Cashea"
-            className="cashea-banner-icon"
-          />
-          <span className="cashea-banner-text">
-            Compra tus equipos de laboratorio con <strong>Cashea</strong> en OnProtec® — Escríbenos por WhatsApp
-          </span>
-        </a>
-      </div>
-
-      {/* =====================================================================
-          8. FOOTER CORPORATIVO ONPROTEC®
-      ===================================================================== */}
-      <footer className="bg-[#2a285c] text-white py-10 keep-white">
-        <div className="max-w-[1640px] mx-auto px-4 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <img
-              src="/brand/onprotec-logo-white.png"
-              alt="OnProtec — La Tienda del Instalador"
-              className="h-8 sm:h-9 w-auto object-contain"
-            />
-            <div>
-              <p className="text-sm font-black tracking-wide text-white keep-white">
-                ONPROTEC® — LA TIENDA DEL INSTALADOR
-              </p>
-              <p className="text-xs text-slate-200 keep-white">
-                Av. Los Estadios con Calle Edison, Los Chaguaramos, Caracas • RIF: J-40685449-2
-              </p>
-            </div>
+      <footer className="bg-[#2a285c] text-white py-12 px-4 sm:px-8 border-t border-slate-800 keep-white">
+        <div className="max-w-[1580px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+          <div className="space-y-1.5">
+            <p className="text-base font-black text-white keep-white">
+              OnProtec® | Sala de Capacitaciones — La Tienda del Instalador
+            </p>
+            <p className="text-xs text-slate-300 flex items-center justify-center md:justify-start gap-1.5 keep-white">
+              <MapPin className="w-3.5 h-3.5 text-[#f4730a]" />
+              Torre América, Piso 14, Urbanización El Recreo, Caracas, Venezuela.
+            </p>
+            <p className="text-[11px] text-slate-400">
+              RIF: J-40685449-2 • Contacto: ventas@onprotec.com | WhatsApp: +58 412 9635648
+            </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4 text-xs font-bold">
+          <div className="flex items-center gap-3">
             <a
               href="https://www.onprotec.com"
               target="_blank"
               rel="noreferrer"
-              className="hover:text-[#fdff00] transition-colors"
+              className="text-xs font-bold text-white hover:text-[#fdff00] underline"
             >
-              www.onprotec.com
+              Visitar www.onprotec.com
             </a>
             <span className="opacity-40">•</span>
-            <a
-              href="http://wa.me/584129635648"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-[#fdff00] transition-colors"
+            <Link
+              href="/admin"
+              className="text-xs font-bold text-slate-300 hover:text-white"
             >
-              Atención WhatsApp: +58 412-9635648
-            </a>
-            <span className="opacity-40">•</span>
-            <Link href="/admin" className="text-[#fdff00] hover:underline">
               Acceso Administrativo
             </Link>
           </div>
         </div>
       </footer>
-
-      {/* =====================================================================
-          9. BOTÓN FLOTANTE OFICIAL DE WHATSAPP (.float-wa de www.onprotec.com)
-      ===================================================================== */}
-      <a
-        href="http://wa.me/584129635648"
-        target="_blank"
-        rel="noreferrer"
-        aria-label="Contactar por WhatsApp OnProtec"
-        className="float-wa"
-      >
-        <Phone className="w-7 h-7 fill-current" />
-      </a>
     </div>
   );
 }

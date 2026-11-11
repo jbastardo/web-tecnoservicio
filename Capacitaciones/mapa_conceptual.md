@@ -74,24 +74,39 @@ flowchart TD
 
 ## 3. Características Globales y Filosofía UX/UI
 
-1. **Widescreen-First (Sin Scroll Vertical Innecesario):**
-   * En pantallas de escritorio (1080p, 1440p, laptops), la información de primer nivel y métricas críticas se presentan en filas horizontales de 4 columnas o paneles paralelos tipo Split View.
+1. **Widescreen-First & Carta de Presentación Ejecutiva:**
+   * En pantallas de escritorio (1080p, 1440p, laptops), la información de primer nivel y métricas críticas se presentan en formato apaisado de alta legibilidad.
+   * La Landing Page pública ha sido rediseñada para eliminar sobrecarga visual ("efecto cabina de avión"): sin barras de búsqueda redundantes ni carruseles de botones dispersos. Funciona como la **carta de presentación ejecutiva de la Sala de Capacitaciones OnProtec en Torre América Piso 14**, con layout split-view (7 cols convocatoria/temario, 5 cols formulario de inscripción con fecha, ubicación y comprobante de pago).
    * Cintillo de navegación fijo (`sticky top-0 z-50`) con estado de integraciones (Odoo, Pabilo, Hora Venezuela).
    * Se reorganiza a flujo vertical amigable únicamente en dispositivos móviles o tablets (`max-width: 768px`).
 
-2. **Horarios Locales Respetados (America/Caracas):**
+2. **Control de Contraste y Modos de Color (Dark/Light):**
+   * Configuración de Tailwind `darkMode: "class"` controlada por selector explícito en `<html>` (`.dark` / `[data-theme]`), evitando que sistemas operativos en modo oscuro fuercen clases oscuras sobre vistas claras.
+   * Regla de Alto Contraste en Modo Claro: Textos oscuros (`#0f172a`, `#1e293b`, `#475569`) sobre fondos blancos/grises, garantizando máxima legibilidad en todas las vistas administrativas (Directorio de Participantes, Gestor de Capacitaciones, Check-in).
+
+3. **Horarios Locales Respetados (America/Caracas):**
    * Todas las fechas de eventos, aperturas de publicidad, confirmaciones 24h y timestamps de check-in se guardan en UTC en base de datos pero se renderizan forzosamente en `America/Caracas` (UTC-4) mediante `fmtLocalTime` y `fmtLocalDate`.
 
 ---
 
 ## 4. Detalle por Módulos y Lógica de Negocio
 
-### A. Control de Aforo y Gestión de Cupos (Sala Onprotec)
-* **Regla de Capacidad:** La sala física cuenta con una capacidad máxima estricta de **18 puestos para participantes** y **1 puesto para el instructor**.
+### A. Control de Aforo y Gestión de Cupos (Sala Onprotec Torre América)
+* **Sede Oficial y Ubicación:** **Torre América, Piso 14, Urbanización El Recreo, Caracas, Venezuela**. La ubicación es editable por evento desde el formulario de creación/edición de capacitaciones.
+* **Aforo Físico de Sala:** Capacidad física máxima estricta de **18 puestos para participantes** y **1 puesto para el instructor**.
+* **Lógica Dual de Aforo OnProtec (Gratuito vs. Cobrado):**
+  1. **Presentaciones Gratuitas (`isFree = true`):**
+     * Meta de pre-inscripción ampliada de **30 hasta 40 participantes**.
+     * Esta holgura permite al equipo de OnProtec (Diana) contactar y reconfirmar telefónicamente a los **18 asistentes presenciales finales**, mitigando el No-Show habitual de los eventos sin costo.
+     * Solo si la pre-inscripción supera los 40 registros entra en estado **`Lista de Espera`**.
+  2. **Actividades Cobradas / Pagas (`isFree = false` o `price > 0`):**
+     * Aforo estricto de **solo 18 puestos VIP garantizados**.
+     * Exige método de pago, referencia de transacción y **zona de carga de comprobante de pago (voucher/captura/PDF)**.
+     * Al alcanzar 18 inscritos confirmados/pagados, el registro pasa automáticamente a **`Lista de Espera`**.
 * **Condición de Sobrecupo y Lista de Espera:**
   $$\text{Ocupación Activa} = \text{Inscritos} + \text{Confirmados} + \text{Asistió}$$
-  * Si $\text{Ocupación Activa} < 18$: El participante ingresa con estado **`Inscrito`**.
-  * Si $\text{Ocupación Activa} \ge 18$: La aplicación le asigna automáticamente el estado **`Lista de Espera`**. En la UI pública se notifica que los 18 cupos están cubiertos y que su puesto es prioritario ante cancelaciones.
+  * Si $\text{Ocupación Activa} < \text{Capacidad Efectiva}$ (18 para pagos, 40 para gratuitos): Estado **`Inscrito`**.
+  * Si $\text{Ocupación Activa} \ge \text{Capacidad Efectiva}$: Estado **`Lista de Espera`**.
 
 ### B. Funnel de Asistencia y Tasa de No-Show
 * **Fórmula de Tasa de No-Show:**
