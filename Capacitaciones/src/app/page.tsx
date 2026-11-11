@@ -296,77 +296,115 @@ export default function HomePage() {
       ===================================================================== */}
       <section className="relative onprotec-hex-bg border-b border-slate-200/80 dark:border-slate-800 py-10 lg:py-14 overflow-hidden">
         <div className="max-w-[1580px] mx-auto px-4 sm:px-8">
-          <div className="max-w-4xl space-y-4">
-            <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-[#f4730a]/40 rounded-full pl-2.5 pr-4 py-1 shadow-sm">
-              <span className="bg-[#f4730a] text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full">
-                SALA TÉCNICA VIP
-              </span>
-              <span className="text-xs font-extrabold text-[#2a285c] dark:text-slate-200 flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-[#f4730a]" />
-                Sede Corporativa OnProtec Caracas (Acceso Exclusivo con Invitación)
-              </span>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+            {/* Columna Izquierda (7 cols): Título, Exclusividad y Valores de la Sala */}
+            <div className="lg:col-span-7 space-y-4">
+              <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-[#f4730a]/40 rounded-full pl-2.5 pr-4 py-1 shadow-sm">
+                <span className="bg-[#f4730a] text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full">
+                  SALA TÉCNICA VIP
+                </span>
+                <span className="text-xs font-extrabold text-[#2a285c] dark:text-slate-200 flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-[#f4730a]" />
+                  Sede Corporativa OnProtec Caracas (Acceso Exclusivo con Invitación)
+                </span>
+              </div>
 
-            <div>
-              <p className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.2em] text-[#f4730a] mb-1">
-                CENTRO DE ENTRENAMIENTO & CERTIFICACIÓN TÉCNICA ONPROTEC®
+              <div>
+                <p className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.2em] text-[#f4730a] mb-1">
+                  CENTRO DE ENTRENAMIENTO & CERTIFICACIÓN TÉCNICA ONPROTEC®
+                </p>
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#1a1c29] dark:text-white leading-[1.1]">
+                  La formación práctica definitiva para{" "}
+                  <span className="text-[#f4730a]">Instaladores e Integradores</span> en Caracas
+                </h1>
+              </div>
+
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 font-medium leading-relaxed max-w-2xl">
+                Nuestra sala de capacitaciones corporativa en Caracas está equipada con tecnología de punta para dominar tecnologías de CCTV, Redes, Control de Acceso y Energía con{" "}
+                <strong className="text-[#f4730a]">equipos reales energizados en vivo</strong>. Aforo VIP limitado a 18 puestos de trabajo individuales para máxima interacción con instructores certificados.
               </p>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#1a1c29] dark:text-white leading-[1.1]">
-                La formación práctica definitiva para{" "}
-                <span className="text-[#f4730a]">Instaladores e Integradores</span> en Caracas
-              </h1>
+
+              {/* 3 Insignias de Prestigio */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 max-w-2xl">
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/10 text-[#f4730a] flex items-center justify-center flex-shrink-0">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">Sede Corporativa</p>
+                    <p className="text-[11px] text-slate-500">Piso enviado al confirmar</p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/10 text-[#2a285c] dark:text-cyan-400 flex items-center justify-center flex-shrink-0">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">18 Puestos VIP</p>
+                    <p className="text-[11px] text-slate-500">Hardware energizado</p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">Certificación Oficial</p>
+                    <p className="text-[11px] text-slate-500">Respaldo Fabricantes</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 font-medium leading-relaxed max-w-3xl">
-              Nuestra sala de capacitaciones corporativa en Caracas está equipada con tecnología de punta para dominar tecnologías de CCTV, Redes, Control de Acceso y Energía con{" "}
-              <strong className="text-[#f4730a]">equipos reales energizados en vivo</strong>. Aforo VIP limitado a 18 puestos de trabajo individuales para máxima interacción con instructores certificados.
-            </p>
-
-            {/* CTA GIGANTE DE ALTA VISIBILIDAD PARA ENCONTRAR LA INSCRIPCIÓN AL INSTANTE */}
-            <div className="pt-2 flex flex-wrap items-center gap-4">
-              <button
-                type="button"
-                onClick={() => scrollToSection("registro-express")}
-                className="inline-flex items-center gap-3 bg-[#f4730a] hover:bg-[#ef7922] text-white text-sm sm:text-base font-black uppercase tracking-wider px-7 py-4 rounded-2xl shadow-xl shadow-[#f4730a]/35 hover:shadow-2xl hover:shadow-[#f4730a]/50 hover:-translate-y-0.5 transition-all cursor-pointer animate-pulse hover:animate-none"
-              >
-                <span>✍️ ¡Completar Formulario de Inscripción Ahora!</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
-              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-[#f4730a]" />
-                <span>Cupos limitados por aforo técnico individual</span>
-              </div>
-            </div>
-
-            {/* 3 Insignias de Prestigio */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 max-w-3xl">
-              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/10 text-[#f4730a] flex items-center justify-center flex-shrink-0">
-                  <Lock className="w-5 h-5" />
+            {/* Columna Derecha (5 cols): Tarjeta de Orientación Directa hacia el Formulario Justo Debajo */}
+            <div className="lg:col-span-5">
+              <div className="bg-white dark:bg-[#13182b] rounded-3xl border-2 border-[#f4730a]/40 dark:border-slate-700 p-6 sm:p-7 shadow-[0_12px_40px_rgba(42,40,92,0.08)] space-y-4">
+                <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-[#2a285c] text-white px-3 py-1 rounded-full keep-white">
+                    <Sparkles className="w-3 h-3 text-[#fdff00]" /> PRÓXIMA CONVOCATORIA
+                  </span>
+                  {selectedTraining && (
+                    <span className="text-xs font-mono font-extrabold text-[#f4730a] bg-orange-50 dark:bg-orange-950/40 px-2.5 py-0.5 rounded-lg border border-[#f4730a]/30">
+                      {selectedTraining.code}
+                    </span>
+                  )}
                 </div>
+
                 <div>
-                  <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">Sede Corporativa Caracas</p>
-                  <p className="text-[11px] text-slate-500">Piso y coordenadas enviados tras confirmación</p>
+                  <h3 className="text-base sm:text-lg font-black text-[#2a285c] dark:text-white leading-snug">
+                    {selectedTraining ? selectedTraining.name || selectedTraining.title : "Capacitación Técnica OnProtec"}
+                  </h3>
+                  <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs font-bold text-slate-600 dark:text-slate-300 mt-2">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-[#f4730a]" />
+                      {selectedTraining ? fmtLocalDate(selectedTraining.eventDate || selectedTraining.startDate) : ""}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-[#2a285c] dark:text-cyan-400" />
+                      {selectedTraining ? fmtLocalHour(selectedTraining.eventDate || selectedTraining.startDate) : ""} (Caracas)
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/10 text-[#2a285c] dark:text-cyan-400 flex items-center justify-center flex-shrink-0">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">18 Puestos VIP</p>
-                  <p className="text-[11px] text-slate-500">Hardware energizado</p>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
-                  <Award className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">Certificación Oficial</p>
-                  <p className="text-[11px] text-slate-500">Respaldo de Fabricantes</p>
+                {/* Llamado de Atención Visual con Flecha Animada hacia el Formulario */}
+                <div className="p-4 bg-orange-50/90 dark:bg-orange-500/10 border-2 border-dashed border-[#f4730a] rounded-2xl text-center space-y-2">
+                  <div className="flex items-center justify-center gap-1.5 text-xs font-black uppercase text-[#f4730a] tracking-wider animate-bounce">
+                    <ChevronDown className="w-4 h-4 text-[#f4730a]" />
+                    <span>EL FORMULARIO ESTÁ JUSTO DEBAJO</span>
+                    <ChevronDown className="w-4 h-4 text-[#f4730a]" />
+                  </div>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+                    Desliza hacia abajo o presiona el botón para completar tu registro en esta misma columna.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection("registro-express")}
+                    className="w-full py-3 px-4 bg-[#f4730a] hover:bg-[#ef7922] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#f4730a]/30 transition-all flex items-center justify-center gap-2 cursor-pointer hover:-translate-y-0.5"
+                  >
+                    <span>✍️ Ir al Formulario de Inscripción ↓</span>
+                  </button>
                 </div>
               </div>
             </div>
