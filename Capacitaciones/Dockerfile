@@ -35,16 +35,21 @@ RUN npm run build
 # Stage 4: Production runner
 # ------------------------------------------------------------------------------
 FROM base AS runner
+RUN apk add --no-cache su-exec
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+ENV DATA_DIR="/app/data"
 
 # Crear usuario seguro no privilegiado
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
+
+# Crear directorio base para volumen persistente y backups
+RUN mkdir -p /app/data /app/data/backups && chown -R nextjs:nodejs /app/data
 
 # Copiar archivos públicos y el build standalone de Next.js
 COPY --from=builder /app/public ./public
@@ -56,8 +61,10 @@ RUN mkdir .next && chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-USER nextjs
+# Copiar script de arranque seguro
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

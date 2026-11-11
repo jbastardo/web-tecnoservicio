@@ -4644,6 +4644,166 @@
       ],
       "createdAt": "2026-10-28T16:00:00-04:00",
       "updatedAt": "2026-10-28T20:23:52.458Z"
+    },
+    {
+      "id": 40,
+      "name": "Certificación Oficial Dahua - Seguridad Electrónica & Redes",
+      "code": "CAP-2026-040",
+      "type": "Certificación",
+      "brand": "Dahua Technology",
+      "instructor": "Especialista Certificado Dahua",
+      "eventDate": "2026-12-08T09:00:00-04:00",
+      "adStartDate": "2026-11-10T09:00:00-04:00",
+      "adCosts": 0,
+      "associatedCosts": 0,
+      "maxCapacity": 18,
+      "instructorCapacity": 1,
+      "relatedSkus": [
+        "DH-IPC-HFW1230S",
+        "DHI-NVR2104HS-S3"
+      ],
+      "price": 20,
+      "currency": "USD",
+      "isFree": false,
+      "status": "Planificado",
+      "surveyUrl": "https://capacitacion.tutecnoservicio.com/encuesta/40",
+      "surveyQrCode": null,
+      "description": "Certificación técnica oficial Dahua en Sala VIP OnProtec. Aforo estricto de 18 puestos individuales energizados para laboratorios prácticos en vivo.",
+      "presentationNotes": "📌 Traer laptop con SmartPSS Lite y ConfigTool instalados. Exclusivo para integradores con cupo VIP confirmado.",
+      "coverImageUrl": "/brand/onprotec-hero-banner.avif",
+      "coverPhotos": [
+        "/brand/onprotec-hero-banner.avif"
+      ],
+      "location": "Torre América, Piso 14, Urb. El Recreo, Caracas",
+      "formQuestionsTitle": "Preguntas Específicas del Curso",
+      "formQuestionsDescription": "Por favor complete estas preguntas para validar su perfil técnico y confirmar su asistencia a la Sala VIP.",
+      "paymentMethods": [
+        "Zelle",
+        "Efectivo en Tienda Onprotec",
+        "Binance"
+      ],
+      "formQuestions": [
+        {
+          "id": "cargo",
+          "label": "Cargo o Rol Técnico en su Empresa",
+          "placeholder": "Ej. Integrador CCTV, Gerente de Proyectos, Instalador...",
+          "type": "text",
+          "required": false
+        },
+        {
+          "id": "experienceLevel",
+          "label": "Nivel de experiencia con la marca / tecnología",
+          "type": "select",
+          "options": [
+            "Básico / Iniciación",
+            "Intermedio (Instalación y Configuración)",
+            "Avanzado / Certificado",
+            "Comercial / Ventas Técnicas"
+          ],
+          "required": true
+        },
+        {
+          "id": "referralSource",
+          "label": "¿Cómo te enteraste de esta capacitación OnProtec?",
+          "type": "select",
+          "options": [
+            "Instagram (@onprotec)",
+            "WhatsApp / Asesor de Ventas",
+            "Página Web (www.onprotec.com)",
+            "Recomendación de Colega",
+            "Correo Electrónico"
+          ],
+          "required": false
+        },
+        {
+          "id": "specialExpectations",
+          "label": "¿Qué tema o necesidad puntual te gustaría resolver en esta sesión?",
+          "placeholder": "Escribe tu consulta o proyecto actual...",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "id": "actividadProfesional",
+          "label": "Actividad profesional actual",
+          "type": "select",
+          "options": [
+            "Integrador / Instalador de CCTV y Redes",
+            "Técnico Especialista",
+            "Distribuidor / Revendedor",
+            "Particular / Independiente"
+          ],
+          "required": true
+        },
+        {
+          "id": "metodoPago",
+          "label": "Método de Pago Utilizado:",
+          "type": "select",
+          "options": [
+            "Zelle",
+            "Efectivo en Tienda Onprotec",
+            "Binance"
+          ],
+          "required": true
+        },
+        {
+          "id": "preguntaAdicional",
+          "label": "Nueva pregunta para el inscrito",
+          "placeholder": "Indica cualquier observación o requerimiento especial...",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "surveyQuestions": [
+        {
+          "id": "ratingInstructor",
+          "label": "1. Dominio técnico, claridad y pedagogía del Instructor (1 a 5)",
+          "type": "rating",
+          "required": true
+        },
+        {
+          "id": "ratingContent",
+          "label": "2. Calidad del contenido técnico y laboratorios prácticos (1 a 5)",
+          "type": "rating",
+          "required": true
+        },
+        {
+          "id": "ratingFacilities",
+          "label": "3. Comodidad y atención en la Sala de Capacitaciones OnProtec (1 a 5)",
+          "type": "rating",
+          "required": true
+        },
+        {
+          "id": "recommendationScore",
+          "label": "4. ¿Qué tan probable es que recomiendes las capacitaciones de OnProtec a un colega? (0 a 10)",
+          "type": "nps",
+          "required": true
+        },
+        {
+          "id": "mostLiked",
+          "label": "5. ¿Qué fue lo que más te gustó de la capacitación?",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "id": "hasActiveProjects",
+          "label": "6. ¿Tienes actualmente proyectos activos donde requieras cotizar equipos en OnProtec?",
+          "type": "select",
+          "options": [
+            "Sí, requiero cotización inmediata con mi asesor",
+            "Sí, a mediano plazo (próximos 30 días)",
+            "Por ahora solo actualización técnica"
+          ],
+          "required": true
+        },
+        {
+          "id": "suggestions",
+          "label": "7. ¿Qué próximos cursos, marcas o certificaciones te gustaría ver en OnProtec?",
+          "type": "textarea",
+          "required": false
+        }
+      ],
+      "createdAt": "2026-11-11T14:00:00-04:00",
+      "updatedAt": "2026-11-11T14:00:00-04:00"
     }
   ],
   "participants": [
@@ -16616,6 +16776,25 @@
       "notes": null,
       "createdAt": "2026-08-31T17:49:48.130Z",
       "updatedAt": "2026-08-31T17:49:48.130Z"
+    },
+    {
+      "id": 631,
+      "name": "Daniel Azopardo",
+      "docType": "V",
+      "docNumber": "26465835",
+      "phone": "+584120000000",
+      "email": "daniel.azopardo@gmail.com",
+      "hasStorePurchases": true,
+      "storePurchasesAmount": 0,
+      "company": "Independiente",
+      "cargo": "Técnico Especialista",
+      "city": "Caracas",
+      "experienceLevel": "Intermedio (Instalación y Configuración)",
+      "referralSource": "WhatsApp / Asesor de Ventas",
+      "allowsContact": true,
+      "notes": "Inscrito en Sala VIP CAP-2026-040",
+      "createdAt": "2026-11-11T15:00:00-04:00",
+      "updatedAt": "2026-11-11T15:00:00-04:00"
     }
   ],
   "registrations": [
@@ -105347,6 +105526,35 @@
         "createdAt": "2026-02-25T06:43:41.900Z",
         "updatedAt": "2026-02-25T06:43:41.900Z"
       }
+    },
+    {
+      "id": 1284,
+      "trainingId": 40,
+      "participantId": 631,
+      "status": "Confirmado",
+      "confirmationDate": "2026-11-11T15:20:00-04:00",
+      "amount": 20,
+      "currency": "USD",
+      "isPaid": true,
+      "paymentDate": "2026-11-11T15:20:00-04:00",
+      "paymentMethod": "Zelle",
+      "paymentReference": "ZELLE-AZOPARDO",
+      "pabiloTransactionId": null,
+      "pabiloStatus": "approved",
+      "invoiceNumber": null,
+      "paymentProofUrl": null,
+      "specialNotes": "Comprobante verificado. Cupo Sala VIP formalmente garantizado.",
+      "customAnswers": {
+        "cargo": "Técnico Especialista",
+        "experienceLevel": "Intermedio (Instalación y Configuración)",
+        "metodoPago": "Zelle",
+        "actividadProfesional": "Integrador / Instalador de CCTV y Redes"
+      },
+      "reminderSentAt": null,
+      "surveySentAt": null,
+      "checkInAt": null,
+      "createdAt": "2026-11-11T15:20:00-04:00",
+      "updatedAt": "2026-11-11T15:20:00-04:00"
     }
   ],
   "surveys": [

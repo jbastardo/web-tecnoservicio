@@ -24,6 +24,7 @@ import {
   MapPin,
   Sparkles,
   MessageSquare,
+  Download,
 } from "lucide-react";
 import { FormQuestion, SurveyQuestion } from "@/types";
 import { fmtLocalDate, fmtLocalHour, formatCurrency } from "@/utils/formatUtils";
@@ -505,6 +506,16 @@ export default function CapacitacionesAdminPage() {
             <RefreshCw className={`w-3.5 h-3.5 ${syncingOdoo ? "animate-spin" : ""}`} />
             <span>Sincronizar Odoo</span>
           </button>
+
+          <a
+            href="/api/admin/backup"
+            download
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-emerald-400 rounded-xl transition"
+            title="Descargar copia de seguridad completa JSON de todas las capacitaciones y registros"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Descargar Respaldo BD</span>
+          </a>
 
           <button
             onClick={() => openCreateModal("general")}

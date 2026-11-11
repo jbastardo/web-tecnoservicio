@@ -294,3 +294,28 @@ Atendiendo los requerimientos operativos de Coordinación de Sala (Diana Barrero
      * Disponible tanto en preguntas personalizadas dinámicas de tipo `file` como en el "Grupo 4: Reporte de Pago" para capacitaciones pagas.
    * **Visualización Administrativa (`/admin/inscripciones` y `/admin/participantes`):**
      * Tabla y modal de detalle permiten previsualizar miniaturas en tiempo real y abrir/descargar el voucher adjunto con un solo clic.
+
+---
+
+## 11. Arquitectura de Persistencia Robusta en Producción (Docker Volume en Coolify & Backups Automáticos)
+
+Para erradicar por completo la pérdida de capacitaciones, preguntas personalizadas, inscritos o encuestas recién creadas al desplegar nuevas versiones de la aplicación desde Git:
+
+1. **Volumen Persistente de Docker en Coolify (`/app/data`):**
+   * Se configuró y vinculó a la aplicación de Coolify (`jzhfwt5pm8hanaoy8w60lwdl`) un almacenamiento persistente (`type: persistent`, volumen `jzhfwt5pm8hanaoy8w60lwdl-onprotec_capacitaciones_data`, `mount_path: /app/data`).
+   * La variable de entorno `DATA_DIR=/app/data` define la ubicación física del archivo maestro `realFormsData.json`.
+   * En cada despliegue, Docker desacopla y vuelve a montar este volumen intacto, garantizando que ninguna capacitación (ej. `CAP-2026-040`) ni registro (ej. `#1284`) sea eliminado o reseteado al compilar una nueva imagen.
+
+2. **Módulo Centralizado de Persistencia (`src/lib/serverStorage.ts`):**
+   * Determina inteligentemente la ruta de almacenamiento según el entorno (`DATA_DIR` $\rightarrow$ `/app/data` $\rightarrow$ `./data` $\rightarrow$ `src/lib/realFormsData.json`).
+   * **Arranque Idempotente:** Si el volumen está vacío (primer arranque), siembra automáticamente los 40 cursos y registros históricos. Si ya existe, carga la base viva con todos los cambios y creaciones del usuario.
+   * **Escritura Atómica:** Emplea archivos temporales `.tmp` y `fs.renameSync` para prevenir corrupción de datos en escrituras concurrentes.
+   * **Backups Rotativos Automáticos:** En cada guardado crea una copia histórica con marca de tiempo en `/app/data/backups/realFormsData.backup-*.json`, conservando automáticamente las 10 versiones más recientes.
+
+3. **Script de Inicialización de Contenedor (`docker-entrypoint.sh`):**
+   * Configurado en `Dockerfile` como punto de entrada (`ENTRYPOINT`).
+   * Al iniciar el contenedor como `root`, ajusta los permisos del volumen montado (`chown -R nextjs:nodejs /app/data`) y delega la ejecución de `node server.js` al usuario sin privilegios `nextjs` mediante `su-exec`.
+
+4. **Descarga y Restauración de Respaldo Administrativo (`/api/admin/backup`):**
+   * Botón directo **"Descargar Respaldo BD"** en `/admin/capacitaciones` para que la gerencia y coordinación descarguen en 1 clic un archivo JSON íntegro con el estado exacto de la base de datos viva.
+   * Endpoint `POST /api/admin/backup` para restauración instantánea en caso de contingencia.

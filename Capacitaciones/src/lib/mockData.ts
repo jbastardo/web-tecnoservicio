@@ -173,31 +173,53 @@ export const defaultAdminUsers: AdminUser[] = [
 
 // =============================================================================
 // DATOS REALES EXTRAÍDOS DE FORMULARIOS GOOGLE Y ODOO (ONPROTEC)
+// Almacenamiento Persistente en Docker Volume (/app/data/realFormsData.json)
 // =============================================================================
 
-export const initialTrainings: Training[] = (realForms.trainings as any[]) || [];
-export const initialParticipants: Participant[] = (realForms.participants as any[]) || [];
-export const initialRegistrations: Registration[] = (realForms.registrations as any[]) || [];
-export const initialSurveys: Survey[] = (realForms.surveys as any[]) || [];
+function loadDataset(): {
+  trainings: Training[];
+  participants: Participant[];
+  registrations: Registration[];
+  surveys: Survey[];
+  adminUsers: AdminUser[];
+} {
+  if (typeof window !== "undefined") {
+    return realForms as any;
+  }
+  try {
+    // Carga segura del módulo de almacenamiento en el servidor
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { loadPersistentDataset } = require("./serverStorage");
+    return loadPersistentDataset();
+  } catch (err: any) {
+    console.warn("[mockData] Fallback a datos estáticos embebidos:", err?.message);
+    return realForms as any;
+  }
+}
+
+const loadedData = loadDataset();
+
+export const initialTrainings: Training[] = (loadedData.trainings as any[]) || [];
+export const initialParticipants: Participant[] = (loadedData.participants as any[]) || [];
+export const initialRegistrations: Registration[] = (loadedData.registrations as any[]) || [];
+export const initialSurveys: Survey[] = (loadedData.surveys as any[]) || [];
 export const initialAdminUsers: AdminUser[] =
-  ((realForms as any).adminUsers as AdminUser[]) || [...defaultAdminUsers];
+  ((loadedData as any).adminUsers as AdminUser[]) || [...defaultAdminUsers];
 export const initialOdooSkus: OdooProduct[] = (realOdooProducts as any[]) || [];
 
 export async function persistDataset(): Promise<void> {
+  if (typeof window !== "undefined") return;
   try {
-    const fs = await import("fs");
-    const path = await import("path");
-    const filePath = path.join(process.cwd(), "src", "lib", "realFormsData.json");
-    const payload = {
+    const { savePersistentDataset } = await import("./serverStorage");
+    await savePersistentDataset({
       trainings: initialTrainings,
       participants: initialParticipants,
       registrations: initialRegistrations,
       surveys: initialSurveys,
       adminUsers: initialAdminUsers,
-    };
-    fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf-8");
+    });
   } catch (err) {
-    console.warn("[persistDataset] No se pudo escribir en realFormsData.json:", err);
+    console.error("[persistDataset] Error en guardado persistente:", err);
   }
 }
 
