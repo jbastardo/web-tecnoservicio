@@ -319,3 +319,8 @@ Para erradicar por completo la pérdida de capacitaciones, preguntas personaliza
 4. **Descarga y Restauración de Respaldo Administrativo (`/api/admin/backup`):**
    * Botón directo **"Descargar Respaldo BD"** en `/admin/capacitaciones` para que la gerencia y coordinación descarguen en 1 clic un archivo JSON íntegro con el estado exacto de la base de datos viva.
    * Endpoint `POST /api/admin/backup` para restauración instantánea en caso de contingencia.
+
+5. **Permisos y Eliminación de Capacitaciones en Cascada (Diana / Coordinación de Sala):**
+   * Se habilitó el endpoint `DELETE /api/capacitaciones?id=<id>` con eliminación en cascada de inscripciones y encuestas asociadas para garantizar integridad referencial.
+   * En `/admin/capacitaciones`, se añadieron botones de eliminación rápida en la tabla (`[ 🗑️ Borrar ]`) y en el pie del modal de edición (`[ 🗑️ Eliminar Capacitación ]`).
+   * **Salvaguarda Visual:** Modal de confirmación con alerta de impacto antes de ejecutar la eliminación definitiva en el almacenamiento persistente.

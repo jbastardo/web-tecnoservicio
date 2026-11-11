@@ -306,3 +306,60 @@ export async function PUT(request: Request) {
 export async function PATCH(request: Request) {
   return PUT(request);
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const idParam = searchParams.get("id");
+
+    if (!idParam) {
+      return NextResponse.json(
+        { success: false, error: "ID de capacitación requerido para eliminar" },
+        { status: 400 }
+      );
+    }
+
+    const idNum = Number(idParam);
+    const idx = initialTrainings.findIndex(
+      (t) => Number(t.id) === idNum || t.code?.toLowerCase() === idParam.toLowerCase()
+    );
+
+    if (idx === -1) {
+      return NextResponse.json(
+        { success: false, error: "Capacitación no encontrada" },
+        { status: 404 }
+      );
+    }
+
+    const deletedTraining = initialTrainings[idx];
+    const trainingId = deletedTraining.id;
+
+    // Eliminar capacitación de la memoria activa
+    initialTrainings.splice(idx, 1);
+
+    // Cascada: Eliminar inscripciones vinculadas
+    for (let i = initialRegistrations.length - 1; i >= 0; i--) {
+      if (Number(initialRegistrations[i].trainingId) === Number(trainingId)) {
+        initialRegistrations.splice(i, 1);
+      }
+    }
+
+    // Cascada: Eliminar encuestas vinculadas
+    for (let i = initialSurveys.length - 1; i >= 0; i--) {
+      if (Number(initialSurveys[i].trainingId) === Number(trainingId)) {
+        initialSurveys.splice(i, 1);
+      }
+    }
+
+    // Persistir cambios atómicamente en el volumen Docker
+    await persistDataset();
+
+    return NextResponse.json({
+      success: true,
+      message: `Capacitación ${deletedTraining.code} (${deletedTraining.name}) eliminada exitosamente.`,
+      data: { id: trainingId, code: deletedTraining.code },
+    });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

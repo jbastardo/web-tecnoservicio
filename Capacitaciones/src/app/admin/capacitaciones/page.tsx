@@ -25,6 +25,7 @@ import {
   Sparkles,
   MessageSquare,
   Download,
+  AlertTriangle,
 } from "lucide-react";
 import { FormQuestion, SurveyQuestion } from "@/types";
 import { fmtLocalDate, fmtLocalHour, formatCurrency } from "@/utils/formatUtils";
@@ -64,6 +65,10 @@ export default function CapacitacionesAdminPage() {
     "general"
   );
   const [saving, setSaving] = useState(false);
+
+  // Modal Confirmación de Eliminación (Permiso Diana / Coordinación)
+  const [deletingTraining, setDeletingTraining] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -297,6 +302,31 @@ export default function CapacitacionesAdminPage() {
       console.error(e);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteTraining = async () => {
+    if (!deletingTraining) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/capacitaciones?id=${deletingTraining.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        notify(`Capacitación ${deletingTraining.code} eliminada correctamente.`);
+        setDeletingTraining(null);
+        if (editingId === deletingTraining.id) {
+          setShowModal(false);
+        }
+        fetchTrainings();
+      } else {
+        alert(data.error || "Error al eliminar la capacitación");
+      }
+    } catch (err: any) {
+      alert(`Error de conexión: ${err.message}`);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -724,6 +754,16 @@ export default function CapacitacionesAdminPage() {
                           >
                             <QrCode className="w-3.5 h-3.5" />
                             <span>Encuesta ({sqCount})</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setDeletingTraining(t)}
+                            className="px-2 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-300 border border-red-800/50 rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                            title={`Eliminar capacitación ${t.code}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Borrar</span>
                           </button>
                         </div>
                       </td>
@@ -1727,10 +1767,26 @@ export default function CapacitacionesAdminPage() {
 
               {/* Pie del Modal */}
               <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-3">
-                <div className="text-[11px] text-slate-400">
-                  {editingId
-                    ? "Los cambios se reflejan de inmediato en la portada pública y encuesta QR."
-                    : "Se generará automáticamente el código único y QR de encuesta."}
+                <div className="flex items-center gap-3">
+                  {editingId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const t = trainings.find((item) => item.id === editingId);
+                        if (t) setDeletingTraining(t);
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/60 text-xs font-bold flex items-center gap-1.5 transition"
+                      title="Eliminar esta capacitación de la base de datos"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Eliminar Capacitación</span>
+                    </button>
+                  )}
+                  <span className="text-[11px] text-slate-400 hidden sm:inline">
+                    {editingId
+                      ? "Los cambios se reflejan de inmediato en la portada pública y encuesta QR."
+                      : "Se generará automáticamente el código único y QR de encuesta."}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -1757,6 +1813,51 @@ export default function CapacitacionesAdminPage() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Eliminación de Capacitación (Permiso Diana / Coordinación) */}
+      {deletingTraining && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-red-500/30 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto mb-4 text-red-400">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-center text-white mb-2">
+              ¿Eliminar Capacitación?
+            </h3>
+            <p className="text-xs text-slate-300 text-center mb-4 leading-relaxed">
+              ¿Estás seguro de que deseas eliminar permanentemente la capacitación{" "}
+              <span className="font-bold text-white block mt-1">
+                {deletingTraining.code} · {deletingTraining.name}
+              </span>
+            </p>
+            <div className="p-3 bg-red-950/30 border border-red-900/40 rounded-xl mb-5 text-[11px] text-red-300 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <span>
+                Esta acción eliminará el evento, su formulario de preguntas personalizadas y todos los registros vinculados de la base de datos persistente.
+              </span>
+            </div>
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setDeletingTraining(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteTraining}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-red-600/20 flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeleting ? "Eliminando..." : "Sí, Eliminar"}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
