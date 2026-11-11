@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { initialAdminUsers, persistDataset } from "@/lib/mockData";
+import { initialAdminUsers, persistDataset } from "@/lib/serverStorage";
 
 const SESSION_COOKIE = "onprotec_admin_session";
 

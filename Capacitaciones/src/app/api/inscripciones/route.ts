@@ -4,7 +4,7 @@ import {
   initialParticipants,
   initialRegistrations,
   persistDataset,
-} from "@/lib/mockData";
+} from "@/lib/serverStorage";
 import { pabiloService } from "@/services/pabiloService";
 import { whatsappService } from "@/services/whatsappService";
 import { fmtLocalTime } from "@/utils/formatUtils";

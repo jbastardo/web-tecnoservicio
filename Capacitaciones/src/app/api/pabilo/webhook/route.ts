@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { pabiloService } from "@/services/pabiloService";
-import { initialRegistrations } from "@/lib/mockData";
+import { initialRegistrations, persistDataset } from "@/lib/serverStorage";
 
 export async function POST(request: Request) {
   try {

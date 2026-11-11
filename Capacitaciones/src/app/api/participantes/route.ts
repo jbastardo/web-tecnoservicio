@@ -4,7 +4,7 @@ import {
   initialRegistrations,
   initialTrainings,
   persistDataset,
-} from "@/lib/mockData";
+} from "@/lib/serverStorage";
 
 export async function GET(request: Request) {
   try {

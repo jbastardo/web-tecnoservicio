@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { initialSurveys, initialTrainings, persistDataset } from "@/lib/mockData";
+import { initialSurveys, initialTrainings, persistDataset } from "@/lib/serverStorage";
 
 export async function GET(request: Request) {
   try {

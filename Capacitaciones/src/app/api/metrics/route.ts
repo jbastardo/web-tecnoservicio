@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { initialTrainings, initialParticipants, initialRegistrations, emptyDashboardMetrics } from "@/lib/mockData";
+import { initialTrainings, initialParticipants, initialRegistrations, emptyDashboardMetrics } from "@/lib/serverStorage";
 
 export async function GET() {
   try {

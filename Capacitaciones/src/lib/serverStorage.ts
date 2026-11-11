@@ -8,6 +8,7 @@ import {
   Survey,
   AdminUser,
 } from "@/types";
+export * from "./constants";
 
 export function getStorageFilePath(): string {
   // 1. Variable de entorno explícita (e.g. DATA_DIR=/app/data en Coolify / Docker)
@@ -45,13 +46,7 @@ interface DatasetPayload {
   lastSavedAt?: string;
 }
 
-let activeDataset: DatasetPayload | null = null;
-
-export function loadPersistentDataset(): DatasetPayload {
-  if (activeDataset) {
-    return activeDataset;
-  }
-
+function loadInitialData(): DatasetPayload {
   const targetPath = getStorageFilePath();
   console.log(`[serverStorage] Determinando ruta de almacenamiento persistente: ${targetPath}`);
 
@@ -63,7 +58,7 @@ export function loadPersistentDataset(): DatasetPayload {
         console.log(
           `[serverStorage] ✅ Base de datos persistente cargada desde ${targetPath} (${parsed.trainings.length} cursos, ${parsed.registrations?.length || 0} inscripciones).`
         );
-        activeDataset = {
+        return {
           trainings: parsed.trainings || [],
           participants: parsed.participants || [],
           registrations: parsed.registrations || [],
@@ -71,7 +66,6 @@ export function loadPersistentDataset(): DatasetPayload {
           adminUsers: parsed.adminUsers || [],
           lastSavedAt: parsed.lastSavedAt || new Date().toISOString(),
         };
-        return activeDataset;
       }
     }
   } catch (err: any) {
@@ -80,7 +74,7 @@ export function loadPersistentDataset(): DatasetPayload {
 
   // Si no existe o está corrupto, inicializar con la semilla completa del repositorio
   console.log(`[serverStorage] ⚠️ Inicializando archivo persistente inicial en ${targetPath}...`);
-  activeDataset = {
+  const initial = {
     trainings: (seedData.trainings as any[]) || [],
     participants: (seedData.participants as any[]) || [],
     registrations: (seedData.registrations as any[]) || [],
@@ -94,13 +88,42 @@ export function loadPersistentDataset(): DatasetPayload {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(targetPath, JSON.stringify(activeDataset, null, 2), "utf-8");
+    fs.writeFileSync(targetPath, JSON.stringify(initial, null, 2), "utf-8");
     console.log(`[serverStorage] ✅ Semilla persistente escrita con éxito en ${targetPath}.`);
   } catch (err: any) {
     console.warn(`[serverStorage] Advertencia al escribir semilla inicial en ${targetPath}:`, err?.message);
   }
 
-  return activeDataset;
+  return initial;
+}
+
+const activeDataset = loadInitialData();
+
+export const initialTrainings: Training[] = activeDataset.trainings;
+export const initialParticipants: Participant[] = activeDataset.participants;
+export const initialRegistrations: Registration[] = activeDataset.registrations;
+export const initialSurveys: Survey[] = activeDataset.surveys;
+export const initialAdminUsers: AdminUser[] = activeDataset.adminUsers;
+
+export function loadPersistentDataset(): DatasetPayload {
+  return {
+    trainings: initialTrainings,
+    participants: initialParticipants,
+    registrations: initialRegistrations,
+    surveys: initialSurveys,
+    adminUsers: initialAdminUsers,
+    lastSavedAt: activeDataset.lastSavedAt,
+  };
+}
+
+export async function persistDataset(): Promise<boolean> {
+  return savePersistentDataset({
+    trainings: initialTrainings,
+    participants: initialParticipants,
+    registrations: initialRegistrations,
+    surveys: initialSurveys,
+    adminUsers: initialAdminUsers,
+  });
 }
 
 export async function savePersistentDataset(payload: DatasetPayload): Promise<boolean> {
