@@ -462,7 +462,7 @@ export default function HomePage() {
                         coverGallery[activeCoverIdx] ||
                         "/brand/onprotec-hero-1920.webp"
                       }
-                      alt={selectedTraining.title}
+                      alt={selectedTraining.name || selectedTraining.title || "Capacitación"}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#1a183b]/95 via-[#1a183b]/40 to-transparent" />
@@ -493,7 +493,7 @@ export default function HomePage() {
                           {selectedTraining.brand || "ONPROTEC"}
                         </span>
                         <h3 className="text-lg sm:text-xl font-black text-white leading-tight line-clamp-2 keep-white">
-                          {selectedTraining.title}
+                          {selectedTraining.name || selectedTraining.title}
                         </h3>
                       </div>
                     </div>
@@ -920,7 +920,7 @@ export default function HomePage() {
                         </span>
                       </div>
                       <h3 className="text-xl sm:text-2xl font-black text-[#2a285c] dark:text-white">
-                        {selectedTraining.title}
+                        {selectedTraining.name || selectedTraining.title}
                       </h3>
                     </div>
 
@@ -1106,30 +1106,54 @@ export default function HomePage() {
             =============================================================== */}
             <div id="registro-express" className="lg:col-span-5 lg:sticky lg:top-28">
               <div className="bg-white dark:bg-[#13182b] rounded-3xl border-2 border-[#2a285c]/15 dark:border-slate-800 shadow-[0_24px_60px_rgba(42,40,92,0.10)] overflow-hidden">
-                {/* Cabecera del Formulario */}
-                <div className="bg-gradient-to-r from-[#2a285c] to-[#1f1d47] text-white p-6 keep-white">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-[#f4730a] text-white px-3 py-1 rounded-full keep-white">
+                {/* Cabecera del Formulario con Fecha, Hora y Aforo */}
+                <div className="bg-gradient-to-r from-[#2a285c] via-[#24224f] to-[#1f1d47] text-white p-6 keep-white">
+                  <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-[#f4730a] text-white px-3 py-1 rounded-full keep-white shadow-sm">
                       <Lock className="w-3 h-3" /> REGISTRO RÁPIDO SIN FRICCIÓN
                     </span>
                     {selectedTraining && (
-                      <span className="text-xs font-mono font-bold text-[#fdff00] keep-white">
+                      <span className="text-xs font-mono font-bold text-[#fdff00] keep-white bg-white/10 px-2.5 py-0.5 rounded-lg border border-white/20">
                         {selectedTraining.code}
                       </span>
                     )}
                   </div>
-                  <h3 className="text-xl font-black tracking-tight text-white keep-white">
-                    Asegura tu Asiento en la Sala VIP
-                  </h3>
-                  <p className="text-xs text-slate-200 mt-1 keep-white">
+                  <h3 className="text-xl sm:text-2xl font-black tracking-tight text-white keep-white leading-tight">
                     {selectedTraining
-                      ? `${selectedTraining.title} • ${
-                          availableSeats > 0
-                            ? `${availableSeats} asientos disponibles de ${maxSeats}`
-                            : "Lista de Espera Prioritaria Activa"
-                        }`
-                      : "Selecciona una capacitación para completar tu registro"}
-                  </p>
+                      ? (selectedTraining.name || selectedTraining.title)
+                      : "Asegura tu Asiento en la Sala VIP"}
+                  </h3>
+
+                  {/* Ficha Destacada de Fecha, Horario y Sede del Evento */}
+                  {selectedTraining && (
+                    <div className="mt-3.5 p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white space-y-2.5 keep-white">
+                      <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+                        <span className="inline-flex items-center gap-1.5 font-black text-[#fdff00]">
+                          <Calendar className="w-4 h-4 text-[#fdff00] flex-shrink-0" />
+                          <span>
+                            {fmtLocalDate(selectedTraining.eventDate || selectedTraining.startDate)}
+                          </span>
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 font-bold text-slate-200">
+                          <Clock className="w-4 h-4 text-cyan-300 flex-shrink-0" />
+                          <span>
+                            {fmtLocalHour(selectedTraining.eventDate || selectedTraining.startDate)}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] pt-2 border-t border-white/15 text-slate-300 flex-wrap gap-2">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-[#f4730a] flex-shrink-0" />
+                          <span>Sala OnProtec (Boleíta Sur, Caracas)</span>
+                        </span>
+                        <span className="font-extrabold text-[#fdff00]">
+                          {availableSeats > 0
+                            ? `${availableSeats} de ${maxSeats} cupos disponibles`
+                            : "Lista de Espera Activa"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-6 sm:p-7">
@@ -1208,6 +1232,33 @@ export default function HomePage() {
                   )}
 
                   <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Barra de Confirmación de Capacitación y Fecha Exacta */}
+                    {selectedTraining && (
+                      <div className="p-3.5 rounded-2xl bg-orange-50/80 dark:bg-orange-500/10 border border-[#f4730a]/30 flex items-center justify-between gap-3">
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] font-black uppercase text-[#f4730a] tracking-wider block">
+                            Capacitación Seleccionada ({selectedTraining.code})
+                          </span>
+                          <p className="font-extrabold text-xs text-[#2a285c] dark:text-white line-clamp-1">
+                            {selectedTraining.name || selectedTraining.title}
+                          </p>
+                          <div className="flex items-center gap-3 text-[11px] font-bold text-slate-700 dark:text-slate-300 pt-0.5">
+                            <span className="flex items-center gap-1 text-[#f4730a]">
+                              <Calendar className="w-3.5 h-3.5" />
+                              {fmtLocalDate(selectedTraining.eventDate || selectedTraining.startDate)}
+                            </span>
+                            <span className="flex items-center gap-1 text-slate-500">
+                              <Clock className="w-3.5 h-3.5" />
+                              {fmtLocalHour(selectedTraining.eventDate || selectedTraining.startDate)}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-xs font-black px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[#2a285c] dark:text-white flex-shrink-0 shadow-sm">
+                          {Number(selectedTraining.price) > 0 ? formatCurrency(selectedTraining.price) : "Gratis"}
+                        </span>
+                      </div>
+                    )}
+
                     {/* GRUPO 1: IDENTIFICACIÓN DEL PARTICIPANTE */}
                     <div className="space-y-3.5">
                       <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#2a285c] dark:text-slate-200">
@@ -1509,8 +1560,8 @@ export default function HomePage() {
                       </div>
                     )}
 
-                    {/* GRUPO 4: REPORTE DE PAGO (SOLO SI EL CURSO ES PAGO) */}
-                    {selectedTraining && !selectedTraining.isFree && (
+                    {/* GRUPO 4: REPORTE DE PAGO (SI EL CURSO ES PAGO O TIENE PRECIO) */}
+                    {selectedTraining && (Number(selectedTraining.price) > 0 || selectedTraining.isFree === false) ? (
                       <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-black text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
@@ -1521,7 +1572,7 @@ export default function HomePage() {
                             {formatCurrency(selectedTraining.price)}
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                           <select
                             value={form.paymentMethod}
                             onChange={(e) =>
@@ -1531,12 +1582,13 @@ export default function HomePage() {
                           >
                             <option value="Pabilo">Pago Móvil (Pabilo)</option>
                             <option value="Zelle">Zelle USD</option>
+                            <option value="Binance">Binance Pay (USDT)</option>
                             <option value="Transferencia">Transferencia Bs</option>
-                            <option value="Efectivo">Efectivo en Tienda</option>
+                            <option value="Efectivo">Efectivo en Tienda OnProtec</option>
                           </select>
                           <input
                             type="text"
-                            placeholder="Nro. Referencia"
+                            placeholder="Nro. Referencia Bancaria"
                             value={form.paymentReference}
                             onChange={(e) =>
                               setForm({ ...form, paymentReference: e.target.value })
@@ -1613,6 +1665,67 @@ export default function HomePage() {
                           )}
                         </div>
                       </div>
+                    ) : (
+                      /* ZONA OPCIONAL SI EL CURSO ES GRATIS O SI DESEA ADJUNTAR ARCHIVO */
+                      !activeFormQuestions.some((q) => q.type === "file") && (
+                        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                          <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                            <UploadCloud className="w-3.5 h-3.5 text-[#f4730a]" />
+                            ¿Deseas adjuntar algún comprobante o documento de soporte? (Opcional)
+                          </label>
+                          {form.paymentProofUrl ? (
+                            <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-emerald-400 dark:border-emerald-600 shadow-sm">
+                              <div className="flex items-center gap-2 overflow-hidden">
+                                {form.paymentProofUrl.startsWith("data:image/") ? (
+                                  <img
+                                    src={form.paymentProofUrl}
+                                    alt="Comprobante"
+                                    className="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700 flex-shrink-0"
+                                  />
+                                ) : (
+                                  <FileCheck className="w-8 h-8 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                )}
+                                <div className="text-left truncate">
+                                  <p className="text-xs font-black text-emerald-700 dark:text-emerald-300 truncate">
+                                    Documento adjuntado
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setForm({ ...form, paymentProofUrl: "" })}
+                                className="p-1.5 text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="flex items-center justify-center gap-2 p-2.5 border border-dashed border-slate-300 dark:border-slate-700 hover:border-[#f4730a] rounded-xl bg-white dark:bg-slate-950/80 cursor-pointer transition text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-[#f4730a]">
+                              <UploadCloud className="w-4 h-4" />
+                              <span>Clic para adjuntar archivo o soporte (JPG, PNG o PDF)</span>
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  if (file.size > 8 * 1024 * 1024) {
+                                    alert("El archivo excede los 8MB permitidos.");
+                                    return;
+                                  }
+                                  const reader = new FileReader();
+                                  reader.onload = (ev) => {
+                                    const base64 = ev.target?.result as string;
+                                    setForm((prev) => ({ ...prev, paymentProofUrl: base64 }));
+                                  };
+                                  reader.readAsDataURL(file);
+                                }}
+                              />
+                            </label>
+                          )}
+                        </div>
+                      )
                     )}
 
                     {/* BOTÓN ANCHO DE CONFIRMACIÓN DE ALTA CONVERSIÓN */}
