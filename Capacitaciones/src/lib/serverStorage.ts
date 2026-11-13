@@ -8,6 +8,7 @@ import {
   Survey,
   AdminUser,
 } from "@/types";
+import { defaultAdminUsers } from "./constants";
 export * from "./constants";
 
 export function getStorageFilePath(): string {
@@ -58,12 +59,42 @@ function loadInitialData(): DatasetPayload {
         console.log(
           `[serverStorage] ✅ Base de datos persistente cargada desde ${targetPath} (${parsed.trainings.length} cursos, ${parsed.registrations?.length || 0} inscripciones).`
         );
+        const adminList: AdminUser[] =
+          Array.isArray(parsed.adminUsers) && parsed.adminUsers.length > 0
+            ? parsed.adminUsers
+            : [...defaultAdminUsers];
+
+        // Garantizar que el usuario master juan@onprotec.com con clave 5197148 esté siempre activo y configurado
+        const masterIdx = adminList.findIndex(
+          (u) =>
+            u.email?.toLowerCase() === "juan@onprotec.com" ||
+            u.username?.toLowerCase() === "juan"
+        );
+        if (masterIdx >= 0) {
+          adminList[masterIdx].password = "5197148";
+          adminList[masterIdx].isActive = true;
+          adminList[masterIdx].role = "Super Admin Master";
+        } else {
+          adminList.unshift({
+            id: 1,
+            username: "juan",
+            email: "juan@onprotec.com",
+            name: "Juan Bastardo",
+            role: "Super Admin Master",
+            department: "Gerencia General OnProtec",
+            password: "5197148",
+            isActive: true,
+            lastLoginAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+          });
+        }
+
         return {
           trainings: parsed.trainings || [],
           participants: parsed.participants || [],
           registrations: parsed.registrations || [],
           surveys: parsed.surveys || [],
-          adminUsers: parsed.adminUsers || [],
+          adminUsers: adminList,
           lastSavedAt: parsed.lastSavedAt || new Date().toISOString(),
         };
       }
@@ -74,12 +105,17 @@ function loadInitialData(): DatasetPayload {
 
   // Si no existe o está corrupto, inicializar con la semilla completa del repositorio
   console.log(`[serverStorage] ⚠️ Inicializando archivo persistente inicial en ${targetPath}...`);
+  const initialAdminList: AdminUser[] =
+    Array.isArray((seedData as any).adminUsers) && (seedData as any).adminUsers.length > 0
+      ? (seedData as any).adminUsers
+      : [...defaultAdminUsers];
+
   const initial = {
     trainings: (seedData.trainings as any[]) || [],
     participants: (seedData.participants as any[]) || [],
     registrations: (seedData.registrations as any[]) || [],
     surveys: (seedData.surveys as any[]) || [],
-    adminUsers: (seedData as any).adminUsers || [],
+    adminUsers: initialAdminList,
     lastSavedAt: new Date().toISOString(),
   };
 

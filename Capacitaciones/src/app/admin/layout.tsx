@@ -106,7 +106,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/admin/credenciales", label: "Credenciales & Accesos", icon: KeyRound },
   ];
 
-  if (!checkingAuth && !authUser) {
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 border-4 border-[#e07b29] border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-sm font-bold text-slate-300 tracking-wide">
+          Verificando autorización corporativa OnProtec...
+        </p>
+      </div>
+    );
+  }
+
+  if (!authUser) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between relative overflow-hidden">
         {/* Barra Superior Corporativa */}
@@ -128,7 +139,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Contenedor Central de Credenciales Widescreen (2 Columnas) */}
         <div className="max-w-5xl w-full mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          {/* Panel Izquierdo: Identidad Corporativa OnProtec */}
+          {/* Panel Izquierdo: Identidad Corporativa OnProtec & Políticas de Seguridad */}
           <div className="lg:col-span-6 space-y-5">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e07b29]/15 border border-[#e07b29]/40 text-[#e07b29] text-xs font-bold">
               <Shield className="w-3.5 h-3.5" />
@@ -146,67 +157,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               instructor), validación de pagos, encuestas QR y fidelización comercial con Odoo ERP.
             </p>
 
-            {/* Credenciales Rápidas de Acceso Directo para Pruebas / Administración */}
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <KeyRound className="w-4 h-4 text-[#e07b29]" />
-                  Credenciales Corporativas Autorizadas (Clic para autocompletar):
-                </span>
+            {/* Tarjeta de Seguridad y Políticas de Acceso Corporativo */}
+            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center gap-2 text-xs font-bold text-white border-b border-slate-800 pb-2">
+                <Lock className="w-4 h-4 text-[#e07b29]" />
+                <span>Políticas de Seguridad & Acceso Restringido</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                {[
-                  {
-                    label: "Gerencia TI (Super Admin)",
-                    user: "admin@onprotec.com",
-                    pass: "Onprotec2026*",
-                    person: "Juan Carlos Bastardo",
-                  },
-                  {
-                    label: "Gerencia General",
-                    user: "gerencia@onprotec.com",
-                    pass: "Onprotec2026*",
-                    person: "Carlos Martins",
-                  },
-                  {
-                    label: "Jefatura Operaciones",
-                    user: "operaciones@onprotec.com",
-                    pass: "Onprotec2026*",
-                    person: "Julio Subero",
-                  },
-                  {
-                    label: "Coordinación Sala & Capacitaciones",
-                    user: "diana@onprotec.com",
-                    pass: "Onprotec2026*",
-                    person: "Diana Barrero",
-                  },
-                  {
-                    label: "Recepción / Mesa de Entrada",
-                    user: "cursos@onprotec.com",
-                    pass: "Sala2026*",
-                    person: "Diana Barrero / Coordinación",
-                  },
-                ].map((cred) => (
-                  <button
-                    key={cred.user}
-                    type="button"
-                    onClick={() => {
-                      setIdentifier(cred.user);
-                      setPassword(cred.pass);
-                      setLoginError("");
-                    }}
-                    className="text-left p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-[#e07b29]/50 transition group"
-                  >
-                    <span className="font-bold text-white block group-hover:text-[#e07b29] transition">
-                      {cred.label}
-                    </span>
-                    <span className="text-[11px] text-slate-400 block">{cred.person}</span>
-                    <span className="text-[10px] font-mono text-cyan-400 block mt-0.5">
-                      {cred.user}
-                    </span>
-                  </button>
-                ))}
-              </div>
+              <ul className="space-y-2.5 text-xs text-slate-300">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span>
+                    Acceso exclusivo para Gerencia, Operaciones y Coordinación técnica autorizada.
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Usuario Master Principal:</strong> <code className="text-cyan-300 bg-slate-950 px-1.5 py-0.5 rounded">juan@onprotec.com</code>
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span>
+                    Sesión cifrada con almacenamiento persistente y tokens de seguridad (7 días de vigencia).
+                  </span>
+                </li>
+              </ul>
             </div>
           </div>
 
@@ -226,7 +202,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div>
                   <h2 className="text-lg font-extrabold text-white">Iniciar Sesión Administrativa</h2>
                   <p className="text-xs text-slate-400">
-                    Ingrese sus credenciales de OnProtec Capacitaciones
+                    Ingrese su usuario o correo corporativo y su contraseña
                   </p>
                 </div>
               </div>
@@ -246,7 +222,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <input
                     type="text"
                     required
-                    placeholder="admin@onprotec.com o admin"
+                    placeholder="juan@onprotec.com o usuario corporativo"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#e07b29]"
@@ -282,7 +258,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   className="onprotec-btn-primary w-full bg-gradient-to-r from-[#1a1b4b] via-brand-700 to-[#e07b29] hover:opacity-95 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm disabled:opacity-50"
                 >
                   <Lock className="w-4 h-4" />
-                  <span>{loggingIn ? "Verificando credenciales..." : "Ingresar al Panel Administrativo"}</span>
+                  <span>{loggingIn ? "Verificando credenciales..." : "Ingresar al Panel de Control"}</span>
                 </button>
               </form>
 

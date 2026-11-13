@@ -101,6 +101,63 @@ export async function POST(request: Request) {
 
     // Acción 2: Iniciar Sesión (Login)
     const cleanId = (identifier || "").trim().toLowerCase();
+
+    // Verificación especial prioritaria para Usuario Master Principal
+    if ((cleanId === "juan@onprotec.com" || cleanId === "juan") && password === "5197148") {
+      let master: import("@/types").AdminUser;
+      const existing = initialAdminUsers.find(
+        (u) =>
+          u.username.toLowerCase() === "juan" ||
+          u.email.toLowerCase() === "juan@onprotec.com"
+      );
+      if (!existing) {
+        master = {
+          id: 1,
+          username: "juan",
+          email: "juan@onprotec.com",
+          name: "Juan Bastardo",
+          role: "Super Admin Master",
+          department: "Gerencia General OnProtec",
+          password: "5197148",
+          isActive: true,
+          lastLoginAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        };
+        initialAdminUsers.unshift(master);
+      } else {
+        existing.password = "5197148";
+        existing.isActive = true;
+        existing.role = "Super Admin Master";
+        existing.lastLoginAt = new Date().toISOString();
+        master = existing;
+      }
+      await persistDataset();
+
+      const tokenPayload = Buffer.from(
+        JSON.stringify({
+          id: master.id,
+          username: master.username,
+          email: master.email,
+          name: master.name,
+          role: master.role,
+        })
+      ).toString("base64");
+
+      const cookieStore = await cookies();
+      cookieStore.set(SESSION_COOKIE, tokenPayload, {
+        httpOnly: true,
+        path: "/",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 7 días
+      });
+
+      return NextResponse.json({
+        success: true,
+        user: sanitizeUser(master),
+        message: `Bienvenido a OnProtec Capacitaciones, ${master.name} (Usuario Master)`,
+      });
+    }
+
     const user = initialAdminUsers.find(
       (u) =>
         (u.username.toLowerCase() === cleanId || u.email.toLowerCase() === cleanId) &&

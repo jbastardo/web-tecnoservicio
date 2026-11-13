@@ -102,9 +102,21 @@ export const defaultSurveyQuestions: SurveyQuestion[] = [
 export const defaultAdminUsers: AdminUser[] = [
   {
     id: 1,
+    username: "juan",
+    email: "juan@onprotec.com",
+    name: "Juan Bastardo",
+    role: "Super Admin Master",
+    department: "Gerencia General OnProtec",
+    password: "5197148",
+    isActive: true,
+    lastLoginAt: "2026-11-13T16:00:00-04:00",
+    createdAt: "2026-01-15T12:00:00Z",
+  },
+  {
+    id: 2,
     username: "admin",
     email: "admin@onprotec.com",
-    name: "Juan Carlos Bastardo",
+    name: "Administración TI OnProtec",
     role: "Super Admin",
     department: "Gerencia de Tecnología OnProtec",
     password: "Onprotec2026*",

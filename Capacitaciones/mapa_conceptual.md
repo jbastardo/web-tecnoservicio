@@ -74,13 +74,20 @@ flowchart TD
 
 ## 3. Características Globales y Filosofía UX/UI
 
-1. **Widescreen-First & Carta de Presentación Ejecutiva:**
+1. **Widescreen-First, Carta de Presentación Ejecutiva & Carrusel Rotante:**
    * En pantallas de escritorio (1080p, 1440p, laptops), la información de primer nivel y métricas críticas se presentan en formato apaisado de alta legibilidad.
-   * La Landing Page pública ha sido rediseñada para eliminar sobrecarga visual ("efecto cabina de avión"): sin barras de búsqueda redundantes ni carruseles de botones dispersos. Funciona como la **carta de presentación ejecutiva de la Sala de Capacitaciones OnProtec en Torre América Piso 14**, con layout split-view (7 cols convocatoria/temario, 5 cols formulario de inscripción con fecha, ubicación y comprobante de pago).
-   * Cintillo de navegación fijo (`sticky top-0 z-50`) con estado de integraciones (Odoo, Pabilo, Hora Venezuela).
+   * **Banner Carrusel de Fotos Rotantes en Portada:** Ubicado en la columna derecha del Hero (`lg:col-span-5`), ocupa el espacio visual destacado con un carrusel interactivo con fotos de alta resolución de las capacitaciones y marcas oficiales (Dahua, Hikvision, UniFi, TP-Link). Rota automáticamente cada 5 segundos (se pausa al pasar el cursor) y dispone de flechas de navegación y puntos indicadores. **Al hacer clic en cualquier slide o en el botón de acción**, selecciona automáticamente esa capacitación y realiza scroll suave directamente al formulario de inscripción (`#registro-express`), sincronizando de inmediato el evento.
+   * La Landing Page pública funciona como la **carta de presentación ejecutiva de la Sala de Capacitaciones OnProtec en Torre América Piso 14**, con layout split-view (7 cols convocatoria/temario, 5 cols carrusel visual y formulario con comprobante de pago).
+   * Cintillo de navegación fijo (`sticky top-0 z-50`) con marca oficial y acceso administrativo seguro.
    * Se reorganiza a flujo vertical amigable únicamente en dispositivos móviles o tablets (`max-width: 768px`).
 
-2. **Control de Contraste y Modos de Color (Dark/Light):**
+2. **Autenticación Administrativa & Usuario Master Principal:**
+   * **Portal Administrativo Protegido (`/admin/*`):** El acceso al panel administrativo está 100% blindado mediante solicitud de usuario/correo corporativo y contraseña con tokens criptográficos de sesión HTTP-only.
+   * **Usuario Master Principal:** `juan@onprotec.com` (o usuario `juan`) con contraseña `5197148` y rol `Super Admin Master`, con acceso total a métricas, finanzas, edición/eliminación de cursos y gestión de credenciales.
+   * **Seguridad Visual Reforzada:** Se eliminaron las cajas de contraseñas visibles en texto plano, reemplazándolas por políticas corporativas de seguridad y campos con enmascaramiento seguro y conmutador de visibilidad.
+   * **Comunicaciones Oficiales:** Todos los mensajes de confirmación y botones de WhatsApp se dirigen al *"Equipo de OnProtec"*, garantizando una voz institucional uniforme.
+
+3. **Control de Contraste y Modos de Color (Dark/Light):**
    * Configuración de Tailwind `darkMode: "class"` controlada por selector explícito en `<html>` (`.dark` / `[data-theme]`), evitando que sistemas operativos en modo oscuro fuercen clases oscuras sobre vistas claras.
    * Regla de Alto Contraste en Modo Claro: Textos oscuros (`#0f172a`, `#1e293b`, `#475569`) sobre fondos blancos/grises, garantizando máxima legibilidad en todas las vistas administrativas (Directorio de Participantes, Gestor de Capacitaciones, Check-in).
 

@@ -16,6 +16,8 @@ import {
   ExternalLink,
   Lock,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   UploadCloud,
   FileCheck,
   Trash2,
@@ -216,6 +218,68 @@ export default function HomePage() {
     (t) => t.status === "Planificado" || t.status === "En Publicidad"
   );
 
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const [isCarouselHovered, setIsCarouselHovered] = useState(false);
+
+  // Generar slides para el banner carrusel de capacitaciones rotantes
+  const carouselSlides = React.useMemo(() => {
+    let list = openTrainings;
+    if (list.length === 0) {
+      list = trainings.slice(0, 4);
+    } else if (list.length === 1 && trainings.length > 1) {
+      const others = trainings.filter((t) => t.id !== list[0].id).slice(0, 3);
+      list = [...list, ...others];
+    }
+
+    return list.map((t, idx) => {
+      const photo =
+        t.coverImageUrl ||
+        (Array.isArray(t.coverPhotos) && t.coverPhotos[0]) ||
+        (idx % 2 === 0 ? "/brand/onprotec-hero-banner.avif" : "/brand/onprotec-hero-1920.webp");
+
+      const isPaid = Boolean(
+        t.isPaid || (t.price && Number(t.price) > 0) || (t.costUsd && Number(t.costUsd) > 0)
+      );
+
+      return {
+        training: t,
+        image: photo,
+        isPaid,
+        priceText: isPaid
+          ? `Inversión: ${formatCurrency(t.price || t.costUsd)} · Aforo VIP 18`
+          : "100% Gratuito · Pre-selección e Invitación",
+        badge:
+          t.status === "Planificado" || t.status === "En Publicidad"
+            ? "⚡ CONVOCATORIA ACTIVA"
+            : "🎓 SALA DE CAPACITACIONES",
+      };
+    });
+  }, [openTrainings, trainings]);
+
+  // Rotación automática cada 5 segundos si el cursor no está sobre el carrusel
+  useEffect(() => {
+    if (carouselSlides.length <= 1 || isCarouselHovered) return;
+    const interval = setInterval(() => {
+      setCarouselIndex((prev) => (prev + 1) % carouselSlides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [carouselSlides.length, isCarouselHovered]);
+
+  const handlePrevSlide = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setCarouselIndex((prev) => (prev - 1 + carouselSlides.length) % carouselSlides.length);
+  };
+
+  const handleNextSlide = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setCarouselIndex((prev) => (prev + 1) % carouselSlides.length);
+  };
+
+  const handleSelectSlideTraining = (t: any) => {
+    setSelectedTraining(t);
+    scrollToSection("registro-express");
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#f8f9fc] dark:bg-[#0b0e17] text-[#1a1c29] dark:text-slate-100 transition-colors duration-200">
       {/* =====================================================================
@@ -358,55 +422,138 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Columna Derecha (5 cols): Tarjeta de Orientación Directa hacia el Formulario Justo Debajo */}
+            {/* Columna Derecha (5 cols): Banner Carrusel de Fotos Rotantes con Clic Directo al Formulario */}
             <div className="lg:col-span-5">
-              <div className="bg-white dark:bg-[#13182b] rounded-3xl border-2 border-[#f4730a]/40 dark:border-slate-700 p-6 sm:p-7 shadow-[0_12px_40px_rgba(42,40,92,0.08)] space-y-4">
-                <div className="flex items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
-                  <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-[#2a285c] text-white px-3 py-1 rounded-full keep-white">
-                    <Sparkles className="w-3 h-3 text-[#fdff00]" /> PRÓXIMA CONVOCATORIA
-                  </span>
-                  {selectedTraining && (
-                    <span className="text-xs font-mono font-extrabold text-[#f4730a] bg-orange-50 dark:bg-orange-950/40 px-2.5 py-0.5 rounded-lg border border-[#f4730a]/30">
-                      {selectedTraining.code}
-                    </span>
-                  )}
-                </div>
+              {carouselSlides.length > 0 ? (
+                <div
+                  onMouseEnter={() => setIsCarouselHovered(true)}
+                  onMouseLeave={() => setIsCarouselHovered(false)}
+                  onClick={() => handleSelectSlideTraining(carouselSlides[carouselIndex].training)}
+                  className="relative group rounded-3xl overflow-hidden border-2 border-[#f4730a]/50 shadow-[0_16px_50px_rgba(42,40,92,0.14)] bg-slate-900 cursor-pointer min-h-[400px] sm:min-h-[440px] flex flex-col justify-between transition-all duration-300 hover:shadow-[0_20px_60px_rgba(244,115,10,0.3)] hover:border-[#f4730a]"
+                >
+                  {/* Foto de Portada con Zoom Suave y Transición */}
+                  <img
+                    src={carouselSlides[carouselIndex].image}
+                    alt={carouselSlides[carouselIndex].training.name}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  />
 
-                <div>
-                  <h3 className="text-base sm:text-lg font-black text-[#2a285c] dark:text-white leading-snug">
-                    {selectedTraining ? selectedTraining.name || selectedTraining.title : "Capacitación Técnica OnProtec"}
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs font-bold text-slate-600 dark:text-slate-300 mt-2">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-[#f4730a]" />
-                      {selectedTraining ? fmtLocalDate(selectedTraining.eventDate || selectedTraining.startDate) : ""}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-[#2a285c] dark:text-cyan-400" />
-                      {selectedTraining ? fmtLocalHour(selectedTraining.eventDate || selectedTraining.startDate) : ""} (Caracas)
-                    </span>
+                  {/* Gradiente Oscuro de Alto Contraste para Garantizar Legibilidad Impecable */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e17] via-[#0b0e17]/85 to-[#1a1b4b]/55" />
+
+                  {/* Barra Superior del Slide */}
+                  <div className="relative z-10 p-5 sm:p-6 flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-[#f4730a] text-white px-3 py-1 rounded-full shadow-md">
+                        <Sparkles className="w-3 h-3 text-[#fdff00]" />
+                        {carouselSlides[carouselIndex].badge}
+                      </span>
+                      {carouselSlides[carouselIndex].training.brand && (
+                        <span className="text-[10px] font-extrabold uppercase bg-white/20 backdrop-blur-md text-white px-2.5 py-1 rounded-full border border-white/20">
+                          {carouselSlides[carouselIndex].training.brand}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-mono font-bold text-white/90 bg-black/50 px-2.5 py-0.5 rounded-full border border-white/20">
+                        {carouselIndex + 1} / {carouselSlides.length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Contenido Central del Slide: Título, Código, Horario y Precio */}
+                  <div className="relative z-10 px-5 sm:px-6 space-y-3 my-auto">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-mono font-bold text-[#fdff00] bg-black/60 px-2.5 py-0.5 rounded-md border border-[#fdff00]/40">
+                        {carouselSlides[carouselIndex].training.code}
+                      </span>
+                      <span
+                        className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
+                          carouselSlides[carouselIndex].isPaid
+                            ? "bg-amber-400 text-amber-950 font-black"
+                            : "bg-emerald-400 text-emerald-950 font-black"
+                        }`}
+                      >
+                        {carouselSlides[carouselIndex].isPaid ? "Formación de Pago" : "100% Gratuito"}
+                      </span>
+                    </div>
+
+                    <h3 className="text-lg sm:text-xl font-black text-white leading-snug drop-shadow-md line-clamp-2">
+                      {carouselSlides[carouselIndex].training.name}
+                    </h3>
+
+                    <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs font-bold text-slate-200">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 text-[#f4730a]" />
+                        {fmtLocalDate(carouselSlides[carouselIndex].training.eventDate)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-cyan-300" />
+                        {fmtLocalHour(carouselSlides[carouselIndex].training.eventDate)} (Caracas)
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-orange-200/90 font-semibold">
+                      {carouselSlides[carouselIndex].priceText}
+                    </p>
+                  </div>
+
+                  {/* Barra Inferior del Slide: Botón CTA y Controles del Carrusel */}
+                  <div className="relative z-10 p-5 sm:p-6 pt-2 space-y-3">
+                    {/* Botón de Acción con Clic Directo al Formulario */}
+                    <div className="w-full py-3 px-4 bg-[#f4730a] hover:bg-[#ef7922] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#f4730a]/40 transition-all flex items-center justify-center gap-2 group-hover:scale-[1.02]">
+                      <span>✍️ Inscribirme en este Curso ↓</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+
+                    {/* Fila de Controles: Flechas y Puntos Indicadores */}
+                    <div className="flex items-center justify-between pt-1">
+                      {/* Puntos Indicadores */}
+                      <div className="flex items-center gap-1.5">
+                        {carouselSlides.map((_, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCarouselIndex(idx);
+                            }}
+                            className={`h-2 rounded-full transition-all cursor-pointer ${
+                              idx === carouselIndex
+                                ? "w-6 bg-[#f4730a]"
+                                : "w-2 bg-white/40 hover:bg-white/70"
+                            }`}
+                            aria-label={`Ver slide ${idx + 1}`}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Flechas Anterior / Siguiente */}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={handlePrevSlide}
+                          className="p-1.5 rounded-full bg-black/50 hover:bg-[#f4730a] text-white border border-white/20 transition-all cursor-pointer"
+                          aria-label="Anterior capacitación"
+                          title="Anterior"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleNextSlide}
+                          className="p-1.5 rounded-full bg-black/50 hover:bg-[#f4730a] text-white border border-white/20 transition-all cursor-pointer"
+                          aria-label="Siguiente capacitación"
+                          title="Siguiente"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {/* Llamado de Atención Visual con Flecha Animada hacia el Formulario */}
-                <div className="p-4 bg-orange-50/90 dark:bg-orange-500/10 border-2 border-dashed border-[#f4730a] rounded-2xl text-center space-y-2">
-                  <div className="flex items-center justify-center gap-1.5 text-xs font-black uppercase text-[#f4730a] tracking-wider animate-bounce">
-                    <ChevronDown className="w-4 h-4 text-[#f4730a]" />
-                    <span>EL FORMULARIO ESTÁ JUSTO DEBAJO</span>
-                    <ChevronDown className="w-4 h-4 text-[#f4730a]" />
-                  </div>
-                  <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
-                    Desliza hacia abajo o presiona el botón para completar tu registro en esta misma columna.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection("registro-express")}
-                    className="w-full py-3 px-4 bg-[#f4730a] hover:bg-[#ef7922] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#f4730a]/30 transition-all flex items-center justify-center gap-2 cursor-pointer hover:-translate-y-0.5"
-                  >
-                    <span>✍️ Ir al Formulario de Inscripción ↓</span>
-                  </button>
-                </div>
-              </div>
+              ) : null}
             </div>
           </div>
         </div>

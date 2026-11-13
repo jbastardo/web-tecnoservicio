@@ -49,7 +49,13 @@ export interface AdminUser {
   username: string;
   email: string;
   name: string;
-  role: "Super Admin" | "Gerencia General" | "Coordinador de Sala" | "Finanzas y Pagos" | "Recepción Check-in";
+  role:
+    | "Super Admin Master"
+    | "Super Admin"
+    | "Gerencia General"
+    | "Coordinador de Sala"
+    | "Finanzas y Pagos"
+    | "Recepción Check-in";
   department: string;
   password?: string;
   isActive: boolean;
