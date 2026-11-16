@@ -239,25 +239,26 @@ html:not([data-theme="dark"]) .divide-slate-800 > :not([hidden]) ~ :not([hidden]
 }
 
 /* Tipografía en Modo Claro sobre Superficies Claras */
-html[data-theme="light"] h1:not(.keep-white),
-html[data-theme="light"] h2:not(.keep-white),
-html[data-theme="light"] h3:not(.keep-white),
-html[data-theme="light"] h4:not(.keep-white),
+html[data-theme="light"] h1:not(.keep-white):not(.dark-banner-card *),
+html[data-theme="light"] h2:not(.keep-white):not(.dark-banner-card *),
+html[data-theme="light"] h3:not(.keep-white):not(.dark-banner-card *),
+html[data-theme="light"] h4:not(.keep-white):not(.dark-banner-card *),
 html[data-theme="light"] th,
-html:not([data-theme="dark"]) h1:not(.keep-white),
-html:not([data-theme="dark"]) h2:not(.keep-white),
-html:not([data-theme="dark"]) h3:not(.keep-white),
-html:not([data-theme="dark"]) h4:not(.keep-white),
+html:not([data-theme="dark"]) h1:not(.keep-white):not(.dark-banner-card *),
+html:not([data-theme="dark"]) h2:not(.keep-white):not(.dark-banner-card *),
+html:not([data-theme="dark"]) h3:not(.keep-white):not(.dark-banner-card *),
+html:not([data-theme="dark"]) h4:not(.keep-white):not(.dark-banner-card *),
 html:not([data-theme="dark"]) th {
   color: #0f172a;
 }
 
 /* En Modo Claro, los textos que se encuentren en superficies que se volvieron claras deben ser OSCUROS DE ALTO CONTRASTE */
-html[data-theme="light"] .bg-slate-900 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *),
-html[data-theme="light"] .bg-slate-950 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *),
-html[data-theme="light"] .bg-white .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *),
-html:not([data-theme="dark"]) .bg-slate-900 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *),
-html:not([data-theme="dark"]) .bg-slate-950 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *) {
+html[data-theme="light"] .bg-slate-900 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *):not(.dark-banner-card *),
+html[data-theme="light"] .bg-slate-950 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *):not(.dark-banner-card *),
+html[data-theme="light"] .bg-white .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *):not(.dark-banner-card *),
+html:not([data-theme="dark"]) .bg-slate-900 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *):not(.dark-banner-card *),
+html:not([data-theme="dark"]) .bg-slate-950 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *):not(.dark-banner-card *),
+html:not([data-theme="dark"]) .bg-white .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *):not(.dark-banner-card *) {
   color: #0f172a !important;
 }
 
@@ -416,19 +417,27 @@ html[data-theme="dark"] .dark-banner-card h3,
 .dark-banner-card h4,
 html[data-theme="light"] .dark-banner-card h4,
 html[data-theme="dark"] .dark-banner-card h4,
-.dark-banner-card .banner-title {
+.dark-banner-card .banner-title,
+html[data-theme="light"] .dark-banner-card .banner-title,
+html[data-theme="dark"] .dark-banner-card .banner-title,
+html[data-theme="light"] .bg-white .dark-banner-card .text-white,
+html:not([data-theme="dark"]) .bg-white .dark-banner-card .text-white {
   color: #ffffff !important;
 }
 
 .dark-banner-card .banner-meta,
 html[data-theme="light"] .dark-banner-card .banner-meta,
-html[data-theme="dark"] .dark-banner-card .banner-meta {
-  color: #f1f5f9 !important;
+html[data-theme="dark"] .dark-banner-card .banner-meta,
+html[data-theme="light"] .bg-white .dark-banner-card .banner-meta,
+html:not([data-theme="dark"]) .bg-white .dark-banner-card .banner-meta {
+  color: #f8fafc !important;
 }
 
 .dark-banner-card .banner-time,
 html[data-theme="light"] .dark-banner-card .banner-time,
-html[data-theme="dark"] .dark-banner-card .banner-time {
+html[data-theme="dark"] .dark-banner-card .banner-time,
+html[data-theme="light"] .bg-white .dark-banner-card .banner-time,
+html:not([data-theme="dark"]) .bg-white .dark-banner-card .banner-time {
   color: #67e8f9 !important;
 }
 

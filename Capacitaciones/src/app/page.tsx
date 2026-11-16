@@ -536,25 +536,38 @@ export default function HomePage() {
                       </div>
 
                       {/* Contenido Central Frosted de Alto Contraste */}
-                      <div className="relative z-10 mx-4 sm:mx-5 my-auto p-3.5 sm:p-4 rounded-2xl bg-[#0b0e17]/90 backdrop-blur-md border border-white/15 shadow-xl space-y-2">
-                        <h4 className="banner-title text-base sm:text-lg font-black text-white leading-snug drop-shadow-sm line-clamp-2">
+                      <div className="relative z-10 mx-4 sm:mx-5 my-auto p-3.5 sm:p-4 rounded-2xl bg-[#070a14]/95 backdrop-blur-md border border-slate-600/80 shadow-xl space-y-2">
+                        <h4
+                          className="banner-title keep-white text-base sm:text-lg font-black text-white leading-snug drop-shadow-sm line-clamp-2"
+                          style={{ color: "#ffffff" }}
+                        >
                           {t.name}
                         </h4>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold">
                           <span className="banner-meta flex items-center gap-1.5 text-slate-100">
                             <Calendar className="w-3.5 h-3.5 text-[#f4730a] flex-shrink-0" />
-                            {fmtLocalDate(t.eventDate || t.startDate)}
+                            <span className="keep-white" style={{ color: "#f8fafc" }}>
+                              {fmtLocalDate(t.eventDate || t.startDate)}
+                            </span>
                           </span>
-                          <span className="banner-time flex items-center gap-1.5 text-cyan-300">
+                          <span
+                            className="banner-time flex items-center gap-1.5 text-cyan-300"
+                            style={{ color: "#67e8f9" }}
+                          >
                             <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                            {fmtLocalHour(t.eventDate || t.startDate)} (Caracas)
+                            <span style={{ color: "#67e8f9" }}>
+                              {fmtLocalHour(t.eventDate || t.startDate)} (Caracas)
+                            </span>
                           </span>
                         </div>
-                        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold pt-1 border-t border-white/10">
-                          <span className="banner-meta text-slate-200 truncate max-w-[65%]">
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold pt-1 border-t border-white/15">
+                          <span
+                            className="banner-meta keep-white text-slate-200 truncate max-w-[65%]"
+                            style={{ color: "#f8fafc" }}
+                          >
                             Instructor: {t.instructor || "Especialista Certificado OnProtec"}
                           </span>
-                          <span className="text-[#fdff00] font-extrabold">
+                          <span className="text-[#fdff00] font-extrabold" style={{ color: "#fdff00" }}>
                             {tAvailable > 0 ? `${tAvailable} cupos libres` : "Lista de espera"}
                           </span>
                         </div>
