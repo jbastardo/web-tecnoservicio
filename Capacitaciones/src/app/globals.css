@@ -406,6 +406,47 @@ button.bg-cyan-600 *,
   color: #000000 !important;
 }
 
+/* Banners Oscuros de Alto Contraste (Independiente del Tema Claro/Oscuro) */
+.dark-banner-card,
+html[data-theme="light"] .dark-banner-card,
+html[data-theme="dark"] .dark-banner-card,
+.dark-banner-card h3,
+html[data-theme="light"] .dark-banner-card h3,
+html[data-theme="dark"] .dark-banner-card h3,
+.dark-banner-card h4,
+html[data-theme="light"] .dark-banner-card h4,
+html[data-theme="dark"] .dark-banner-card h4,
+.dark-banner-card .banner-title {
+  color: #ffffff !important;
+}
+
+.dark-banner-card .banner-meta,
+html[data-theme="light"] .dark-banner-card .banner-meta,
+html[data-theme="dark"] .dark-banner-card .banner-meta {
+  color: #f1f5f9 !important;
+}
+
+.dark-banner-card .banner-time,
+html[data-theme="light"] .dark-banner-card .banner-time,
+html[data-theme="dark"] .dark-banner-card .banner-time {
+  color: #67e8f9 !important;
+}
+
+.bg-amber-400,
+.keep-white .bg-amber-400,
+.bg-\[\#2a285c\] .bg-amber-400,
+.dark-banner-card .bg-amber-400,
+html[data-theme="light"] .dark-banner-card .bg-amber-400,
+html[data-theme="dark"] .dark-banner-card .bg-amber-400,
+.bg-emerald-400,
+.keep-white .bg-emerald-400,
+.bg-\[\#2a285c\] .bg-emerald-400,
+.dark-banner-card .bg-emerald-400,
+html[data-theme="light"] .dark-banner-card .bg-emerald-400,
+html[data-theme="dark"] .dark-banner-card .bg-emerald-400 {
+  color: #090d16 !important;
+}
+
 /* Colores de Acentos en Modo Claro */
 html[data-theme="light"] .text-cyan-300,
 html[data-theme="light"] .text-cyan-400 {

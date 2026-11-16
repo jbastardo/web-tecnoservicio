@@ -74,18 +74,20 @@ flowchart TD
 
 ## 3. Características Globales y Filosofía UX/UI
 
-1. **Widescreen-First, Carta de Presentación Ejecutiva & Carrusel / Banners Duales:**
-   * En pantallas de escritorio (1080p, 1440p, laptops), la información de primer nivel y métricas críticas se presentan en formato apaisado de alta legibilidad.
-   * **Sistema de 2 Banners de Convocatoria (Uno para cada Formulario):**
-     * Diseñado para facilitar la identificación visual inmediata de las certificaciones concurrentes (ej. EZVIZ y Dahua).
-     * **En el Hero (Columna Derecha `lg:col-span-5`):** Muestra por defecto los **2 Banners Convocatorias Activas** visibles simultáneamente sin esperar rotaciones, con switch integrado `[2 Banners | Carrusel]`. Cada banner cuenta con arte gráfico, fecha, horario en Caracas, código y badge de precio/gratuidad. El banner actualmente activo exhibe borde naranja fluorescente con checkmark y brillo.
-     * **En la Sección de Registro (`#registro-express`):** Despliega un bloque de ancho completo con los **2 Banners Principales de Inscripción**. Al hacer clic en cualquiera de ellos, selecciona de inmediato esa capacitación, activa sus preguntas y métodos de pago, y desplaza la vista fluidamente hacia `#formulario-oficial`.
+1. **Widescreen-First, Hero Centrado & Sistema de 2 Banners Duales:**
+   * En pantallas de escritorio (1080p, 1440p, laptops), la información de primer nivel y métricas críticas se presentan con alta legibilidad y flujo visual directo sin duplicidades.
+   * **Hero Corporativo Centrado (`max-w-4xl mx-auto`):** Encabezado ejecutivo limpio centrado con altura compacta (`py-7 lg:py-9`) para mostrar de inmediato la propuesta de valor de la Sala Técnica VIP OnProtec y permitir que los 2 Banners de selección queden visibles desde el primer pantallazo.
+   * **Sistema de 2 Banners de Convocatoria (Uno para cada Formulario) en `#registro-express`:**
+     * Diseñado para facilitar la identificación visual inmediata de las certificaciones concurrentes (ej. EZVIZ y Dahua) sin bloques duplicados en el Hero.
+     * Despliega un bloque de ancho completo con los **2 Banners Principales de Inscripción** lado a lado (`grid-cols-1 md:grid-cols-2`).
+     * Cada banner incluye tarjeta central frosted (`bg-[#0b0e17]/90`) con título blanco de alto contraste, fecha, horario Caracas, instructor, cupos libres, badge de inversión/gratuidad y distintivo `✓ SELECCIONADO` en la convocatoria activa.
+     * **Botones Unificados y Enfoque Directo:** Ambos banners incorporan al pie un botón accionable claro *"✍️ Clic para llenar formulario • [Marca/Código] ↓"*. Al hacer clic, selecciona esa capacitación, actualiza temario/preguntas/pagos, desplaza fluidamente hacia `#formulario-oficial` y coloca el foco en el campo inicial del formulario (`#input-participant-name`).
      * **En la Cabecera del Formulario (`#formulario-oficial`):** Indica con total claridad cuál curso se está completando e incorpora un botón rápido de conmutación: *"¿Deseas inscribirte en el otro curso? Cambiar a: [Marca/Código]"*.
      * **Soporte de Campañas de Marketing por URL:** Reconoce parámetros de enlace para anuncios (`/?curso=ezviz`, `/?curso=dahua`, `/?id=39`, `/?id=40`), cargando y seleccionando automáticamente la capacitación y el formulario respectivo.
-   * **Prioridad Visual de la Convocatoria EZVIZ:** Por directriz operativa, la capacitación de certificación oficial EZVIZ (`CAP-2026-039`) se posiciona **de primera** tanto en el orden de convocatorias activas, como en el primer slide del carrusel y pre-seleccionada por defecto en el formulario `#registro-express`, seguida cronológicamente por las demás capacitaciones según su fecha de inicio más próxima.
-   * **Diseño Frosted Anti-Colisión para Modo Oscuro:** La información clave del slide (título, código, fecha, hora en Caracas, precio y aforo) está enmarcada en una tarjeta sólida frosted (`bg-[#0b0e17]/92 backdrop-blur-xl border border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-2xl`) con tipografías de alto contraste y badges luminosos, mientras que el flyer de fondo cuenta con opacidad calibrada (`opacity-25` a `opacity-35`) y gradiente base oscuro, evitando que las letras impresas en los flyers colisionen con los textos de la interfaz.
-   * La Landing Page pública funciona como la **carta de presentación ejecutiva de la Sala de Capacitaciones OnProtec en Torre América Piso 14**, con layout split-view (7 cols convocatoria/temario, 5 cols carrusel visual y formulario con comprobante de pago).
-   * Cintillo de navegación fijo (`sticky top-0 z-50`) con marca oficial y acceso administrativo seguro.
+   * **Prioridad Visual de la Convocatoria EZVIZ:** Por directriz operativa, la capacitación de certificación oficial EZVIZ (`CAP-2026-039`) se posiciona **de primera** tanto en el orden de convocatorias activas como pre-seleccionada por defecto en el formulario `#registro-express`, seguida cronológicamente por las demás capacitaciones según su fecha de inicio más próxima.
+   * **Blindaje Anti-Colisión en Banners (`.dark-banner-card`):** La clase `.dark-banner-card` y sus reglas dedicadas en `globals.css` garantizan texto blanco (`#ffffff`), horario cian (`#67e8f9`) y badges de inversión (`#090d16` sobre `.bg-amber-400`/`.bg-emerald-400`) con contraste perfecto tanto en Modo Claro como en Modo Oscuro.
+   * La Landing Page pública funciona como la **carta de presentación ejecutiva de la Sala de Capacitaciones OnProtec**, con layout split-view inferior (7 cols ficha técnica/temario, 5 cols formulario oficial con comprobante de pago).
+   * Cintillo de navegación fijo (`sticky top-0 z-50`) con marca oficial única y acceso administrativo seguro.
    * Se reorganiza a flujo vertical amigable únicamente en dispositivos móviles o tablets (`max-width: 768px`).
 
 2. **Autenticación Administrativa & Usuario Master Principal:**

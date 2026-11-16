@@ -16,8 +16,6 @@ import {
   ExternalLink,
   Lock,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   UploadCloud,
   FileCheck,
   Trash2,
@@ -68,7 +66,6 @@ export default function HomePage() {
   const [submissionResult, setSubmissionResult] = useState<any | null>(null);
 
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
-  const [heroBannerMode, setHeroBannerMode] = useState<"dual" | "carousel">("dual");
 
   useEffect(() => {
     fetch("/api/capacitaciones?order=desc")
@@ -135,6 +132,17 @@ export default function HomePage() {
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+  };
+
+  const handleSelectBannerTraining = (t: any) => {
+    setSelectedTraining(t);
+    scrollToSection("formulario-oficial");
+    setTimeout(() => {
+      const nameInput = document.getElementById("input-participant-name") as HTMLInputElement | null;
+      if (nameInput) {
+        nameInput.focus({ preventScroll: true });
+      }
+    }, 350);
   };
 
   const isSelectedTrainingOpen =
@@ -293,68 +301,6 @@ export default function HomePage() {
     });
   }, [trainings]);
 
-  const [carouselIndex, setCarouselIndex] = useState(0);
-  const [isCarouselHovered, setIsCarouselHovered] = useState(false);
-
-  // Generar slides para el banner carrusel de capacitaciones rotantes
-  const carouselSlides = React.useMemo(() => {
-    let list = openTrainings;
-    if (list.length === 0) {
-      list = trainings.slice(0, 4);
-    } else if (list.length === 1 && trainings.length > 1) {
-      const others = trainings.filter((t) => t.id !== list[0].id).slice(0, 3);
-      list = [...list, ...others];
-    }
-
-    return list.map((t, idx) => {
-      const photo =
-        t.coverImageUrl ||
-        (Array.isArray(t.coverPhotos) && t.coverPhotos[0]) ||
-        (idx % 2 === 0 ? "/brand/onprotec-hero-banner.avif" : "/brand/onprotec-hero-1920.webp");
-
-      const isPaid = Boolean(
-        t.isPaid || (t.price && Number(t.price) > 0) || (t.costUsd && Number(t.costUsd) > 0)
-      );
-
-      return {
-        training: t,
-        image: photo,
-        isPaid,
-        priceText: isPaid
-          ? `Inversión: ${formatCurrency(t.price || t.costUsd)} · Aforo VIP 18`
-          : "100% Gratuito · Pre-selección e Invitación",
-        badge:
-          t.status === "Planificado" || t.status === "En Publicidad"
-            ? "⚡ CONVOCATORIA ACTIVA"
-            : "🎓 SALA DE CAPACITACIONES",
-      };
-    });
-  }, [openTrainings, trainings]);
-
-  // Rotación automática cada 5 segundos si el cursor no está sobre el carrusel
-  useEffect(() => {
-    if (carouselSlides.length <= 1 || isCarouselHovered) return;
-    const interval = setInterval(() => {
-      setCarouselIndex((prev) => (prev + 1) % carouselSlides.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [carouselSlides.length, isCarouselHovered]);
-
-  const handlePrevSlide = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setCarouselIndex((prev) => (prev - 1 + carouselSlides.length) % carouselSlides.length);
-  };
-
-  const handleNextSlide = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setCarouselIndex((prev) => (prev + 1) % carouselSlides.length);
-  };
-
-  const handleSelectSlideTraining = (t: any) => {
-    setSelectedTraining(t);
-    scrollToSection("registro-express");
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-[#f8f9fc] dark:bg-[#0b0e17] text-[#1a1c29] dark:text-slate-100 transition-colors duration-200">
       {/* =====================================================================
@@ -386,12 +332,9 @@ export default function HomePage() {
           <div className="flex items-center gap-3">
             <OnprotecBrand />
             <div className="hidden lg:block pl-3.5 border-l border-slate-200 dark:border-slate-800">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#f4730a] block">
-                SALA DE CAPACITACIONES
-              </span>
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                <Lock className="w-3 h-3 text-[#f4730a]" />
-                Sede OnProtec Caracas (Acceso Privado)
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-[#f4730a]" />
+                Sede Corporativa Caracas • Cupos Limitados (18 VIP)
               </span>
             </div>
           </div>
@@ -431,360 +374,99 @@ export default function HomePage() {
       </header>
 
       {/* =====================================================================
-          3. HERO CORPORATIVO: CARTA DE PRESENTACIÓN DE LA SALA VIP
+          3. HERO CORPORATIVO CENTRADO: CARTA DE PRESENTACIÓN DE LA SALA VIP
       ===================================================================== */}
-      <section className="relative onprotec-hex-bg border-b border-slate-200/80 dark:border-slate-800 py-10 lg:py-14 overflow-hidden">
+      <section className="relative onprotec-hex-bg border-b border-slate-200/80 dark:border-slate-800 py-7 lg:py-9 overflow-hidden">
         <div className="max-w-[1580px] mx-auto px-4 sm:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-            {/* Columna Izquierda (7 cols): Título, Exclusividad y Valores de la Sala */}
-            <div className="lg:col-span-7 space-y-4">
-              <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-[#f4730a]/40 rounded-full pl-2.5 pr-4 py-1 shadow-sm">
-                <span className="bg-[#f4730a] text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full">
-                  SALA TÉCNICA VIP
-                </span>
-                <span className="text-xs font-extrabold text-[#2a285c] dark:text-slate-200 flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-[#f4730a]" />
-                  Sede Corporativa OnProtec Caracas (Acceso Exclusivo con Invitación)
-                </span>
-              </div>
-
-              <div>
-                <p className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.2em] text-[#f4730a] mb-1">
-                  CENTRO DE ENTRENAMIENTO & CERTIFICACIÓN TÉCNICA ONPROTEC®
-                </p>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#1a1c29] dark:text-white leading-[1.1]">
-                  La formación práctica definitiva para{" "}
-                  <span className="text-[#f4730a]">Instaladores e Integradores</span> en Caracas
-                </h1>
-              </div>
-
-              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 font-medium leading-relaxed max-w-2xl">
-                Nuestra sala de capacitaciones corporativa en Caracas está equipada con tecnología de punta para dominar tecnologías de CCTV, Redes, Control de Acceso y Energía con{" "}
-                <strong className="text-[#f4730a]">equipos reales energizados en vivo</strong>. Aforo VIP limitado a 18 puestos de trabajo individuales para máxima interacción con instructores certificados.
-              </p>
-
-              {/* 3 Insignias de Prestigio */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 max-w-2xl">
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/10 text-[#f4730a] flex items-center justify-center flex-shrink-0">
-                    <Lock className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">Sede Corporativa</p>
-                    <p className="text-[11px] text-slate-500">Piso enviado al confirmar</p>
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/10 text-[#2a285c] dark:text-cyan-400 flex items-center justify-center flex-shrink-0">
-                    <Users className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">18 Puestos VIP</p>
-                    <p className="text-[11px] text-slate-500">Hardware energizado</p>
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
-                    <Award className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">Certificación Oficial</p>
-                    <p className="text-[11px] text-slate-500">Respaldo Fabricantes</p>
-                  </div>
-                </div>
-              </div>
+          <div className="max-w-4xl mx-auto text-center flex flex-col items-center space-y-4">
+            <div className="inline-flex flex-wrap items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-[#f4730a]/40 rounded-full pl-2.5 pr-4 py-1 shadow-sm">
+              <span className="bg-[#f4730a] text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full">
+                SALA TÉCNICA VIP
+              </span>
+              <span className="text-xs font-extrabold text-[#2a285c] dark:text-slate-200 flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-[#f4730a]" />
+                Sede Corporativa OnProtec Caracas (Acceso Exclusivo con Invitación)
+              </span>
             </div>
 
-            {/* Columna Derecha (5 cols): 2 Banners de Convocatoria / Carrusel Rotante */}
-            <div className="lg:col-span-5 space-y-3">
-              {/* Barra de Control de Vista para Marketing */}
-              <div className="flex items-center justify-between gap-2 px-1">
-                <span className="text-[11px] font-black uppercase tracking-wider text-[#f4730a] flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#f4730a]" />
-                  <span>Convocatorias Oficiales ({openTrainings.length})</span>
-                </span>
-                {openTrainings.length >= 2 && (
-                  <div className="inline-flex rounded-xl p-0.5 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[10px] font-extrabold">
-                    <button
-                      type="button"
-                      onClick={() => setHeroBannerMode("dual")}
-                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                        heroBannerMode === "dual"
-                          ? "bg-[#f4730a] text-white shadow-sm"
-                          : "text-slate-600 dark:text-slate-300 hover:text-black dark:hover:text-white"
-                      }`}
-                    >
-                      2 Banners
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setHeroBannerMode("carousel")}
-                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                        heroBannerMode === "carousel"
-                          ? "bg-[#f4730a] text-white shadow-sm"
-                          : "text-slate-600 dark:text-slate-300 hover:text-black dark:hover:text-white"
-                      }`}
-                    >
-                      Carrusel
-                    </button>
-                  </div>
-                )}
+            <div>
+              <p className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.2em] text-[#f4730a] mb-1.5">
+                CENTRO DE ENTRENAMIENTO & CERTIFICACIÓN TÉCNICA ONPROTEC®
+              </p>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#1a1c29] dark:text-white leading-[1.1]">
+                La formación práctica definitiva para{" "}
+                <span className="text-[#f4730a]">Instaladores e Integradores</span> en Caracas
+              </h1>
+            </div>
+
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 font-medium leading-relaxed max-w-3xl mx-auto">
+              Nuestra sala de capacitaciones corporativa en Caracas está equipada con tecnología de punta para dominar tecnologías de CCTV, Redes, Control de Acceso y Energía con{" "}
+              <strong className="text-[#f4730a]">equipos reales energizados en vivo</strong>. Aforo VIP limitado a 18 puestos de trabajo individuales para máxima interacción con instructores certificados.
+            </p>
+
+            {/* 3 Insignias de Prestigio Centradas */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1 w-full max-w-3xl mx-auto text-left">
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/10 text-[#f4730a] flex items-center justify-center flex-shrink-0">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">Sede Corporativa</p>
+                  <p className="text-[11px] text-slate-500">Piso enviado al confirmar</p>
+                </div>
               </div>
 
-              {heroBannerMode === "dual" && openTrainings.length >= 2 ? (
-                /* Vista de 2 Banners en el Hero: 1 Banner para cada Formulario */
-                <div className="grid grid-cols-1 gap-3.5">
-                  {openTrainings.slice(0, 2).map((t, idx) => {
-                    const isSelected = selectedTraining?.id === t.id;
-                    const isPaid = Boolean(t.isPaid || (t.price && Number(t.price) > 0));
-                    const photo =
-                      t.coverImageUrl ||
-                      (Array.isArray(t.coverPhotos) && t.coverPhotos[0]) ||
-                      (idx === 0 ? "/brand/onprotec-hero-banner.avif" : "/brand/onprotec-hero-1920.webp");
-
-                    return (
-                      <div
-                        key={t.id}
-                        onClick={() => {
-                          setSelectedTraining(t);
-                          scrollToSection("formulario-oficial");
-                        }}
-                        className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 border-2 p-4 flex flex-col justify-between group min-h-[195px] shadow-md ${
-                          isSelected
-                            ? "border-[#f4730a] ring-3 ring-[#f4730a]/40 shadow-[0_8px_30px_rgba(244,115,10,0.3)] bg-slate-900"
-                            : "border-slate-300 dark:border-slate-800 hover:border-[#f4730a]/60 bg-slate-900/90 opacity-90 hover:opacity-100"
-                        }`}
-                      >
-                        <img
-                          src={photo}
-                          alt={t.name}
-                          className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:opacity-35 transition-transform duration-700 ease-out group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#06080e] via-[#090c16]/95 to-[#0b0e17]/80" />
-
-                        {/* Top Bar */}
-                        <div className="relative z-10 flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-mono font-bold text-[#fdff00] bg-black/80 px-2 py-0.5 rounded border border-[#fdff00]/40">
-                              {t.code}
-                            </span>
-                            {t.brand && (
-                              <span className="text-[10px] font-black uppercase bg-[#2a285c] text-white px-2 py-0.5 rounded-full border border-white/20">
-                                {t.brand}
-                              </span>
-                            )}
-                          </div>
-                          <span
-                            className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
-                              isPaid
-                                ? "bg-amber-400 text-amber-950 font-black"
-                                : "bg-emerald-400 text-emerald-950 font-black"
-                            }`}
-                          >
-                            {isPaid ? `Inversión: ${formatCurrency(t.price)}` : "100% Gratuito"}
-                          </span>
-                        </div>
-
-                        {/* Middle Content */}
-                        <div className="relative z-10 space-y-1 my-2">
-                          <h4 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-1 drop-shadow-sm">
-                            {t.name}
-                          </h4>
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] font-bold text-slate-200">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3 text-[#f4730a]" />
-                              {fmtLocalDate(t.eventDate || t.startDate)}
-                            </span>
-                            <span className="flex items-center gap-1 text-cyan-300">
-                              <Clock className="w-3 h-3" />
-                              {fmtLocalHour(t.eventDate || t.startDate)} (Caracas)
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Action CTA */}
-                        <div className="relative z-10 pt-1">
-                          {isSelected ? (
-                            <div className="w-full py-2 px-3 bg-[#f4730a] text-white font-black text-[11px] uppercase tracking-wider rounded-xl shadow-sm flex items-center justify-center gap-1.5">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-[#fdff00]" />
-                              <span>✓ Formulario Activo Abajo ↓</span>
-                            </div>
-                          ) : (
-                            <div className="w-full py-2 px-3 bg-white/15 group-hover:bg-[#f4730a] text-white font-bold text-[11px] uppercase tracking-wider rounded-xl border border-white/20 transition-all flex items-center justify-center gap-1.5">
-                              <span>👉 Llenar Formulario de {t.brand || "este curso"} ↓</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/10 text-[#2a285c] dark:text-cyan-400 flex items-center justify-center flex-shrink-0">
+                  <Users className="w-5 h-5" />
                 </div>
-              ) : carouselSlides.length > 0 ? (
-                /* Modo Carrusel */
-                <div
-                  onMouseEnter={() => setIsCarouselHovered(true)}
-                  onMouseLeave={() => setIsCarouselHovered(false)}
-                  onClick={() => handleSelectSlideTraining(carouselSlides[carouselIndex].training)}
-                  className="relative group rounded-3xl overflow-hidden border-2 border-[#f4730a]/50 shadow-[0_16px_50px_rgba(42,40,92,0.14)] bg-slate-900 cursor-pointer min-h-[400px] sm:min-h-[440px] flex flex-col justify-between transition-all duration-300 hover:shadow-[0_20px_60px_rgba(244,115,10,0.3)] hover:border-[#f4730a]"
-                >
-                  {/* Foto de Portada con Zoom Suave y Transición */}
-                  <img
-                    src={carouselSlides[carouselIndex].image}
-                    alt={carouselSlides[carouselIndex].training.name}
-                    className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:opacity-35 transition-all duration-700 ease-out group-hover:scale-105"
-                  />
-
-                  {/* Gradiente Oscuro de Alto Contraste para Garantizar Legibilidad Impecable */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#06080e] via-[#090c16]/95 to-[#0b0e17]/80" />
-
-                  {/* Barra Superior del Slide */}
-                  <div className="relative z-10 p-5 sm:p-6 flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-[#f4730a] text-white px-3 py-1 rounded-full shadow-md">
-                        <Sparkles className="w-3 h-3 text-[#fdff00]" />
-                        {carouselSlides[carouselIndex].badge}
-                      </span>
-                      {carouselSlides[carouselIndex].training.brand && (
-                        <span className="text-[10px] font-extrabold uppercase bg-white/20 backdrop-blur-md text-white px-2.5 py-1 rounded-full border border-white/20">
-                          {carouselSlides[carouselIndex].training.brand}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-mono font-bold text-white/90 bg-black/60 px-2.5 py-0.5 rounded-full border border-white/20">
-                        {carouselIndex + 1} / {carouselSlides.length}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Contenido Central del Slide: Tarjeta Frosted de Alto Contraste para Evitar Choque con el Flyer */}
-                  <div className="relative z-10 mx-5 sm:mx-6 my-auto p-4 sm:p-5 rounded-2xl bg-[#0b0e17]/92 backdrop-blur-xl border border-slate-700/80 shadow-2xl space-y-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-mono font-bold text-[#fdff00] bg-black/90 px-2.5 py-0.5 rounded-md border border-[#fdff00]/40">
-                        {carouselSlides[carouselIndex].training.code}
-                      </span>
-                      <span
-                        className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
-                          carouselSlides[carouselIndex].isPaid
-                            ? "bg-amber-400 text-amber-950 font-black"
-                            : "bg-emerald-400 text-emerald-950 font-black"
-                        }`}
-                      >
-                        {carouselSlides[carouselIndex].isPaid ? "Formación de Pago" : "100% Gratuito"}
-                      </span>
-                    </div>
-
-                    <h3 className="text-lg sm:text-xl font-black text-white leading-snug drop-shadow-md line-clamp-2">
-                      {carouselSlides[carouselIndex].training.name}
-                    </h3>
-
-                    <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-200">
-                      <span className="flex items-center gap-1.5 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700/80 text-slate-100">
-                        <Calendar className="w-3.5 h-3.5 text-[#f4730a]" />
-                        {fmtLocalDate(carouselSlides[carouselIndex].training.eventDate)}
-                      </span>
-                      <span className="flex items-center gap-1.5 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700/80 text-cyan-300">
-                        <Clock className="w-3.5 h-3.5" />
-                        {fmtLocalHour(carouselSlides[carouselIndex].training.eventDate)} (Caracas)
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-orange-300 font-extrabold flex items-center gap-1.5 pt-0.5">
-                      <Award className="w-3.5 h-3.5 text-[#f4730a]" />
-                      <span>{carouselSlides[carouselIndex].priceText}</span>
-                    </p>
-                  </div>
-
-                  {/* Barra Inferior del Slide: Botón CTA y Controles del Carrusel */}
-                  <div className="relative z-10 p-5 sm:p-6 pt-2 space-y-3">
-                    {/* Botón de Acción con Clic Directo al Formulario */}
-                    <div className="w-full py-3 px-4 bg-[#f4730a] hover:bg-[#ef7922] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-[#f4730a]/40 transition-all flex items-center justify-center gap-2 group-hover:scale-[1.02]">
-                      <span>✍️ Inscribirme en este Curso ↓</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
-
-                    {/* Fila de Controles: Flechas y Puntos Indicadores */}
-                    <div className="flex items-center justify-between pt-1">
-                      {/* Puntos Indicadores */}
-                      <div className="flex items-center gap-1.5">
-                        {carouselSlides.map((_, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCarouselIndex(idx);
-                            }}
-                            className={`h-2 rounded-full transition-all cursor-pointer ${
-                              idx === carouselIndex
-                                ? "w-6 bg-[#f4730a]"
-                                : "w-2 bg-white/40 hover:bg-white/70"
-                            }`}
-                            aria-label={`Ver slide ${idx + 1}`}
-                          />
-                        ))}
-                      </div>
-
-                      {/* Flechas Anterior / Siguiente */}
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={handlePrevSlide}
-                          className="p-1.5 rounded-full bg-black/50 hover:bg-[#f4730a] text-white border border-white/20 transition-all cursor-pointer"
-                          aria-label="Anterior capacitación"
-                          title="Anterior"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleNextSlide}
-                          className="p-1.5 rounded-full bg-black/50 hover:bg-[#f4730a] text-white border border-white/20 transition-all cursor-pointer"
-                          aria-label="Siguiente capacitación"
-                          title="Siguiente"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                <div>
+                  <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">18 Puestos VIP</p>
+                  <p className="text-[11px] text-slate-500">Hardware energizado</p>
                 </div>
-              ) : null}
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-extrabold text-[#2a285c] dark:text-white">Certificación Oficial</p>
+                  <p className="text-[11px] text-slate-500">Respaldo Fabricantes</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* =====================================================================
-          4. SECCIÓN PRINCIPAL: CONVOCATORIA ACTIVA & REGISTRO EXPRESS (WIDESCREEN 7 / 5)
+          4. SECCIÓN PRINCIPAL: 2 BANNERS + CONVOCATORIA ACTIVA & FORMULARIO (WIDESCREEN 7 / 5)
       ===================================================================== */}
-      <section id="registro-express" className="py-12 lg:py-16 flex-1">
+      <section id="registro-express" className="py-8 lg:py-12 flex-1">
         <div className="max-w-[1580px] mx-auto px-4 sm:px-8">
           {/* =============================================================
               BANNERS PRINCIPALES DE SELECCIÓN DE CAPACITACIÓN & FORMULARIO
           ============================================================= */}
           {openTrainings.length >= 2 && (
             <div className="mb-8 p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#13182b] border-2 border-slate-200 dark:border-slate-800 shadow-md">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="bg-[#f4730a] text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm">
                       PASO 1 • SELECCIONA TU CAPACITACIÓN
                     </span>
-                    <span className="text-xs font-mono font-bold text-slate-500">
-                      (2 Formaciones Activas en Sala VIP)
+                    <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
+                      ({openTrainings.length} Formaciones Activas en Sala VIP)
                     </span>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-black text-[#2a285c] dark:text-white mt-1">
-                    Elige la certificación a la que deseas asistir para cargar su formulario de datos:
-                  </h3>
+                  <h2 className="text-lg sm:text-xl font-black text-[#2a285c] dark:text-white mt-1">
+                    Haz clic en el curso de tu interés para abrir y llenar su formulario abajo:
+                  </h2>
                 </div>
-                <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  <span>El formulario de abajo se adapta al curso seleccionado</span>
+                <div className="text-xs text-slate-600 dark:text-slate-300 font-semibold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                  <span>Cada banner carga su temario y formulario dedicado</span>
                 </div>
               </div>
 
@@ -792,7 +474,10 @@ export default function HomePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
                 {openTrainings.slice(0, 2).map((t, idx) => {
                   const isSelected = selectedTraining?.id === t.id;
-                  const isPaid = Boolean(t.isPaid || (t.price && Number(t.price) > 0));
+                  const tIsPaid = Boolean(t.isPaid || (t.price && Number(t.price) > 0) || t.isFree === false);
+                  const tMaxSeats = tIsPaid ? 18 : Math.max(Number(t?.maxCapacity) || 40, 40);
+                  const tOccupied = Number(t?.stats?.totalOccupied ?? t?.occupiedCount ?? 0);
+                  const tAvailable = Math.max(0, tMaxSeats - tOccupied);
                   const photo =
                     t.coverImageUrl ||
                     (Array.isArray(t.coverPhotos) && t.coverPhotos[0]) ||
@@ -801,76 +486,96 @@ export default function HomePage() {
                   return (
                     <div
                       key={t.id}
-                      onClick={() => {
-                        setSelectedTraining(t);
-                        scrollToSection("formulario-oficial");
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleSelectBannerTraining(t)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleSelectBannerTraining(t);
+                        }
                       }}
-                      className={`relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 border-3 flex flex-col justify-between min-h-[220px] sm:min-h-[250px] shadow-md group ${
+                      className={`dark-banner-card relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 border-2 flex flex-col justify-between min-h-[270px] sm:min-h-[290px] bg-[#0b0e17] shadow-lg group ${
                         isSelected
-                          ? "border-[#f4730a] ring-4 ring-[#f4730a]/25 shadow-[0_16px_45px_rgba(244,115,10,0.30)] scale-[1.01]"
-                          : "border-slate-200 dark:border-slate-800 hover:border-[#f4730a]/60 dark:hover:border-slate-700 opacity-85 hover:opacity-100 hover:scale-[1.005]"
+                          ? "border-[#f4730a] ring-4 ring-[#f4730a]/30 shadow-[0_16px_45px_rgba(244,115,10,0.32)] scale-[1.01]"
+                          : "border-slate-700/80 hover:border-[#f4730a] opacity-95 hover:opacity-100 hover:scale-[1.005]"
                       }`}
                     >
-                      {/* Foto Flyer de Fondo */}
+                      {/* Foto Flyer de Fondo con Opacidad Calibrada */}
                       <img
                         src={photo}
                         alt={t.name}
-                        className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-transform duration-700 ease-out group-hover:scale-105"
+                        className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:opacity-35 transition-all duration-700 ease-out group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#06080e] via-[#090c16]/90 to-[#0b0e17]/80" />
 
                       {/* Header del Banner */}
-                      <div className="relative z-10 p-4 sm:p-5 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono font-black text-[#fdff00] bg-black/80 px-2.5 py-0.5 rounded-md border border-[#fdff00]/40">
+                      <div className="relative z-10 p-4 sm:p-5 pb-2 flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-mono font-black text-[#fdff00] bg-black/85 px-2.5 py-0.5 rounded-md border border-[#fdff00]/40">
                             {t.code}
                           </span>
                           {t.brand && (
-                            <span className="text-[10px] font-black uppercase bg-[#2a285c] text-white px-2.5 py-0.5 rounded-full border border-white/20">
+                            <span className="text-[10px] font-black uppercase bg-[#2a285c] text-white px-2.5 py-0.5 rounded-full border border-white/25">
                               {t.brand}
+                            </span>
+                          )}
+                          {isSelected && (
+                            <span className="text-[10px] font-black uppercase bg-emerald-500 text-white px-2.5 py-0.5 rounded-full shadow-sm">
+                              ✓ SELECCIONADO
                             </span>
                           )}
                         </div>
                         <span
                           className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-sm ${
-                            isPaid
-                              ? "bg-amber-400 text-amber-950 font-black"
-                              : "bg-emerald-400 text-emerald-950 font-black"
+                            tIsPaid ? "bg-amber-400" : "bg-emerald-400"
                           }`}
                         >
-                          {isPaid ? `Inversión: ${formatCurrency(t.price)}` : "100% Gratuito"}
+                          {tIsPaid ? `Inversión: ${formatCurrency(t.price)}` : "100% Gratuito"}
                         </span>
                       </div>
 
-                      {/* Contenido Central */}
-                      <div className="relative z-10 px-4 sm:px-5 space-y-1.5 my-auto">
-                        <h4 className="text-base sm:text-lg font-black text-white leading-snug drop-shadow-md line-clamp-2">
+                      {/* Contenido Central Frosted de Alto Contraste */}
+                      <div className="relative z-10 mx-4 sm:mx-5 my-auto p-3.5 sm:p-4 rounded-2xl bg-[#0b0e17]/90 backdrop-blur-md border border-white/15 shadow-xl space-y-2">
+                        <h4 className="banner-title text-base sm:text-lg font-black text-white leading-snug drop-shadow-sm line-clamp-2">
                           {t.name}
                         </h4>
-                        <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-200">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5 text-[#f4730a]" />
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold">
+                          <span className="banner-meta flex items-center gap-1.5 text-slate-100">
+                            <Calendar className="w-3.5 h-3.5 text-[#f4730a] flex-shrink-0" />
                             {fmtLocalDate(t.eventDate || t.startDate)}
                           </span>
-                          <span className="flex items-center gap-1 text-cyan-300">
-                            <Clock className="w-3.5 h-3.5" />
+                          <span className="banner-time flex items-center gap-1.5 text-cyan-300">
+                            <Clock className="w-3.5 h-3.5 flex-shrink-0" />
                             {fmtLocalHour(t.eventDate || t.startDate)} (Caracas)
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold pt-1 border-t border-white/10">
+                          <span className="banner-meta text-slate-200 truncate max-w-[65%]">
+                            Instructor: {t.instructor || "Especialista Certificado OnProtec"}
+                          </span>
+                          <span className="text-[#fdff00] font-extrabold">
+                            {tAvailable > 0 ? `${tAvailable} cupos libres` : "Lista de espera"}
                           </span>
                         </div>
                       </div>
 
-                      {/* Footer Botón de Estado / Acción */}
+                      {/* Footer Botón de Acción Unificado */}
                       <div className="relative z-10 p-4 sm:p-5 pt-2">
-                        {isSelected ? (
-                          <div className="w-full py-2.5 px-4 bg-[#f4730a] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-[#fdff00]" />
-                            <span>✓ Formulario Activo Abajo (Llenar Datos) ↓</span>
-                          </div>
-                        ) : (
-                          <div className="w-full py-2.5 px-4 bg-white/15 group-hover:bg-[#f4730a] text-white font-bold text-xs uppercase tracking-wider rounded-xl border border-white/20 transition-all flex items-center justify-center gap-2">
-                            <span>👉 Clic para llenar Formulario de {t.brand || "esta capacitación"} ↓</span>
-                          </div>
-                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectBannerTraining(t);
+                          }}
+                          className={`w-full py-3 px-4 font-black text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                            isSelected
+                              ? "bg-[#f4730a] hover:bg-[#ef7922] text-white shadow-lg shadow-[#f4730a]/40"
+                              : "bg-white/20 hover:bg-[#f4730a] group-hover:bg-[#f4730a] text-white border border-white/30 shadow-md"
+                          }`}
+                        >
+                          <span>✍️ Clic para llenar formulario • {t.brand || t.code} ↓</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -884,34 +589,6 @@ export default function HomePage() {
                 COLUMNA IZQUIERDA (7 cols): CONVOCATORIA ACTUAL EN SALA VIP
             ------------------------------------------------------------- */}
             <div className="lg:col-span-7 space-y-6">
-              {/* Selector Limpio si existen varias capacitaciones abiertas */}
-              {openTrainings.length > 1 && (
-                <div className="bg-white dark:bg-[#13182b] p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-3 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#f4730a]" />
-                    <span className="text-xs font-extrabold text-[#2a285c] dark:text-white">
-                      Convocatorias Disponibles:
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {openTrainings.map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setSelectedTraining(t)}
-                        className={`text-xs px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-                          selectedTraining?.id === t.id
-                            ? "bg-[#f4730a] text-white shadow-sm"
-                            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
-                        }`}
-                      >
-                        {t.code} • {t.brand || "OnProtec"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Ficha Ejecutiva del Evento Seleccionado */}
               {selectedTraining ? (
                 <div className="bg-white dark:bg-[#13182b] rounded-3xl border-2 border-slate-200/90 dark:border-slate-800 shadow-md overflow-hidden">
@@ -1170,6 +847,7 @@ export default function HomePage() {
 
                           <div>
                             <input
+                              id="input-participant-name"
                               type="text"
                               required
                               placeholder="Nombre y Apellido Completo *"
