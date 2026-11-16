@@ -13,6 +13,10 @@ import {
   RefreshCw,
   BookOpen,
   Clock,
+  Edit3,
+  Trash2,
+  AlertTriangle,
+  Check,
 } from "lucide-react";
 import { formatCurrency, fmtLocalDate } from "@/utils/formatUtils";
 
@@ -24,6 +28,29 @@ export default function ParticipantesAdminPage() {
     "all" | "recurring" | "store_clients" | "prospects"
   >("all");
   const [selectedParticipant, setSelectedParticipant] = useState<any | null>(null);
+  const [toast, setToast] = useState("");
+
+  // Estado Editar / Borrar Participante y Formularios Individuales
+  const [editingParticipant, setEditingParticipant] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    docType: "V",
+    docNumber: "",
+    phone: "",
+    email: "",
+    company: "",
+    cargo: "",
+    city: "Caracas",
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingParticipant, setDeletingParticipant] = useState<any | null>(null);
+  const [isDeletingParticipant, setIsDeletingParticipant] = useState(false);
+  const [confirmDeleteRegId, setConfirmDeleteRegId] = useState<number | null>(null);
+
+  const notify = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(""), 4500);
+  };
 
   const fetchParticipants = () => {
     setLoading(true);
@@ -39,6 +66,119 @@ export default function ParticipantesAdminPage() {
   useEffect(() => {
     fetchParticipants();
   }, []);
+
+  const openEditParticipant = (p: any) => {
+    setEditingParticipant(p);
+    setEditForm({
+      name: p.name || "",
+      docType: p.docType || "V",
+      docNumber: p.docNumber || "",
+      phone: p.phone || "",
+      email: p.email || "",
+      company: p.company || "",
+      cargo: p.cargo || "",
+      city: p.city || "Caracas",
+    });
+  };
+
+  const handleSaveParticipant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingParticipant) return;
+    setSavingEdit(true);
+    try {
+      const res = await fetch("/api/participantes", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingParticipant.id, ...editForm }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setParticipants((prev) =>
+          prev.map((p) => (p.id === editingParticipant.id ? { ...p, ...data.data } : p))
+        );
+        if (selectedParticipant && selectedParticipant.id === editingParticipant.id) {
+          setSelectedParticipant((prev: any) => ({ ...prev, ...data.data }));
+        }
+        setEditingParticipant(null);
+        notify("Datos del participante actualizados con éxito");
+      } else {
+        notify(data.error || "Error al actualizar participante");
+      }
+    } catch (err) {
+      console.error("Error actualizando participante:", err);
+      notify("Error de red al guardar cambios");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteParticipant = async () => {
+    if (!deletingParticipant) return;
+    setIsDeletingParticipant(true);
+    try {
+      const res = await fetch(`/api/participantes?id=${deletingParticipant.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setParticipants((prev) =>
+          prev.filter((p) => Number(p.id) !== Number(deletingParticipant.id))
+        );
+        if (
+          selectedParticipant &&
+          Number(selectedParticipant.id) === Number(deletingParticipant.id)
+        ) {
+          setSelectedParticipant(null);
+        }
+        notify("Participante y sus formularios eliminados con éxito");
+        setDeletingParticipant(null);
+      } else {
+        notify(data.error || "No se pudo eliminar participante");
+      }
+    } catch (err) {
+      console.error("Error eliminando participante:", err);
+      notify("Error de red al eliminar");
+    } finally {
+      setIsDeletingParticipant(false);
+    }
+  };
+
+  const handleDeleteSingleRegistration = async (registrationId: number, participantId: number) => {
+    try {
+      const res = await fetch(`/api/inscripciones?id=${registrationId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setConfirmDeleteRegId(null);
+        setParticipants((prev) =>
+          prev
+            .map((p) => {
+              if (Number(p.id) !== Number(participantId)) return p;
+              const nextParts = (p.participations || []).filter(
+                (x: any) => Number(x.registrationId) !== Number(registrationId)
+              );
+              return { ...p, participations: nextParts };
+            })
+            .filter((p) => Number(p.id) !== Number(participantId) || (p.participations || []).length > 0)
+        );
+        setSelectedParticipant((prev: any) => {
+          if (!prev) return null;
+          const nextParts = (prev.participations || []).filter(
+            (x: any) => Number(x.registrationId) !== Number(registrationId)
+          );
+          if (nextParts.length === 0) return null;
+          return { ...prev, participations: nextParts };
+        });
+        notify("Formulario de capacitación eliminado");
+      } else {
+        notify(data.error || "Error al eliminar formulario");
+      }
+    } catch (err) {
+      console.error("Error eliminando participación:", err);
+      notify("Error de red al eliminar");
+    }
+  };
 
   const recurringCount = participants.filter(
     (p) => (p.participations?.length || 0) > 1
@@ -84,6 +224,13 @@ export default function ParticipantesAdminPage() {
 
   return (
     <div className="space-y-6">
+      {toast && (
+        <div className="fixed top-5 right-5 z-50 bg-emerald-950 border border-emerald-500 text-emerald-200 text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2">
+          <Check className="w-4 h-4 text-emerald-400" />
+          <span>{toast}</span>
+        </div>
+      )}
+
       {/* Cintillo Widescreen de Cabecera y Filtros */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-4 border-b border-slate-300 dark:border-slate-800">
         <div>
@@ -278,14 +425,32 @@ export default function ParticipantesAdminPage() {
                       </td>
 
                       <td className="py-3.5 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedParticipant(p)}
-                          className="px-3 py-1.5 bg-orange-50 hover:bg-[#f4730a] text-[#f4730a] hover:text-white border border-[#f4730a]/40 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-cyan-300 dark:border-slate-700 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition shadow-sm cursor-pointer"
-                        >
-                          <BookOpen className="w-3.5 h-3.5 text-[#f4730a] group-hover:text-white" />
-                          <span>Ver Participaciones ({parts.length})</span>
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedParticipant(p)}
+                            className="px-2.5 py-1.5 bg-orange-50 hover:bg-[#f4730a] text-[#f4730a] hover:text-white border border-[#f4730a]/40 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-cyan-300 dark:border-slate-700 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition shadow-sm cursor-pointer"
+                          >
+                            <BookOpen className="w-3.5 h-3.5" />
+                            <span>Ver ({parts.length})</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openEditParticipant(p)}
+                            className="p-1.5 rounded-xl bg-slate-100 hover:bg-[#f4730a] text-slate-700 hover:text-white border border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-amber-300 transition cursor-pointer"
+                            title="Editar datos del participante"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeletingParticipant(p)}
+                            className="p-1.5 rounded-xl bg-rose-50 hover:bg-red-600 text-rose-600 hover:text-white border border-rose-300 dark:bg-red-500/15 dark:border-red-500/40 dark:text-red-400 transition cursor-pointer"
+                            title="Borrar participante y sus formularios"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -301,33 +466,57 @@ export default function ParticipantesAdminPage() {
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-3xl p-6 max-w-3xl w-full shadow-2xl relative my-8 text-slate-900 dark:text-white">
             <button
-              onClick={() => setSelectedParticipant(null)}
+              onClick={() => {
+                setSelectedParticipant(null);
+                setConfirmDeleteRegId(null);
+              }}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-800 dark:hover:text-white"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-start gap-4 pb-4 border-b border-slate-200 dark:border-slate-800 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#1a1b4b] border border-[#e07b29] flex items-center justify-center text-white font-black text-lg keep-white shadow-sm">
-                {selectedParticipant.name?.slice(0, 2).toUpperCase()}
+            <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800 mb-4 pr-8">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#1a1b4b] border border-[#e07b29] flex items-center justify-center text-white font-black text-lg keep-white shadow-sm flex-shrink-0">
+                  {selectedParticipant.name?.slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                    {selectedParticipant.name}
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                    Doc: <strong className="text-slate-900 dark:text-slate-200 font-bold">{selectedParticipant.docType || "V"}-{selectedParticipant.docNumber || "S/D"}</strong>{" "}
+                    · WhatsApp: <strong className="text-[#0e5cd7] dark:text-cyan-400 font-bold">{selectedParticipant.phone}</strong> ·
+                    Email: <span className="font-medium">{selectedParticipant.email}</span>
+                  </p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                    Empresa:{" "}
+                    <strong className="text-slate-900 dark:text-white font-bold">
+                      {selectedParticipant.company || "Independiente"}
+                    </strong>{" "}
+                    {selectedParticipant.cargo ? `(${selectedParticipant.cargo})` : ""} · Ciudad:{" "}
+                    <span className="font-medium">{selectedParticipant.city || "Caracas"}</span>
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                  {selectedParticipant.name}
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                  Doc: <strong className="text-slate-900 dark:text-slate-200 font-bold">{selectedParticipant.docNumber || "S/D"}</strong>{" "}
-                  · WhatsApp: <strong className="text-[#0e5cd7] dark:text-cyan-400 font-bold">{selectedParticipant.phone}</strong> ·
-                  Email: <span className="font-medium">{selectedParticipant.email}</span>
-                </p>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                  Empresa:{" "}
-                  <strong className="text-slate-900 dark:text-white font-bold">
-                    {selectedParticipant.company || "Independiente"}
-                  </strong>{" "}
-                  {selectedParticipant.cargo ? `(${selectedParticipant.cargo})` : ""} · Ciudad:{" "}
-                  <span className="font-medium">{selectedParticipant.city || "Caracas"}</span>
-                </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openEditParticipant(selectedParticipant)}
+                  className="px-3 py-1.5 rounded-xl bg-[#f4730a] hover:bg-[#ef7922] text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Editar Datos</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeletingParticipant(selectedParticipant)}
+                  className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Borrar Participante</span>
+                </button>
               </div>
             </div>
 
@@ -441,9 +630,214 @@ export default function ParticipantesAdminPage() {
                         ? `${formatCurrency(part.amount)} (${part.isPaid ? "Pagado" : "Pendiente"})`
                         : "Evento Gratuito"}
                     </span>
+                    {confirmDeleteRegId === part.registrationId ? (
+                      <div className="flex items-center gap-1 pt-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteSingleRegistration(part.registrationId, selectedParticipant.id)
+                          }
+                          className="px-2 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[10px] font-black cursor-pointer"
+                        >
+                          Confirmar Borrar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteRegId(null)}
+                          className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold cursor-pointer"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteRegId(part.registrationId)}
+                        className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-50 hover:bg-red-600 text-rose-600 hover:text-white border border-rose-300 dark:bg-red-500/15 dark:border-red-500/40 dark:text-red-400 text-[10px] font-bold transition cursor-pointer"
+                        title="Borrar este formulario de capacitación"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Borrar Formulario</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Datos del Participante */}
+      {editingParticipant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-xl p-6 shadow-2xl relative">
+            <button
+              onClick={() => setEditingParticipant(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-base font-black text-white mb-4 flex items-center gap-2">
+              <Edit3 className="w-4 h-4 text-[#f4730a]" />
+              <span>Editar Datos del Participante (#{editingParticipant.id})</span>
+            </h3>
+            <form onSubmit={handleSaveParticipant} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Nombre Completo *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                  />
+                </div>
+                <div className="grid grid-cols-12 gap-2">
+                  <div className="col-span-4">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">Tipo</label>
+                    <select
+                      value={editForm.docType}
+                      onChange={(e) => setEditForm({ ...editForm, docType: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-2 py-2 text-xs text-white"
+                    >
+                      <option value="V">V-</option>
+                      <option value="E">E-</option>
+                      <option value="J">J-</option>
+                      <option value="P">P-</option>
+                    </select>
+                  </div>
+                  <div className="col-span-8">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Cédula / RIF *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.docNumber}
+                      onChange={(e) => setEditForm({ ...editForm, docNumber: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    WhatsApp / Teléfono *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Correo Electrónico *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={editForm.email}
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Empresa / Integrador
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.company}
+                    onChange={(e) => setEditForm({ ...editForm, company: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Cargo / Rol
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.cargo}
+                    onChange={(e) => setEditForm({ ...editForm, cargo: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Ciudad
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.city}
+                    onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingParticipant(null)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="px-4 py-2 bg-[#f4730a] hover:bg-[#ef7922] text-white text-xs font-black rounded-xl cursor-pointer"
+                >
+                  {savingEdit ? "Guardando..." : "Guardar Cambios"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmación Eliminar Participante */}
+      {deletingParticipant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border-2 border-red-500/40 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/15 text-red-400 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white">¿Eliminar Participante?</h3>
+                <p className="text-xs text-slate-400">
+                  {deletingParticipant.name} ({deletingParticipant.docType || "V"}-{deletingParticipant.docNumber || "S/D"})
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Esta acción eliminará al participante del directorio CRM junto con sus{" "}
+              <strong>{deletingParticipant.participations?.length || 0} formularios registrados</strong> en capacitaciones.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDeletingParticipant(null)}
+                disabled={isDeletingParticipant}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteParticipant}
+                disabled={isDeletingParticipant}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-black rounded-xl cursor-pointer"
+              >
+                {isDeletingParticipant ? "Eliminando..." : "Sí, Eliminar Participante"}
+              </button>
             </div>
           </div>
         </div>

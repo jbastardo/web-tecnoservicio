@@ -29,6 +29,7 @@ import {
   Hash,
   Sparkles,
   User,
+  Trash2,
 } from "lucide-react";
 import { fmtLocalDate, fmtLocalTime, formatCurrency } from "@/utils/formatUtils";
 
@@ -59,6 +60,35 @@ export default function InscripcionesAdminPage() {
   });
   const [savingModal, setSavingModal] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+
+  // Estado para Editar Todos los Datos de un Formulario Registrado
+  const [editingReg, setEditingReg] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState<any>({
+    trainingId: "",
+    name: "",
+    docType: "V",
+    docNumber: "",
+    phone: "",
+    email: "",
+    company: "",
+    cargo: "",
+    city: "Caracas",
+    experienceLevel: "",
+    status: "Inscrito",
+    isPaid: false,
+    amount: 0,
+    paymentMethod: "",
+    paymentReference: "",
+    invoiceNumber: "",
+    carnetNumber: "",
+    specialNotes: "",
+    customAnswers: {},
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  // Estado para Confirmar Eliminación de Formulario Registrado
+  const [deletingReg, setDeletingReg] = useState<any | null>(null);
+  const [isDeletingReg, setIsDeletingReg] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -97,10 +127,23 @@ export default function InscripcionesAdminPage() {
       });
       const data = await res.json();
       if (data.success) {
+        const updatedRecord = data.data;
         setRegistrations((prev) =>
-          prev.map((r) => (r.id === id ? { ...r, ...data.data } : r))
+          prev.map((r) => {
+            if (r.id === id) return { ...r, ...updatedRecord };
+            if (
+              updatedRecord.participant &&
+              Number(r.participantId) === Number(updatedRecord.participantId)
+            ) {
+              return { ...r, participant: updatedRecord.participant };
+            }
+            return r;
+          })
         );
-        return data.data;
+        if (viewingDetailsReg && viewingDetailsReg.id === id) {
+          setViewingDetailsReg((prev: any) => ({ ...prev, ...updatedRecord }));
+        }
+        return updatedRecord;
       }
     } catch (err) {
       console.error("Error al actualizar inscripción:", err);
@@ -134,6 +177,78 @@ export default function InscripcionesAdminPage() {
 
   const updateInvoice = (id: number, invoiceNumber: string) => {
     patchRegistration(id, { invoiceNumber });
+  };
+
+  // Abrir Modal de Edición Completa de Formulario Registrado
+  const openEditModal = (r: any) => {
+    setEditingReg(r);
+    setEditForm({
+      trainingId: String(r.trainingId || ""),
+      name: r.participant?.name || "",
+      docType: r.participant?.docType || "V",
+      docNumber: r.participant?.docNumber || "",
+      phone: r.participant?.phone || "",
+      email: r.participant?.email || "",
+      company: r.participant?.company || "",
+      cargo: r.participant?.cargo || "",
+      city: r.participant?.city || "Caracas",
+      experienceLevel: r.participant?.experienceLevel || r.experienceLevel || "",
+      status: r.status || "Inscrito",
+      isPaid: Boolean(r.isPaid),
+      amount: Number(r.amount || 0),
+      paymentMethod: r.paymentMethod || "",
+      paymentReference: r.paymentReference || "",
+      invoiceNumber: r.invoiceNumber || "",
+      carnetNumber: r.carnetNumber || "",
+      specialNotes: r.specialNotes || "",
+      customAnswers: { ...(r.customAnswers || {}) },
+    });
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingReg) return;
+    setSavingEdit(true);
+
+    const updated = await patchRegistration(editingReg.id, {
+      ...editForm,
+      trainingId: Number(editForm.trainingId) || editingReg.trainingId,
+      amount: Number(editForm.amount) || 0,
+    });
+
+    setSavingEdit(false);
+    if (updated) {
+      setEditingReg(null);
+      showToast(`Datos del formulario #${editingReg.id} actualizados con éxito.`);
+    } else {
+      showToast("Error al guardar los cambios del formulario.");
+    }
+  };
+
+  const handleDeleteRegistration = async () => {
+    if (!deletingReg) return;
+    setIsDeletingReg(true);
+    try {
+      const res = await fetch(`/api/inscripciones?id=${deletingReg.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRegistrations((prev) => prev.filter((r) => Number(r.id) !== Number(deletingReg.id)));
+        if (viewingDetailsReg && Number(viewingDetailsReg.id) === Number(deletingReg.id)) {
+          setViewingDetailsReg(null);
+        }
+        showToast("Formulario registrado eliminado con éxito");
+        setDeletingReg(null);
+      } else {
+        showToast(data.error || "No se pudo eliminar el formulario.");
+      }
+    } catch (err) {
+      console.error("Error al eliminar formulario:", err);
+      showToast("Error de red al eliminar el formulario.");
+    } finally {
+      setIsDeletingReg(false);
+    }
   };
 
   // Abrir Modal de Validación Manual
@@ -251,6 +366,7 @@ export default function InscripcionesAdminPage() {
             <option value="Asistió">Asistió</option>
             <option value="No Asistió">No Asistió</option>
             <option value="Lista de Espera">Lista de Espera</option>
+            <option value="Cancelado">Cancelado</option>
           </select>
 
           <span className="text-[11px] font-mono text-cyan-300 bg-slate-900 border border-slate-700 px-2.5 py-1.5 rounded-xl">
@@ -449,29 +565,40 @@ export default function InscripcionesAdminPage() {
                           <option value="Asistió">Asistió</option>
                           <option value="No Asistió">No Asistió</option>
                           <option value="Lista de Espera">Lista de Espera</option>
+                          <option value="Cancelado">Cancelado</option>
                         </select>
                       </td>
 
                       {/* Acciones */}
                       <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
                           <button
                             type="button"
                             onClick={() => setViewingDetailsReg(r)}
-                            className="px-2.5 py-1 bg-[#e07b29]/15 hover:bg-[#e07b29]/25 text-[#e07b29] rounded text-[11px] font-bold border border-[#e07b29]/40 flex items-center gap-1 transition cursor-pointer"
+                            className="px-2 py-1 bg-[#e07b29]/15 hover:bg-[#e07b29]/25 text-[#e07b29] rounded text-[11px] font-bold border border-[#e07b29]/40 flex items-center gap-1 transition cursor-pointer"
                             title="Ver todos los datos enviados por el inscrito y respuestas del formulario"
                           >
                             <Eye className="w-3 h-3 text-[#e07b29]" />
-                            <span>Ver Datos</span>
+                            <span>Ver</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(r)}
+                            className="px-2 py-1 bg-slate-800 hover:bg-[#f4730a] text-amber-300 hover:text-white rounded text-[11px] font-bold border border-slate-700 flex items-center gap-1 transition cursor-pointer"
+                            title="Editar todos los datos de este formulario registrado"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            <span>Editar</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => openValidationModal(r)}
-                            className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded text-[11px] font-semibold border border-slate-700 flex items-center gap-1 transition"
+                            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded text-[11px] font-semibold border border-slate-700 flex items-center gap-1 transition cursor-pointer"
                             title="Validar o modificar pago manualmente"
                           >
-                            <Edit3 className="w-3 h-3 text-cyan-400" />
+                            <ShieldCheck className="w-3 h-3 text-cyan-400" />
                             <span>Validar</span>
                           </button>
 
@@ -482,10 +609,20 @@ export default function InscripcionesAdminPage() {
                                 `Recordatorio WhatsApp 24h enviado al participante ${r.participant?.name} (${r.participant?.phone})`
                               )
                             }
-                            className="p-1.5 hover:bg-slate-800 rounded text-emerald-400 transition"
+                            className="p-1.5 hover:bg-slate-800 rounded text-emerald-400 transition cursor-pointer"
                             title="Enviar Recordatorio WhatsApp"
                           >
                             <Send className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setDeletingReg(r)}
+                            className="px-2 py-1 bg-red-500/15 hover:bg-red-600 text-red-400 hover:text-white rounded text-[11px] font-bold border border-red-500/40 flex items-center gap-1 transition cursor-pointer"
+                            title="Borrar formulario registrado"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Borrar</span>
                           </button>
                         </div>
                       </td>
@@ -906,7 +1043,17 @@ export default function InscripcionesAdminPage() {
                 </span>
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    openEditModal(viewingDetailsReg);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-[#f4730a] hover:bg-[#ef7922] text-white text-xs font-extrabold shadow-sm transition cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Editar Datos</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -915,6 +1062,16 @@ export default function InscripcionesAdminPage() {
                   className="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-extrabold shadow-sm transition cursor-pointer"
                 >
                   Editar Estado / Validar Pago
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeletingReg(viewingDetailsReg);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-extrabold shadow-sm transition cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Borrar</span>
                 </button>
                 <button
                   type="button"
@@ -1121,6 +1278,447 @@ export default function InscripcionesAdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edición Completa del Formulario Registrado */}
+      {editingReg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-3xl p-6 sm:p-7 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setEditingReg(null)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition"
+              title="Cerrar"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 pb-4 mb-5 border-b border-slate-800">
+              <div className="w-10 h-10 rounded-xl bg-[#f4730a]/15 text-[#f4730a] flex items-center justify-center">
+                <Edit3 className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#f4730a]">
+                  EDICIÓN COMPLETA DE FORMULARIO REGISTRADO #{editingReg.id}
+                </span>
+                <h3 className="text-lg font-black text-white">
+                  {editingReg.participant?.name || "Sin Nombre"}
+                </h3>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-5">
+              {/* Sección A: Capacitación y Estado */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-cyan-400">
+                  1. Capacitación & Control de Asistencia
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Capacitación Asignada
+                    </label>
+                    <select
+                      value={editForm.trainingId}
+                      onChange={(e) => setEditForm({ ...editForm, trainingId: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                    >
+                      {trainings.map((t) => (
+                        <option key={t.id} value={String(t.id)}>
+                          {t.code} • {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        Estado
+                      </label>
+                      <select
+                        value={editForm.status}
+                        onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                      >
+                        <option value="Inscrito">Inscrito</option>
+                        <option value="Confirmado">Confirmado</option>
+                        <option value="Asistió">Asistió</option>
+                        <option value="No Asistió">No Asistió</option>
+                        <option value="Lista de Espera">Lista de Espera</option>
+                        <option value="Cancelado">Cancelado</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        Nº Carnet
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.carnetNumber}
+                        onChange={(e) => setEditForm({ ...editForm, carnetNumber: e.target.value })}
+                        placeholder="Ej. 09"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#f4730a]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        Nº Factura
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.invoiceNumber}
+                        onChange={(e) => setEditForm({ ...editForm, invoiceNumber: e.target.value })}
+                        placeholder="FAC-001"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#f4730a]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección B: Datos Personales */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-[#f4730a]">
+                  2. Datos del Participante
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Nombre y Apellido *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-12 gap-2">
+                    <div className="col-span-4">
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">Tipo</label>
+                      <select
+                        value={editForm.docType}
+                        onChange={(e) => setEditForm({ ...editForm, docType: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                      >
+                        <option value="V">V-</option>
+                        <option value="E">E-</option>
+                        <option value="J">J-</option>
+                        <option value="P">P-</option>
+                      </select>
+                    </div>
+                    <div className="col-span-8">
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        Cédula / RIF *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editForm.docNumber}
+                        onChange={(e) => setEditForm({ ...editForm, docNumber: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#f4730a]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Teléfono / WhatsApp *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#f4730a]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Correo Electrónico *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Empresa / Emprendimiento
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.company}
+                      onChange={(e) => setEditForm({ ...editForm, company: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        Cargo / Rol
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.cargo}
+                        onChange={(e) => setEditForm({ ...editForm, cargo: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        Ciudad
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.city}
+                        onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección C: Respuestas Dinámicas y Cobro */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                  3. Respuestas del Formulario & Pago
+                </h4>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      ¿Cobrado?
+                    </label>
+                    <select
+                      value={editForm.isPaid ? "true" : "false"}
+                      onChange={(e) => setEditForm({ ...editForm, isPaid: e.target.value === "true" })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                    >
+                      <option value="true">Sí (Cobrado)</option>
+                      <option value="false">No (Pendiente)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Monto ($)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editForm.amount}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, amount: parseFloat(e.target.value) || 0 })
+                      }
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#f4730a]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Método de Pago
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.paymentMethod}
+                      onChange={(e) => setEditForm({ ...editForm, paymentMethod: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Referencia
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.paymentReference}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, paymentReference: e.target.value })
+                      }
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#f4730a]"
+                    />
+                  </div>
+                </div>
+
+                {/* Preguntas Dinámicas de customAnswers */}
+                {(() => {
+                  const targetCourse =
+                    trainings.find((t) => Number(t.id) === Number(editForm.trainingId)) ||
+                    editingReg.training;
+                  const formQuestions = Array.isArray(targetCourse?.formQuestions)
+                    ? targetCourse.formQuestions
+                    : [];
+                  const questionMap = new Map<string, any>();
+                  formQuestions.forEach((fq: any) => questionMap.set(fq.id, fq));
+                  Object.keys(editForm.customAnswers || {}).forEach((k) => {
+                    if (!questionMap.has(k)) {
+                      questionMap.set(k, { id: k, label: k, type: "text" });
+                    }
+                  });
+                  const fields = Array.from(questionMap.values());
+                  if (fields.length === 0) return null;
+
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-800">
+                      {fields.map((fq: any) => {
+                        const rawVal = editForm.customAnswers?.[fq.id] ?? "";
+                        const isBase64File =
+                          typeof rawVal === "string" && rawVal.startsWith("data:");
+                        return (
+                          <div key={fq.id}>
+                            <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                              {fq.label}
+                            </label>
+                            {isBase64File ? (
+                              <span className="text-[11px] text-emerald-400 font-mono block py-1.5">
+                                Archivo adjunto en base64 (conservado)
+                              </span>
+                            ) : fq.type === "select" && Array.isArray(fq.options) ? (
+                              <select
+                                value={String(rawVal)}
+                                onChange={(e) =>
+                                  setEditForm((prev: any) => ({
+                                    ...prev,
+                                    customAnswers: {
+                                      ...prev.customAnswers,
+                                      [fq.id]: e.target.value,
+                                    },
+                                  }))
+                                }
+                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                              >
+                                <option value="">Seleccionar...</option>
+                                {fq.options.map((opt: string, idx: number) => (
+                                  <option key={idx} value={opt}>
+                                    {opt}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                value={String(rawVal)}
+                                onChange={(e) =>
+                                  setEditForm((prev: any) => ({
+                                    ...prev,
+                                    customAnswers: {
+                                      ...prev.customAnswers,
+                                      [fq.id]: e.target.value,
+                                    },
+                                  }))
+                                }
+                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Notas Especiales / Expectativas
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={editForm.specialNotes}
+                    onChange={(e) => setEditForm({ ...editForm, specialNotes: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a] resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingReg(null)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="px-5 py-2.5 bg-[#f4730a] hover:bg-[#ef7922] text-white text-xs font-black rounded-xl flex items-center gap-2 transition shadow-lg cursor-pointer"
+                >
+                  {savingEdit ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                  <span>Guardar Cambios</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmación de Eliminación de Formulario Registrado */}
+      {deletingReg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border-2 border-red-500/40 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-red-500/15 text-red-400 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white">
+                  ¿Eliminar Formulario Registrado?
+                </h3>
+                <p className="text-xs text-slate-400">Registro #{deletingReg.id}</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs space-y-1">
+              <p className="font-bold text-white">{deletingReg.participant?.name || "Sin Nombre"}</p>
+              <p className="font-mono text-slate-400">
+                {deletingReg.participant?.docType || "V"}-{deletingReg.participant?.docNumber || "S/D"}
+              </p>
+              <p className="text-cyan-300 font-semibold truncate">
+                {deletingReg.training?.code} • {deletingReg.training?.name}
+              </p>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Esta acción eliminará permanentemente este registro del evento y liberará el cupo correspondiente. Si el participante no tiene otros cursos registrados, también se depurará su ficha para permitirle inscribirse nuevamente.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDeletingReg(null)}
+                disabled={isDeletingReg}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteRegistration}
+                disabled={isDeletingReg}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-black rounded-xl flex items-center gap-1.5 transition shadow-lg cursor-pointer"
+              >
+                {isDeletingReg ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+                <span>Sí, Borrar Registro</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

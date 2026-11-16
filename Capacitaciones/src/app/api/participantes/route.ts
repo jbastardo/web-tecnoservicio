@@ -93,14 +93,18 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ success: false, error: "No encontrado" }, { status: 404 });
     }
 
-    initialParticipants[idx] = {
+    const updatedParticipant = {
       ...initialParticipants[idx],
       ...(body.name !== undefined && { name: body.name }),
+      ...(body.docType !== undefined && { docType: body.docType }),
+      ...(body.docNumber !== undefined && { docNumber: body.docNumber }),
       ...(body.phone !== undefined && { phone: body.phone }),
       ...(body.email !== undefined && { email: body.email }),
       ...(body.company !== undefined && { company: body.company }),
       ...(body.cargo !== undefined && { cargo: body.cargo }),
       ...(body.city !== undefined && { city: body.city }),
+      ...(body.experienceLevel !== undefined && { experienceLevel: body.experienceLevel }),
+      ...(body.referralSource !== undefined && { referralSource: body.referralSource }),
       ...(body.hasStorePurchases !== undefined && {
         hasStorePurchases: Boolean(body.hasStorePurchases),
       }),
@@ -111,8 +115,78 @@ export async function PATCH(request: Request) {
       updatedAt: new Date().toISOString(),
     };
 
+    initialParticipants[idx] = updatedParticipant;
+
+    // Sincronizar cambios en las inscripciones vinculadas
+    initialRegistrations.forEach((r) => {
+      if (Number(r.participantId) === Number(updatedParticipant.id)) {
+        r.participant = updatedParticipant;
+        if (body.experienceLevel !== undefined) {
+          r.experienceLevel = body.experienceLevel;
+        }
+      }
+    });
+
     await persistDataset();
-    return NextResponse.json({ success: true, data: initialParticipants[idx] });
+    return NextResponse.json({ success: true, data: updatedParticipant });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  return PATCH(request);
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    let idParam = searchParams.get("id");
+
+    if (!idParam) {
+      try {
+        const body = await request.json();
+        if (body?.id !== undefined && body?.id !== null) {
+          idParam = String(body.id);
+        }
+      } catch {
+        // Sin body JSON
+      }
+    }
+
+    if (!idParam) {
+      return NextResponse.json(
+        { success: false, error: "ID de participante requerido para eliminar." },
+        { status: 400 }
+      );
+    }
+
+    const idx = initialParticipants.findIndex((p) => Number(p.id) === Number(idParam));
+    if (idx === -1) {
+      return NextResponse.json(
+        { success: false, error: "Participante no encontrado." },
+        { status: 404 }
+      );
+    }
+
+    const [deletedParticipant] = initialParticipants.splice(idx, 1);
+
+    // Eliminar todas las inscripciones asociadas a este participante
+    let removedRegs = 0;
+    for (let i = initialRegistrations.length - 1; i >= 0; i--) {
+      if (Number(initialRegistrations[i].participantId) === Number(deletedParticipant.id)) {
+        initialRegistrations.splice(i, 1);
+        removedRegs++;
+      }
+    }
+
+    await persistDataset();
+
+    return NextResponse.json({
+      success: true,
+      message: `Participante ${deletedParticipant.name} y sus ${removedRegs} formularios registrados fueron eliminados correctamente.`,
+      data: deletedParticipant,
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

@@ -47,7 +47,9 @@ export async function GET(request: Request) {
       results = results.filter((r) => Number(r.participantId) === participantId);
     }
 
-    const populated = results.map((r) => {
+    const sorted = [...results].sort((a, b) => Number(b.id) - Number(a.id));
+
+    const populated = sorted.map((r) => {
       const p = initialParticipants.find((part) => Number(part.id) === Number(r.participantId));
       const participations = p ? buildParticipantParticipations(p.id) : [];
       return {
@@ -287,6 +289,7 @@ export async function PATCH(request: Request) {
     const body = await request.json();
     const {
       id,
+      trainingId,
       status,
       isPaid,
       amount,
@@ -299,7 +302,19 @@ export async function PATCH(request: Request) {
       checkInAt,
       invoiceNumber,
       carnetNumber,
+      specialNotes,
+      experienceLevel,
       customAnswers,
+      // Datos del participante vinculados al formulario registrado
+      name,
+      docType,
+      docNumber,
+      phone,
+      email,
+      company,
+      cargo,
+      city,
+      referralSource,
     } = body;
 
     if (!id) {
@@ -318,11 +333,76 @@ export async function PATCH(request: Request) {
     }
 
     const current = initialRegistrations[regIndex];
+    const nowIso = new Date().toISOString();
+
+    // Resolver capacitación si fue reasignada
+    let resolvedTraining =
+      initialTrainings.find((t) => Number(t.id) === Number(current.trainingId)) || current.training;
+    let resolvedTrainingId = current.trainingId;
+    if (trainingId !== undefined && Number(trainingId) !== Number(current.trainingId)) {
+      const targetTr = initialTrainings.find((t) => Number(t.id) === parseInt(trainingId));
+      if (!targetTr) {
+        return NextResponse.json(
+          { success: false, error: "Capacitación de destino no encontrada." },
+          { status: 404 }
+        );
+      }
+      resolvedTraining = targetTr;
+      resolvedTrainingId = targetTr.id;
+    }
+
+    // Actualizar participante vinculado si se recibieron cambios
+    const partIndex = initialParticipants.findIndex(
+      (p) => Number(p.id) === Number(current.participantId)
+    );
+    let updatedParticipant = partIndex !== -1 ? initialParticipants[partIndex] : current.participant;
+
+    const hasParticipantUpdates =
+      name !== undefined ||
+      docType !== undefined ||
+      docNumber !== undefined ||
+      phone !== undefined ||
+      email !== undefined ||
+      company !== undefined ||
+      cargo !== undefined ||
+      city !== undefined ||
+      experienceLevel !== undefined ||
+      referralSource !== undefined;
+
+    if (partIndex !== -1 && hasParticipantUpdates) {
+      const savedParticipant = {
+        ...initialParticipants[partIndex],
+        ...(name !== undefined && { name }),
+        ...(docType !== undefined && { docType }),
+        ...(docNumber !== undefined && { docNumber }),
+        ...(phone !== undefined && { phone }),
+        ...(email !== undefined && { email }),
+        ...(company !== undefined && { company }),
+        ...(cargo !== undefined && { cargo }),
+        ...(city !== undefined && { city }),
+        ...(experienceLevel !== undefined && { experienceLevel }),
+        ...(referralSource !== undefined && { referralSource }),
+        updatedAt: nowIso,
+      };
+      initialParticipants[partIndex] = savedParticipant;
+      updatedParticipant = savedParticipant;
+
+      // Sincronizar referencia embebida en otras inscripciones del mismo participante
+      initialRegistrations.forEach((r) => {
+        if (Number(r.participantId) === Number(savedParticipant.id)) {
+          r.participant = savedParticipant;
+        }
+      });
+    }
+
     const updated = {
       ...current,
+      trainingId: resolvedTrainingId,
+      training: resolvedTraining,
+      participant: updatedParticipant,
       ...(status !== undefined && { status }),
       ...(isPaid !== undefined && { isPaid }),
-      ...(amount !== undefined && { amount: parseFloat(amount) }),
+      ...(amount !== undefined && { amount: parseFloat(amount) || 0 }),
       ...(pabiloStatus !== undefined && { pabiloStatus }),
       ...(paymentMethod !== undefined && { paymentMethod }),
       ...(paymentReference !== undefined && { paymentReference }),
@@ -332,14 +412,89 @@ export async function PATCH(request: Request) {
       ...(checkInAt !== undefined && { checkInAt }),
       ...(invoiceNumber !== undefined && { invoiceNumber }),
       ...(carnetNumber !== undefined && { carnetNumber }),
+      ...(specialNotes !== undefined && { specialNotes }),
+      ...(experienceLevel !== undefined && { experienceLevel }),
       ...(customAnswers !== undefined && { customAnswers }),
-      updatedAt: new Date().toISOString(),
+      updatedAt: nowIso,
     };
 
     initialRegistrations[regIndex] = updated;
     await persistDataset();
 
-    return NextResponse.json({ success: true, data: updated });
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...updated,
+        participant: updatedParticipant
+          ? {
+              ...updatedParticipant,
+              participations: buildParticipantParticipations(updatedParticipant.id),
+            }
+          : undefined,
+      },
+    });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  return PATCH(request);
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    let idParam = searchParams.get("id");
+
+    if (!idParam) {
+      try {
+        const body = await request.json();
+        if (body?.id !== undefined && body?.id !== null) {
+          idParam = String(body.id);
+        }
+      } catch {
+        // Sin body JSON
+      }
+    }
+
+    if (!idParam) {
+      return NextResponse.json(
+        { success: false, error: "ID de inscripción requerido para eliminar." },
+        { status: 400 }
+      );
+    }
+
+    const regIndex = initialRegistrations.findIndex((r) => Number(r.id) === parseInt(idParam!));
+    if (regIndex === -1) {
+      return NextResponse.json(
+        { success: false, error: "Inscripción no encontrada." },
+        { status: 404 }
+      );
+    }
+
+    const [deleted] = initialRegistrations.splice(regIndex, 1);
+
+    // Si el participante quedó sin otras inscripciones activas/registradas, limpiar registro huérfano
+    const stillHasRegistrations = initialRegistrations.some(
+      (r) => Number(r.participantId) === Number(deleted.participantId)
+    );
+    if (!stillHasRegistrations) {
+      const pIdx = initialParticipants.findIndex(
+        (p) => Number(p.id) === Number(deleted.participantId)
+      );
+      if (pIdx !== -1) {
+        initialParticipants.splice(pIdx, 1);
+      }
+    }
+
+    await persistDataset();
+
+    return NextResponse.json({
+      success: true,
+      message: "Formulario registrado eliminado correctamente",
+      data: deleted,
+    });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

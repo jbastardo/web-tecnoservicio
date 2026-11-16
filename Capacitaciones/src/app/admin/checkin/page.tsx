@@ -21,6 +21,9 @@ import {
   ShieldCheck,
   FileSpreadsheet,
   Edit2,
+  Edit3,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { fmtLocalTime, fmtLocalDate, formatCurrency } from "@/utils/formatUtils";
 import { OnprotecBrand } from "@/components/OnprotecBrand";
@@ -37,6 +40,22 @@ export default function CheckinAdminPage() {
   const [responsableMesa, setResponsableMesa] = useState("Diana Barrero");
   const [coordinadorEvento, setCoordinadorEvento] = useState("Coordinación OnProtec C.A.");
   const [toastMessage, setToastMessage] = useState("");
+  const [editingReg, setEditingReg] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    docType: "V",
+    docNumber: "",
+    phone: "",
+    email: "",
+    company: "",
+    cargo: "",
+    city: "Caracas",
+    carnetNumber: "",
+    status: "Confirmado",
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingReg, setDeletingReg] = useState<any | null>(null);
+  const [isDeletingReg, setIsDeletingReg] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -182,6 +201,84 @@ export default function CheckinAdminPage() {
       showToast(`Nº de Carnet asignado: ${trimmed || "Sin carnet"}`);
     } catch (err) {
       console.error("Error guardando carnet:", err);
+    }
+  };
+
+  const openEditModal = (r: any) => {
+    const p = r.participant || {};
+    setEditingReg(r);
+    setEditForm({
+      name: p.name || "",
+      docType: p.docType || "V",
+      docNumber: p.docNumber || "",
+      phone: p.phone || "",
+      email: p.email || "",
+      company: p.company || "",
+      cargo: p.cargo || "",
+      city: p.city || "Caracas",
+      carnetNumber: r.carnetNumber || "",
+      status: r.status || "Confirmado",
+    });
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingReg) return;
+    setSavingEdit(true);
+    try {
+      const res = await fetch("/api/inscripciones", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingReg.id, ...editForm }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const updatedRecord = data.data;
+        setRegistrations((prev) =>
+          prev.map((r) => {
+            if (r.id === editingReg.id) return { ...r, ...updatedRecord };
+            if (
+              updatedRecord.participant &&
+              Number(r.participantId) === Number(updatedRecord.participantId)
+            ) {
+              return { ...r, participant: updatedRecord.participant };
+            }
+            return r;
+          })
+        );
+        setEditingReg(null);
+        showToast("Datos del inscrito actualizados correctamente");
+      } else {
+        showToast(data.error || "No se pudo actualizar");
+      }
+    } catch (err) {
+      console.error("Error editando inscrito:", err);
+      showToast("Error al guardar cambios");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteReg = async () => {
+    if (!deletingReg) return;
+    setIsDeletingReg(true);
+    try {
+      const res = await fetch(`/api/inscripciones?id=${deletingReg.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setRegistrations((prev) => prev.filter((r) => Number(r.id) !== Number(deletingReg.id)));
+        showToast("Formulario eliminado del evento");
+        setDeletingReg(null);
+      } else {
+        showToast(data.error || "Error al eliminar");
+      }
+    } catch (err) {
+      console.error("Error eliminando inscripción:", err);
+      showToast("Error de red al eliminar");
+    } finally {
+      setIsDeletingReg(false);
     }
   };
 
@@ -626,29 +723,47 @@ export default function CheckinAdminPage() {
                         )}
                       </td>
 
-                      {/* BOTÓN CHECK DE ASISTENCIA (1-TAP) */}
+                      {/* BOTÓN CHECK DE ASISTENCIA (1-TAP) + EDITAR / BORRAR */}
                       <td className="py-3.5 px-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleAttendance(r.id)}
-                          className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 mx-auto cursor-pointer ${
-                            isPresent
-                              ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400/50"
-                              : "bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-300 border border-slate-700 hover:border-emerald-500"
-                          }`}
-                        >
-                          {isPresent ? (
-                            <>
-                              <CheckCircle2 className="w-4 h-4 text-white" />
-                              <span>✓ ASISTIÓ</span>
-                            </>
-                          ) : (
-                            <>
-                              <Check className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>Dar Check</span>
-                            </>
-                          )}
-                        </button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleAttendance(r.id)}
+                            className={`px-3.5 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                              isPresent
+                                ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400/50"
+                                : "bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-300 border border-slate-700 hover:border-emerald-500"
+                            }`}
+                          >
+                            {isPresent ? (
+                              <>
+                                <CheckCircle2 className="w-4 h-4 text-white" />
+                                <span>✓ ASISTIÓ</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>Dar Check</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(r)}
+                            className="p-2 rounded-xl bg-slate-800 hover:bg-[#f4730a] text-amber-300 hover:text-white border border-slate-700 transition cursor-pointer"
+                            title="Editar datos del inscrito"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeletingReg(r)}
+                            className="p-2 rounded-xl bg-red-500/15 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/40 transition cursor-pointer"
+                            title="Borrar formulario de este inscrito"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -855,6 +970,184 @@ export default function CheckinAdminPage() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edición Rápida de Inscrito en Check-in */}
+      {editingReg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-xl p-6 shadow-2xl relative">
+            <button
+              onClick={() => setEditingReg(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-base font-black text-white mb-4 flex items-center gap-2">
+              <Edit3 className="w-4 h-4 text-[#f4730a]" />
+              <span>Editar Datos del Inscrito (#{editingReg.id})</span>
+            </h3>
+            <form onSubmit={handleSaveEdit} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Nombre y Apellido *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                  />
+                </div>
+                <div className="grid grid-cols-12 gap-2">
+                  <div className="col-span-4">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">Tipo</label>
+                    <select
+                      value={editForm.docType}
+                      onChange={(e) => setEditForm({ ...editForm, docType: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-2 py-2 text-xs text-white"
+                    >
+                      <option value="V">V-</option>
+                      <option value="E">E-</option>
+                      <option value="J">J-</option>
+                      <option value="P">P-</option>
+                    </select>
+                  </div>
+                  <div className="col-span-8">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Cédula / RIF *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.docNumber}
+                      onChange={(e) => setEditForm({ ...editForm, docNumber: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    WhatsApp / Teléfono *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Correo Electrónico *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={editForm.email}
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Empresa / Proyecto
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.company}
+                    onChange={(e) => setEditForm({ ...editForm, company: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Cargo / Rol
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.cargo}
+                    onChange={(e) => setEditForm({ ...editForm, cargo: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    Estado
+                  </label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"
+                  >
+                    <option value="Inscrito">Inscrito</option>
+                    <option value="Confirmado">Confirmado</option>
+                    <option value="Asistió">Asistió</option>
+                    <option value="No Asistió">No Asistió</option>
+                    <option value="Lista de Espera">Lista de Espera</option>
+                    <option value="Cancelado">Cancelado</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setEditingReg(null)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="px-4 py-2 bg-[#f4730a] hover:bg-[#ef7922] text-white text-xs font-black rounded-xl cursor-pointer"
+                >
+                  {savingEdit ? "Guardando..." : "Guardar Cambios"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmación Eliminar en Check-in */}
+      {deletingReg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border-2 border-red-500/40 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/15 text-red-400 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white">¿Eliminar Formulario de Check-in?</h3>
+                <p className="text-xs text-slate-400">{deletingReg.participant?.name}</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-300">
+              Se eliminará permanentemente esta inscripción del evento actual y se liberará el cupo correspondiente.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDeletingReg(null)}
+                disabled={isDeletingReg}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteReg}
+                disabled={isDeletingReg}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-black rounded-xl cursor-pointer"
+              >
+                {isDeletingReg ? "Borrando..." : "Sí, Borrar"}
+              </button>
             </div>
           </div>
         </div>
