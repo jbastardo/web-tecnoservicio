@@ -508,7 +508,12 @@ html[data-theme="dark"] .text-slate-400,
 html[data-theme="dark"] .text-slate-500,
 .dark .text-slate-400,
 .dark .text-slate-500 {
-  color: #94a3b8 !important;
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] label,
+.dark label {
+  color: #f8fafc !important;
 }
 
 /* Superficies Oscuras */
@@ -542,7 +547,7 @@ html[data-theme="dark"] input::placeholder,
 html[data-theme="dark"] textarea::placeholder,
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: #64748b !important;
+  color: #94a3b8 !important;
 }
 
 /* Scrollbars */

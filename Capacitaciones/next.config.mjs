@@ -22,6 +22,55 @@ const nextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/capacitacion",
+        destination: "/",
+        permanent: false,
+      },
+      {
+        source: "/capacitaciones",
+        destination: "/",
+        permanent: false,
+      },
+      {
+        source: "/registro",
+        destination: "/#registro-express",
+        permanent: false,
+      },
+      {
+        source: "/inscripcion",
+        destination: "/#registro-express",
+        permanent: false,
+      },
+      {
+        source: "/inscripciones",
+        destination: "/#registro-express",
+        permanent: false,
+      },
+      {
+        source: "/cursos",
+        destination: "/",
+        permanent: false,
+      },
+      {
+        source: "/curso",
+        destination: "/",
+        permanent: false,
+      },
+      {
+        source: "/login",
+        destination: "/admin",
+        permanent: false,
+      },
+      {
+        source: "/encuesta",
+        destination: "/",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

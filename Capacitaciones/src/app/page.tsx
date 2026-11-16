@@ -75,10 +75,20 @@ export default function HomePage() {
       .then((data) => {
         if (data.success && data.data.length > 0) {
           setTrainings(data.data);
+          const activeTrainings = data.data.filter(
+            (t: any) => t.status === "Planificado" || t.status === "En Publicidad"
+          );
+          // Priorizar EZVIZ de primera por solicitud expresa del usuario
+          const ezvizActive = activeTrainings.find(
+            (t: any) =>
+              (t.brand || "").toLowerCase().includes("ezviz") ||
+              (t.name || "").toLowerCase().includes("ezviz") ||
+              t.code === "CAP-2026-039"
+          );
           const planned =
-            data.data.find(
-              (t: any) => t.status === "Planificado" || t.status === "En Publicidad"
-            ) || data.data[0];
+            ezvizActive ||
+            activeTrainings[0] ||
+            data.data[0];
           setSelectedTraining(planned);
         }
       })
@@ -207,16 +217,53 @@ export default function HomePage() {
     (q) => !/método de pago|metodo de pago|forma de pago/i.test(q.label)
   );
 
-  // Sincronizar el método de pago por defecto si no es parte de la lista permitida
+  // Cálculo de horas restantes antes del evento para validar pagos en efectivo
+  const hoursUntilEvent = React.useMemo(() => {
+    if (!selectedTraining) return 999;
+    const targetDate = selectedTraining.eventDate || selectedTraining.startDate;
+    if (!targetDate) return 999;
+    const eventTime = new Date(targetDate).getTime();
+    if (isNaN(eventTime)) return 999;
+    return (eventTime - Date.now()) / (1000 * 60 * 60);
+  }, [selectedTraining?.eventDate, selectedTraining?.startDate]);
+
+  // Si faltan 48 horas o menos antes del evento, ya NO se puede aceptar efectivo en tienda
+  const isCashDisabledByDeadline = hoursUntilEvent <= 48;
+
+  // Sincronizar el método de pago por defecto si no es parte de la lista permitida o si es efectivo y está bloqueado
   useEffect(() => {
+    const isCashSelected = (form.paymentMethod || "").toLowerCase().includes("efectivo");
+    if (isCashSelected && isCashDisabledByDeadline) {
+      const nonCash = allowedPaymentMethods.find((m) => !m.toLowerCase().includes("efectivo")) || allowedPaymentMethods[0];
+      setForm((prev) => ({ ...prev, paymentMethod: nonCash }));
+      return;
+    }
     if (allowedPaymentMethods.length > 0 && !allowedPaymentMethods.includes(form.paymentMethod)) {
       setForm((prev) => ({ ...prev, paymentMethod: allowedPaymentMethods[0] }));
     }
-  }, [selectedTraining?.id, allowedPaymentMethods.length]);
+  }, [selectedTraining?.id, allowedPaymentMethods.length, isCashDisabledByDeadline, form.paymentMethod]);
 
-  const openTrainings = trainings.filter(
-    (t) => t.status === "Planificado" || t.status === "En Publicidad"
-  );
+  const openTrainings = React.useMemo(() => {
+    const list = trainings.filter(
+      (t) => t.status === "Planificado" || t.status === "En Publicidad"
+    );
+    return [...list].sort((a, b) => {
+      const aIsEzviz =
+        (a.brand || "").toLowerCase().includes("ezviz") ||
+        (a.name || "").toLowerCase().includes("ezviz") ||
+        a.code === "CAP-2026-039";
+      const bIsEzviz =
+        (b.brand || "").toLowerCase().includes("ezviz") ||
+        (b.name || "").toLowerCase().includes("ezviz") ||
+        b.code === "CAP-2026-039";
+      if (aIsEzviz && !bIsEzviz) return -1;
+      if (!aIsEzviz && bIsEzviz) return 1;
+      const dateA = new Date(a.eventDate || a.startDate).getTime();
+      const dateB = new Date(b.eventDate || b.startDate).getTime();
+      if (!isNaN(dateA) && !isNaN(dateB)) return dateA - dateB;
+      return 0;
+    });
+  }, [trainings]);
 
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [isCarouselHovered, setIsCarouselHovered] = useState(false);
@@ -435,11 +482,11 @@ export default function HomePage() {
                   <img
                     src={carouselSlides[carouselIndex].image}
                     alt={carouselSlides[carouselIndex].training.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:opacity-35 transition-all duration-700 ease-out group-hover:scale-105"
                   />
 
                   {/* Gradiente Oscuro de Alto Contraste para Garantizar Legibilidad Impecable */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0b0e17] via-[#0b0e17]/85 to-[#1a1b4b]/55" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#06080e] via-[#090c16]/95 to-[#0b0e17]/80" />
 
                   {/* Barra Superior del Slide */}
                   <div className="relative z-10 p-5 sm:p-6 flex items-center justify-between gap-2 flex-wrap">
@@ -456,16 +503,16 @@ export default function HomePage() {
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-mono font-bold text-white/90 bg-black/50 px-2.5 py-0.5 rounded-full border border-white/20">
+                      <span className="text-[11px] font-mono font-bold text-white/90 bg-black/60 px-2.5 py-0.5 rounded-full border border-white/20">
                         {carouselIndex + 1} / {carouselSlides.length}
                       </span>
                     </div>
                   </div>
 
-                  {/* Contenido Central del Slide: Título, Código, Horario y Precio */}
-                  <div className="relative z-10 px-5 sm:px-6 space-y-3 my-auto">
+                  {/* Contenido Central del Slide: Tarjeta Frosted de Alto Contraste para Evitar Choque con el Flyer */}
+                  <div className="relative z-10 mx-5 sm:mx-6 my-auto p-4 sm:p-5 rounded-2xl bg-[#0b0e17]/92 backdrop-blur-xl border border-slate-700/80 shadow-2xl space-y-3">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-mono font-bold text-[#fdff00] bg-black/60 px-2.5 py-0.5 rounded-md border border-[#fdff00]/40">
+                      <span className="text-xs font-mono font-bold text-[#fdff00] bg-black/90 px-2.5 py-0.5 rounded-md border border-[#fdff00]/40">
                         {carouselSlides[carouselIndex].training.code}
                       </span>
                       <span
@@ -483,19 +530,20 @@ export default function HomePage() {
                       {carouselSlides[carouselIndex].training.name}
                     </h3>
 
-                    <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs font-bold text-slate-200">
-                      <span className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-200">
+                      <span className="flex items-center gap-1.5 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700/80 text-slate-100">
                         <Calendar className="w-3.5 h-3.5 text-[#f4730a]" />
                         {fmtLocalDate(carouselSlides[carouselIndex].training.eventDate)}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-cyan-300" />
+                      <span className="flex items-center gap-1.5 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700/80 text-cyan-300">
+                        <Clock className="w-3.5 h-3.5" />
                         {fmtLocalHour(carouselSlides[carouselIndex].training.eventDate)} (Caracas)
                       </span>
                     </div>
 
-                    <p className="text-xs text-orange-200/90 font-semibold">
-                      {carouselSlides[carouselIndex].priceText}
+                    <p className="text-xs text-orange-300 font-extrabold flex items-center gap-1.5 pt-0.5">
+                      <Award className="w-3.5 h-3.5 text-[#f4730a]" />
+                      <span>{carouselSlides[carouselIndex].priceText}</span>
                     </p>
                   </div>
 
@@ -1006,33 +1054,69 @@ export default function HomePage() {
                               </span>
                             </div>
 
+                            {/* Alerta si el efectivo está bloqueado por faltar <= 48 horas */}
+                            {isCashDisabledByDeadline && (
+                              <div className="p-2.5 rounded-xl bg-rose-500/15 border border-rose-400 text-rose-900 dark:text-rose-200 text-[11px] flex items-start gap-2">
+                                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                                <p className="leading-snug">
+                                  <strong>Restricción 48h antes del evento:</strong> Ya no se aceptan pagos en efectivo en tienda. Por favor selecciona un método de pago electrónico.
+                                </p>
+                              </div>
+                            )}
+
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               <select
                                 value={form.paymentMethod}
                                 onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
                                 className="bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white outline-none"
                               >
-                                {allowedPaymentMethods.map((m) => (
-                                  <option key={m} value={m}>
-                                    {m}
-                                  </option>
-                                ))}
+                                {allowedPaymentMethods.map((m) => {
+                                  const isCash = m.toLowerCase().includes("efectivo");
+                                  const disabled = isCash && isCashDisabledByDeadline;
+                                  return (
+                                    <option key={m} value={m} disabled={disabled}>
+                                      {m} {disabled ? "(No disponible a menos de 48h del evento)" : ""}
+                                    </option>
+                                  );
+                                })}
                               </select>
 
                               <input
                                 type="text"
-                                placeholder="Nro. Referencia Bancaria"
+                                placeholder={
+                                  form.paymentMethod.toLowerCase().includes("efectivo")
+                                    ? "Pago en caja (Tienda OnProtec)"
+                                    : "Nro. Referencia Bancaria *"
+                                }
                                 value={form.paymentReference}
                                 onChange={(e) => setForm({ ...form, paymentReference: e.target.value })}
                                 className="bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white outline-none"
                               />
                             </div>
 
+                            {/* Comunicado obligatorio de 48 horas para pago en efectivo */}
+                            {form.paymentMethod.toLowerCase().includes("efectivo") && (
+                              <div className="p-3.5 rounded-2xl bg-amber-500/20 border-2 border-amber-500 text-amber-950 dark:text-amber-200 text-xs space-y-1.5 shadow-sm">
+                                <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wide text-amber-900 dark:text-amber-300">
+                                  <AlertTriangle className="w-4 h-4 text-[#f4730a] shrink-0" />
+                                  <span>Condición Obligatoria de Pago en Efectivo</span>
+                                </div>
+                                <p className="text-[11px] leading-relaxed">
+                                  Dispones de un <strong>lapso máximo de 48 horas continuas</strong> tras enviar este formulario para acudir a nuestra tienda OnProtec (Sede Corporativa) y formalizar tu pago en caja. De lo contrario, tu solicitud será <strong>automáticamente anulada</strong> y el cupo se liberará.
+                                </p>
+                                <p className="text-[10px] text-amber-800 dark:text-amber-400 font-bold">
+                                  * Importante: A partir de 48 horas antes de la fecha del evento, ya no se puede aceptar efectivo en tienda.
+                                </p>
+                              </div>
+                            )}
+
                             {/* Carga de Comprobante de Pago */}
                             <div className="pt-2 border-t border-amber-200 dark:border-amber-500/20">
                               <label className="block text-xs font-black text-amber-900 dark:text-amber-200 mb-1.5 flex items-center gap-1.5">
                                 <UploadCloud className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                                Adjuntar Comprobante de Pago (Voucher / Captura / PDF)
+                                {form.paymentMethod.toLowerCase().includes("efectivo")
+                                  ? "Comprobante (Opcional - Formalizarás en caja en tienda)"
+                                  : "Adjuntar Comprobante de Pago (Voucher / Captura / PDF)"}
                               </label>
 
                               {form.paymentProofUrl ? (
@@ -1271,9 +1355,21 @@ export default function HomePage() {
                     ¿Qué sigue a continuación?
                   </p>
                   <p className="text-emerald-800 dark:text-emerald-300 text-[11px] leading-snug">
-                    Nuestro equipo verificará el comprobante de pago. El equipo de OnProtec se comunicará contigo vía WhatsApp en breve para confirmar los detalles finales y enviarte las instrucciones privadas de acceso a la sala.
+                    Nuestro equipo verificará el reporte de pago. El equipo de OnProtec se comunicará contigo vía WhatsApp en breve para confirmar los detalles finales y enviarte las instrucciones privadas de acceso a la sala.
                   </p>
                 </div>
+
+                {form.paymentMethod.toLowerCase().includes("efectivo") && (
+                  <div className="p-3 bg-amber-500/20 border-2 border-amber-500 rounded-2xl text-left text-xs space-y-1">
+                    <p className="font-extrabold text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-[#f4730a]" />
+                      Plazo máximo de 48h para pago en tienda
+                    </p>
+                    <p className="text-amber-900 dark:text-amber-300 text-[11px] leading-snug">
+                      Dispones de <strong>48 horas continuas</strong> para acudir a nuestra tienda OnProtec (Sede Corporativa) y formalizar tu pago en efectivo en caja. De lo contrario, tu solicitud y cupo serán <strong>anulados automáticamente</strong>.
+                    </p>
+                  </div>
+                )}
               </div>
             ) : submissionResult.isWaitlist ? (
               <div className="text-center space-y-3">
@@ -1348,6 +1444,14 @@ export default function HomePage() {
                   {selectedTraining ? fmtLocalDate(selectedTraining.eventDate) : ""}
                 </strong>
               </div>
+              {isPaidCourse && (
+                <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-[11px] pt-1 border-t border-slate-200 dark:border-slate-800">
+                  <span>Método de Pago:</span>
+                  <strong className="text-slate-800 dark:text-white">
+                    {form.paymentMethod}
+                  </strong>
+                </div>
+              )}
             </div>
 
             {/* Acciones */}
@@ -1356,7 +1460,15 @@ export default function HomePage() {
                 href={`https://wa.me/584129635648?text=${encodeURIComponent(
                   `Hola equipo de OnProtec, acabo de completar mi ${
                     isPaidCourse ? "inscripción" : "pre-inscripción"
-                  } para la capacitación ${selectedTraining?.code} - ${selectedTraining?.name}. Mi nombre es ${form.name} (CI: ${form.docType}-${form.docNumber}).`
+                  } para la capacitación ${selectedTraining?.code} - ${selectedTraining?.name}. Mi nombre es ${form.name} (CI: ${form.docType}-${form.docNumber}).${
+                    isPaidCourse
+                      ? ` Método de pago: ${form.paymentMethod}${
+                          form.paymentMethod.toLowerCase().includes("efectivo")
+                            ? " (Plazo máx. 48h para pagar en tienda)"
+                            : ""
+                        }.`
+                      : ""
+                  }`
                 )}`}
                 target="_blank"
                 rel="noreferrer"

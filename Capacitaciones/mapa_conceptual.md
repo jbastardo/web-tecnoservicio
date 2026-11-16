@@ -76,7 +76,9 @@ flowchart TD
 
 1. **Widescreen-First, Carta de Presentación Ejecutiva & Carrusel Rotante:**
    * En pantallas de escritorio (1080p, 1440p, laptops), la información de primer nivel y métricas críticas se presentan en formato apaisado de alta legibilidad.
-   * **Banner Carrusel de Fotos Rotantes en Portada:** Ubicado en la columna derecha del Hero (`lg:col-span-5`), ocupa el espacio visual destacado con un carrusel interactivo con fotos de alta resolución de las capacitaciones y marcas oficiales (Dahua, Hikvision, UniFi, TP-Link). Rota automáticamente cada 5 segundos (se pausa al pasar el cursor) y dispone de flechas de navegación y puntos indicadores. **Al hacer clic en cualquier slide o en el botón de acción**, selecciona automáticamente esa capacitación y realiza scroll suave directamente al formulario de inscripción (`#registro-express`), sincronizando de inmediato el evento.
+   * **Prioridad Visual de la Convocatoria EZVIZ:** Por directriz operativa, la capacitación de certificación oficial EZVIZ (`CAP-2026-039`) se posiciona **de primera** tanto en el orden de convocatorias activas, como en el primer slide del carrusel y pre-seleccionada por defecto en el formulario `#registro-express`, seguida cronológicamente por las demás capacitaciones según su fecha de inicio más próxima.
+   * **Banner Carrusel de Fotos Rotantes en Portada:** Ubicado en la columna derecha del Hero (`lg:col-span-5`), ocupa el espacio visual destacado con un carrusel interactivo con fotos de alta resolución de las capacitaciones y marcas oficiales (EZVIZ, Dahua, Hikvision, UniFi). Rota automáticamente cada 5 segundos (se pausa al pasar el cursor) y dispone de flechas de navegación y puntos indicadores. **Al hacer clic en cualquier slide o en el botón de acción**, selecciona automáticamente esa capacitación y realiza scroll suave directamente al formulario de inscripción (`#registro-express`), sincronizando de inmediato el evento.
+   * **Diseño Frosted Anti-Colisión para Modo Oscuro:** La información clave del slide (título, código, fecha, hora en Caracas, precio y aforo) está enmarcada en una tarjeta sólida frosted (`bg-[#0b0e17]/92 backdrop-blur-xl border border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-2xl`) con tipografías de alto contraste y badges luminosos, mientras que el flyer de fondo cuenta con opacidad calibrada (`opacity-25` a `opacity-35`) y gradiente base oscuro, evitando que las letras impresas en los flyers colisionen con los textos de la interfaz.
    * La Landing Page pública funciona como la **carta de presentación ejecutiva de la Sala de Capacitaciones OnProtec en Torre América Piso 14**, con layout split-view (7 cols convocatoria/temario, 5 cols carrusel visual y formulario con comprobante de pago).
    * Cintillo de navegación fijo (`sticky top-0 z-50`) con marca oficial y acceso administrativo seguro.
    * Se reorganiza a flujo vertical amigable únicamente en dispositivos móviles o tablets (`max-width: 768px`).
@@ -90,9 +92,14 @@ flowchart TD
 3. **Control de Contraste y Modos de Color (Dark/Light):**
    * Configuración de Tailwind `darkMode: "class"` controlada por selector explícito en `<html>` (`.dark` / `[data-theme]`), evitando que sistemas operativos en modo oscuro fuercen clases oscuras sobre vistas claras.
    * Regla de Alto Contraste en Modo Claro: Textos oscuros (`#0f172a`, `#1e293b`, `#475569`) sobre fondos blancos/grises, garantizando máxima legibilidad en todas las vistas administrativas (Directorio de Participantes, Gestor de Capacitaciones, Check-in).
+   * Regla de Alto Contraste en Modo Oscuro: Textos secundarios iluminados a `#cbd5e1`, placeholders de inputs a `#94a3b8`, etiquetas a `#f8fafc`, y superficies con fondos oscuros profundos `#111526` y `#0b0e17`.
 
-3. **Horarios Locales Respetados (America/Caracas):**
+4. **Horarios Locales Respetados (America/Caracas):**
    * Todas las fechas de eventos, aperturas de publicidad, confirmaciones 24h y timestamps de check-in se guardan en UTC en base de datos pero se renderizan forzosamente en `America/Caracas` (UTC-4) mediante `fmtLocalTime` y `fmtLocalDate`.
+
+5. **Blindaje de Enlaces y Manejo Amigable de Errores 404:**
+   * Redirecciones automáticas en `next.config.mjs` para URLs comunes o aliases tecleados por usuarios (`/capacitacion`, `/capacitaciones`, `/inscripcion`, `/registro`, `/cursos`, `/encuesta`) hacia `/` o `/#registro-express`.
+   * Página `src/app/not-found.tsx` estilizada con la identidad corporativa OnProtec y botón de retorno inmediato.
 
 ---
 
@@ -113,6 +120,10 @@ flowchart TD
      * Aforo estricto de **solo 18 puestos VIP garantizados**.
      * Exige método de pago, referencia de transacción y **zona de carga de comprobante de pago (voucher/captura/PDF)**.
      * **Métodos de Pago Expresados:** La lista de métodos de pago en el formulario solo exhibe los expresamente configurados para ese curso.
+     * **Regla de Negocio para Pago en Efectivo en Tienda:**
+       * **Plazo de 48 Horas Post-Envío:** Al seleccionar *"Efectivo en Tienda OnProtec"*, el participante cuenta con un lapso máximo de 48 horas continuas para acudir a la Sede Corporativa y cancelar en caja; transcurrido este tiempo sin reporte, su reserva y cupo VIP son automáticamente anulados.
+       * **Restricción 48 Horas Pre-Evento:** A menos de 48 horas de la fecha y hora de inicio de la capacitación, el sistema inhabilita y bloquea la opción de efectivo en tienda, exigiendo únicamente medios de pago electrónicos inmediatos (Pago Móvil, Transferencia Bancaria o Binance Pay).
+       * **Avisos Informativos:** El formulario muestra banners preventivos destacados, la carga de comprobante se vuelve opcional al pagar en caja, y tanto el modal de confirmación como el texto de WhatsApp recuerdan el plazo perentorio de 48 horas.
      * **Confirmación Post-Envío:** Notifica de inmediato que el participante está **Formalmente Inscrito** con cupo VIP asegurado.
 * **Validación Anti-Duplicados:**
   * El sistema valida mediante normalización de caracteres que ningún número de Cédula o RIF (o correo electrónico) se registre más de una vez en la misma capacitación activa. Retorna error `409 Conflict` con indicaciones claras para contactar al equipo de OnProtec vía WhatsApp si requiere gestionar su registro.
