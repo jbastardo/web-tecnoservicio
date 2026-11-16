@@ -68,6 +68,7 @@ export default function HomePage() {
   const [submissionResult, setSubmissionResult] = useState<any | null>(null);
 
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [heroBannerMode, setHeroBannerMode] = useState<"dual" | "carousel">("dual");
 
   useEffect(() => {
     fetch("/api/capacitaciones?order=desc")
@@ -78,15 +79,42 @@ export default function HomePage() {
           const activeTrainings = data.data.filter(
             (t: any) => t.status === "Planificado" || t.status === "En Publicidad"
           );
-          // Priorizar EZVIZ de primera por solicitud expresa del usuario
-          const ezvizActive = activeTrainings.find(
-            (t: any) =>
-              (t.brand || "").toLowerCase().includes("ezviz") ||
-              (t.name || "").toLowerCase().includes("ezviz") ||
-              t.code === "CAP-2026-039"
-          );
+
+          // Soporte para campañas de marketing vía URL (?curso=ezviz / ?curso=dahua / ?id=39 / ?id=40)
+          let targetTraining: any = null;
+          if (typeof window !== "undefined") {
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryCurso = (urlParams.get("curso") || urlParams.get("c") || "").toLowerCase();
+            const queryId = urlParams.get("id") || urlParams.get("cap");
+
+            if (queryId) {
+              targetTraining = data.data.find(
+                (t: any) =>
+                  String(t.id) === queryId ||
+                  (t.code && t.code.toLowerCase().includes(queryId.toLowerCase()))
+              );
+            } else if (queryCurso) {
+              targetTraining = data.data.find(
+                (t: any) =>
+                  (t.brand || "").toLowerCase().includes(queryCurso) ||
+                  (t.name || "").toLowerCase().includes(queryCurso) ||
+                  (t.code || "").toLowerCase().includes(queryCurso)
+              );
+            }
+          }
+
+          if (!targetTraining) {
+            // Priorizar EZVIZ por defecto por solicitud del usuario
+            targetTraining = activeTrainings.find(
+              (t: any) =>
+                (t.brand || "").toLowerCase().includes("ezviz") ||
+                (t.name || "").toLowerCase().includes("ezviz") ||
+                t.code === "CAP-2026-039"
+            );
+          }
+
           const planned =
-            ezvizActive ||
+            targetTraining ||
             activeTrainings[0] ||
             data.data[0];
           setSelectedTraining(planned);
@@ -469,9 +497,132 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Columna Derecha (5 cols): Banner Carrusel de Fotos Rotantes con Clic Directo al Formulario */}
-            <div className="lg:col-span-5">
-              {carouselSlides.length > 0 ? (
+            {/* Columna Derecha (5 cols): 2 Banners de Convocatoria / Carrusel Rotante */}
+            <div className="lg:col-span-5 space-y-3">
+              {/* Barra de Control de Vista para Marketing */}
+              <div className="flex items-center justify-between gap-2 px-1">
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#f4730a] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#f4730a]" />
+                  <span>Convocatorias Oficiales ({openTrainings.length})</span>
+                </span>
+                {openTrainings.length >= 2 && (
+                  <div className="inline-flex rounded-xl p-0.5 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-[10px] font-extrabold">
+                    <button
+                      type="button"
+                      onClick={() => setHeroBannerMode("dual")}
+                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                        heroBannerMode === "dual"
+                          ? "bg-[#f4730a] text-white shadow-sm"
+                          : "text-slate-600 dark:text-slate-300 hover:text-black dark:hover:text-white"
+                      }`}
+                    >
+                      2 Banners
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHeroBannerMode("carousel")}
+                      className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                        heroBannerMode === "carousel"
+                          ? "bg-[#f4730a] text-white shadow-sm"
+                          : "text-slate-600 dark:text-slate-300 hover:text-black dark:hover:text-white"
+                      }`}
+                    >
+                      Carrusel
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {heroBannerMode === "dual" && openTrainings.length >= 2 ? (
+                /* Vista de 2 Banners en el Hero: 1 Banner para cada Formulario */
+                <div className="grid grid-cols-1 gap-3.5">
+                  {openTrainings.slice(0, 2).map((t, idx) => {
+                    const isSelected = selectedTraining?.id === t.id;
+                    const isPaid = Boolean(t.isPaid || (t.price && Number(t.price) > 0));
+                    const photo =
+                      t.coverImageUrl ||
+                      (Array.isArray(t.coverPhotos) && t.coverPhotos[0]) ||
+                      (idx === 0 ? "/brand/onprotec-hero-banner.avif" : "/brand/onprotec-hero-1920.webp");
+
+                    return (
+                      <div
+                        key={t.id}
+                        onClick={() => {
+                          setSelectedTraining(t);
+                          scrollToSection("formulario-oficial");
+                        }}
+                        className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 border-2 p-4 flex flex-col justify-between group min-h-[195px] shadow-md ${
+                          isSelected
+                            ? "border-[#f4730a] ring-3 ring-[#f4730a]/40 shadow-[0_8px_30px_rgba(244,115,10,0.3)] bg-slate-900"
+                            : "border-slate-300 dark:border-slate-800 hover:border-[#f4730a]/60 bg-slate-900/90 opacity-90 hover:opacity-100"
+                        }`}
+                      >
+                        <img
+                          src={photo}
+                          alt={t.name}
+                          className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:opacity-35 transition-transform duration-700 ease-out group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#06080e] via-[#090c16]/95 to-[#0b0e17]/80" />
+
+                        {/* Top Bar */}
+                        <div className="relative z-10 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-mono font-bold text-[#fdff00] bg-black/80 px-2 py-0.5 rounded border border-[#fdff00]/40">
+                              {t.code}
+                            </span>
+                            {t.brand && (
+                              <span className="text-[10px] font-black uppercase bg-[#2a285c] text-white px-2 py-0.5 rounded-full border border-white/20">
+                                {t.brand}
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
+                              isPaid
+                                ? "bg-amber-400 text-amber-950 font-black"
+                                : "bg-emerald-400 text-emerald-950 font-black"
+                            }`}
+                          >
+                            {isPaid ? `Inversión: ${formatCurrency(t.price)}` : "100% Gratuito"}
+                          </span>
+                        </div>
+
+                        {/* Middle Content */}
+                        <div className="relative z-10 space-y-1 my-2">
+                          <h4 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-1 drop-shadow-sm">
+                            {t.name}
+                          </h4>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] font-bold text-slate-200">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-[#f4730a]" />
+                              {fmtLocalDate(t.eventDate || t.startDate)}
+                            </span>
+                            <span className="flex items-center gap-1 text-cyan-300">
+                              <Clock className="w-3 h-3" />
+                              {fmtLocalHour(t.eventDate || t.startDate)} (Caracas)
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Action CTA */}
+                        <div className="relative z-10 pt-1">
+                          {isSelected ? (
+                            <div className="w-full py-2 px-3 bg-[#f4730a] text-white font-black text-[11px] uppercase tracking-wider rounded-xl shadow-sm flex items-center justify-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[#fdff00]" />
+                              <span>✓ Formulario Activo Abajo ↓</span>
+                            </div>
+                          ) : (
+                            <div className="w-full py-2 px-3 bg-white/15 group-hover:bg-[#f4730a] text-white font-bold text-[11px] uppercase tracking-wider rounded-xl border border-white/20 transition-all flex items-center justify-center gap-1.5">
+                              <span>👉 Llenar Formulario de {t.brand || "este curso"} ↓</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : carouselSlides.length > 0 ? (
+                /* Modo Carrusel */
                 <div
                   onMouseEnter={() => setIsCarouselHovered(true)}
                   onMouseLeave={() => setIsCarouselHovered(false)}
@@ -612,6 +763,122 @@ export default function HomePage() {
       ===================================================================== */}
       <section id="registro-express" className="py-12 lg:py-16 flex-1">
         <div className="max-w-[1580px] mx-auto px-4 sm:px-8">
+          {/* =============================================================
+              BANNERS PRINCIPALES DE SELECCIÓN DE CAPACITACIÓN & FORMULARIO
+          ============================================================= */}
+          {openTrainings.length >= 2 && (
+            <div className="mb-8 p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#13182b] border-2 border-slate-200 dark:border-slate-800 shadow-md">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="bg-[#f4730a] text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full shadow-sm">
+                      PASO 1 • SELECCIONA TU CAPACITACIÓN
+                    </span>
+                    <span className="text-xs font-mono font-bold text-slate-500">
+                      (2 Formaciones Activas en Sala VIP)
+                    </span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-black text-[#2a285c] dark:text-white mt-1">
+                    Elige la certificación a la que deseas asistir para cargar su formulario de datos:
+                  </h3>
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  <span>El formulario de abajo se adapta al curso seleccionado</span>
+                </div>
+              </div>
+
+              {/* Grid de 2 Banners Lado a Lado */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
+                {openTrainings.slice(0, 2).map((t, idx) => {
+                  const isSelected = selectedTraining?.id === t.id;
+                  const isPaid = Boolean(t.isPaid || (t.price && Number(t.price) > 0));
+                  const photo =
+                    t.coverImageUrl ||
+                    (Array.isArray(t.coverPhotos) && t.coverPhotos[0]) ||
+                    (idx === 0 ? "/brand/onprotec-hero-banner.avif" : "/brand/onprotec-hero-1920.webp");
+
+                  return (
+                    <div
+                      key={t.id}
+                      onClick={() => {
+                        setSelectedTraining(t);
+                        scrollToSection("formulario-oficial");
+                      }}
+                      className={`relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 border-3 flex flex-col justify-between min-h-[220px] sm:min-h-[250px] shadow-md group ${
+                        isSelected
+                          ? "border-[#f4730a] ring-4 ring-[#f4730a]/25 shadow-[0_16px_45px_rgba(244,115,10,0.30)] scale-[1.01]"
+                          : "border-slate-200 dark:border-slate-800 hover:border-[#f4730a]/60 dark:hover:border-slate-700 opacity-85 hover:opacity-100 hover:scale-[1.005]"
+                      }`}
+                    >
+                      {/* Foto Flyer de Fondo */}
+                      <img
+                        src={photo}
+                        alt={t.name}
+                        className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-transform duration-700 ease-out group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#06080e] via-[#090c16]/90 to-[#0b0e17]/80" />
+
+                      {/* Header del Banner */}
+                      <div className="relative z-10 p-4 sm:p-5 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono font-black text-[#fdff00] bg-black/80 px-2.5 py-0.5 rounded-md border border-[#fdff00]/40">
+                            {t.code}
+                          </span>
+                          {t.brand && (
+                            <span className="text-[10px] font-black uppercase bg-[#2a285c] text-white px-2.5 py-0.5 rounded-full border border-white/20">
+                              {t.brand}
+                            </span>
+                          )}
+                        </div>
+                        <span
+                          className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-sm ${
+                            isPaid
+                              ? "bg-amber-400 text-amber-950 font-black"
+                              : "bg-emerald-400 text-emerald-950 font-black"
+                          }`}
+                        >
+                          {isPaid ? `Inversión: ${formatCurrency(t.price)}` : "100% Gratuito"}
+                        </span>
+                      </div>
+
+                      {/* Contenido Central */}
+                      <div className="relative z-10 px-4 sm:px-5 space-y-1.5 my-auto">
+                        <h4 className="text-base sm:text-lg font-black text-white leading-snug drop-shadow-md line-clamp-2">
+                          {t.name}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-200">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5 text-[#f4730a]" />
+                            {fmtLocalDate(t.eventDate || t.startDate)}
+                          </span>
+                          <span className="flex items-center gap-1 text-cyan-300">
+                            <Clock className="w-3.5 h-3.5" />
+                            {fmtLocalHour(t.eventDate || t.startDate)} (Caracas)
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Footer Botón de Estado / Acción */}
+                      <div className="relative z-10 p-4 sm:p-5 pt-2">
+                        {isSelected ? (
+                          <div className="w-full py-2.5 px-4 bg-[#f4730a] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md flex items-center justify-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-[#fdff00]" />
+                            <span>✓ Formulario Activo Abajo (Llenar Datos) ↓</span>
+                          </div>
+                        ) : (
+                          <div className="w-full py-2.5 px-4 bg-white/15 group-hover:bg-[#f4730a] text-white font-bold text-xs uppercase tracking-wider rounded-xl border border-white/20 transition-all flex items-center justify-center gap-2">
+                            <span>👉 Clic para llenar Formulario de {t.brand || "esta capacitación"} ↓</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
             {/* -------------------------------------------------------------
                 COLUMNA IZQUIERDA (7 cols): CONVOCATORIA ACTUAL EN SALA VIP
@@ -800,13 +1067,13 @@ export default function HomePage() {
             {/* -------------------------------------------------------------
                 COLUMNA DERECHA (5 cols): FORMULARIO DE REGISTRO SIN FRICCIÓN
             ------------------------------------------------------------- */}
-            <div className="lg:col-span-5 lg:sticky lg:top-24">
+            <div id="formulario-oficial" className="lg:col-span-5 lg:sticky lg:top-24">
               <div className="bg-white dark:bg-[#13182b] rounded-3xl border-2 border-[#2a285c]/15 dark:border-slate-800 shadow-[0_20px_50px_rgba(42,40,92,0.10)] overflow-hidden">
                 {/* Cabecera del Formulario con Fecha y Sede */}
                 <div className="bg-gradient-to-r from-[#2a285c] to-[#1f1d47] text-white p-6 keep-white">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest bg-[#f4730a] text-white px-3 py-1 rounded-full keep-white shadow-sm">
-                      <Lock className="w-3 h-3" /> FORMULARIO OFICIAL
+                      <Lock className="w-3 h-3" /> FORMULARIO OFICIAL • {selectedTraining?.brand || "ONPROTEC"}
                     </span>
                     {selectedTraining && (
                       <span className="text-xs font-mono font-bold text-[#fdff00] keep-white bg-white/10 px-2.5 py-0.5 rounded-lg border border-white/20">
@@ -827,6 +1094,29 @@ export default function HomePage() {
                       Sede OnProtec Caracas (Acceso Privado)
                     </span>
                   </div>
+
+                  {/* Selector Rápido de Formulario Alterno si hay 2 convocatorias */}
+                  {openTrainings.length >= 2 && (
+                    <div className="mt-3 pt-2.5 border-t border-white/20 flex items-center justify-between gap-2 flex-wrap text-xs">
+                      <span className="text-[11px] text-slate-300 font-semibold">
+                        ¿Deseas inscribirte en el otro curso?
+                      </span>
+                      {openTrainings
+                        .filter((t) => t.id !== selectedTraining?.id)
+                        .slice(0, 1)
+                        .map((other) => (
+                          <button
+                            key={other.id}
+                            type="button"
+                            onClick={() => setSelectedTraining(other)}
+                            className="bg-white/20 hover:bg-[#f4730a] text-white px-3 py-1 rounded-xl font-black text-[11px] transition-all flex items-center gap-1.5 border border-white/30 cursor-pointer shadow-sm"
+                          >
+                            <span>Cambiar a: {other.brand || other.code}</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-6">
