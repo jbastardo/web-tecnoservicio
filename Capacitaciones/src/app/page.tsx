@@ -16,9 +16,6 @@ import {
   ExternalLink,
   Lock,
   ChevronDown,
-  UploadCloud,
-  FileCheck,
-  Trash2,
   CheckCircle2,
   Building2,
   Phone,
@@ -65,9 +62,8 @@ export default function HomePage() {
     email: "",
     company: "",
     city: "Caracas",
-    paymentMethod: "Binance Pay (Pabilo)",
+    paymentMethod: "Binance (Pabilo)",
     paymentReference: "",
-    paymentProofUrl: "",
     specialNotes: "",
   });
 
@@ -152,7 +148,7 @@ export default function HomePage() {
     setPabiloError(null);
     setForm((prev) => ({
       ...prev,
-      paymentMethod: "Binance Pay (Pabilo)",
+      paymentMethod: "Binance (Pabilo)",
     }));
   }, [selectedTraining?.id]);
 
@@ -191,7 +187,7 @@ export default function HomePage() {
     if (!selectedTraining) return;
     const cleanRef = form.paymentReference.trim();
     if (cleanRef.length < 4) {
-      setPabiloError("Ingresa el Nro. de Referencia / Order ID de Binance Pay (mínimo 4 caracteres) para validar.");
+      setPabiloError("Ingresa el Nro. de Referencia / Order ID de Binance (mínimo 4 caracteres) para validar.");
       setPabiloVerification(null);
       return;
     }
@@ -223,7 +219,7 @@ export default function HomePage() {
         setPabiloError(null);
       } else {
         setPabiloVerification(null);
-        setPabiloError(data.error || "No se pudo verificar el pago en Binance Pay.");
+        setPabiloError(data.error || "No se pudo verificar el pago en Binance.");
       }
     } catch {
       setPabiloVerification(null);
@@ -248,7 +244,7 @@ export default function HomePage() {
 
     if (isPaidCourse && !pabiloVerification?.verified) {
       const msg =
-        "Debes validar tu pago real de Binance Pay con Pabilo antes de continuar con la inscripción.";
+        "Debes validar tu pago real de Binance con Pabilo antes de continuar con la inscripción.";
       setPabiloError(msg);
       setSubmissionResult({ success: false, error: msg });
       scrollToSection("pago-binance-pabilo");
@@ -265,7 +261,7 @@ export default function HomePage() {
         body: JSON.stringify({
           trainingId: selectedTraining.id,
           ...form,
-          paymentMethod: isPaidCourse ? "Binance Pay (Pabilo)" : "Gratuito",
+          paymentMethod: isPaidCourse ? "Binance (Pabilo)" : "Gratuito",
           paymentDate,
           pabiloPaymentId: pabiloVerification?.paymentId || null,
           pabiloVerificationToken: pabiloVerification?.verificationToken || null,
@@ -321,9 +317,11 @@ export default function HomePage() {
     ? selectedTraining.formQuestions
     : [];
 
-  // Preguntas dinámicas para la sección 2 (omitiendo la pregunta de pago si ya se seleccionó en el bloque de cobro)
+  // Preguntas dinámicas para la sección 2 (omitiendo preguntas de pago o comprobantes de archivo, ya que Pabilo valida en línea)
   const displayFormQuestions = activeFormQuestions.filter(
-    (q) => !/método de pago|metodo de pago|forma de pago/i.test(q.label)
+    (q) =>
+      q.type !== "file" &&
+      !/método de pago|metodo de pago|forma de pago|comprobante/i.test(q.label)
   );
 
   const openTrainings = React.useMemo(() => {
@@ -495,7 +493,7 @@ export default function HomePage() {
           {/* =============================================================
               BANNERS PRINCIPALES DE SELECCIÓN DE CAPACITACIÓN & FORMULARIO
           ============================================================= */}
-          {openTrainings.length >= 2 && (
+          {openTrainings.length >= 1 && (
             <div className="mb-8 p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#13182b] border-2 border-slate-200 dark:border-slate-800 shadow-md">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                 <div>
@@ -504,7 +502,7 @@ export default function HomePage() {
                       PASO 1 • SELECCIONA TU CAPACITACIÓN
                     </span>
                     <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
-                      ({openTrainings.length} Formaciones Activas en Sala VIP)
+                      ({openTrainings.length} {openTrainings.length === 1 ? "Formación Activa" : "Formaciones Activas"} en Sala VIP)
                     </span>
                   </div>
                   <h2 className="text-lg sm:text-xl font-black text-[#2a285c] dark:text-white mt-1">
@@ -517,18 +515,23 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Grid de 2 Banners Lado a Lado */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
-                {openTrainings.slice(0, 2).map((t, idx) => {
+              {/* Grid Dinámico de Banners (1 por cada capacitación activa) */}
+              <div
+                className={`grid grid-cols-1 gap-5 lg:gap-6 ${
+                  openTrainings.length === 1
+                    ? "max-w-2xl mx-auto"
+                    : openTrainings.length === 2
+                    ? "md:grid-cols-2"
+                    : "md:grid-cols-2 lg:grid-cols-3"
+                }`}
+              >
+                {openTrainings.map((t, idx) => {
                   const isSelected = selectedTraining?.id === t.id;
                   const tIsPaid = Boolean(t.isPaid || (t.price && Number(t.price) > 0) || t.isFree === false);
-                  const tMaxSeats = tIsPaid ? 18 : Math.max(Number(t?.maxCapacity) || 40, 40);
-                  const tOccupied = Number(t?.stats?.totalOccupied ?? t?.occupiedCount ?? 0);
-                  const tAvailable = Math.max(0, tMaxSeats - tOccupied);
                   const photo =
                     t.coverImageUrl ||
                     (Array.isArray(t.coverPhotos) && t.coverPhotos[0]) ||
-                    (idx === 0 ? "/brand/onprotec-hero-banner.avif" : "/brand/onprotec-hero-1920.webp");
+                    (idx % 2 === 0 ? "/brand/onprotec-hero-banner.avif" : "/brand/onprotec-hero-1920.webp");
 
                   return (
                     <div
@@ -542,86 +545,87 @@ export default function HomePage() {
                           handleSelectBannerTraining(t);
                         }
                       }}
-                      className={`dark-banner-card relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 border-2 flex flex-col justify-between min-h-[270px] sm:min-h-[290px] bg-[#0b0e17] shadow-lg group ${
+                      className={`dark-banner-card relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 border-2 flex flex-col justify-between bg-[#0b0e17] shadow-lg group ${
                         isSelected
                           ? "border-[#f4730a] ring-4 ring-[#f4730a]/30 shadow-[0_16px_45px_rgba(244,115,10,0.32)] scale-[1.01]"
                           : "border-slate-700/80 hover:border-[#f4730a] opacity-95 hover:opacity-100 hover:scale-[1.005]"
                       }`}
                     >
-                      {/* Foto Flyer de Fondo con Opacidad Calibrada */}
-                      <img
-                        src={photo}
-                        alt={t.name}
-                        className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover:opacity-35 transition-all duration-700 ease-out group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#06080e] via-[#090c16]/90 to-[#0b0e17]/80" />
+                      {/* Bloque Superior: Imagen Llamativa Protagonista a Todo Color */}
+                      <div className="relative h-48 sm:h-52 w-full overflow-hidden bg-[#06080e]">
+                        <img
+                          src={photo}
+                          alt={t.name}
+                          className="w-full h-full object-cover object-center opacity-100 group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/75 via-black/35 to-transparent" />
 
-                      {/* Header del Banner */}
-                      <div className="relative z-10 p-4 sm:p-5 pb-2 flex items-center justify-between gap-2 flex-wrap">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] font-mono font-black text-[#fdff00] bg-black/85 px-2.5 py-0.5 rounded-md border border-[#fdff00]/40">
-                            {t.code}
-                          </span>
-                          {t.brand && (
-                            <span className="text-[10px] font-black uppercase bg-[#2a285c] text-white px-2.5 py-0.5 rounded-full border border-white/25">
-                              {t.brand}
+                        {/* Barra Flotante Superior de Badges */}
+                        <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] font-mono font-black text-[#fdff00] bg-black/85 px-2.5 py-0.5 rounded-md border border-[#fdff00]/40">
+                              {t.code}
                             </span>
-                          )}
-                          {isSelected && (
-                            <span className="text-[10px] font-black uppercase bg-emerald-500 text-white px-2.5 py-0.5 rounded-full shadow-sm">
-                              ✓ SELECCIONADO
-                            </span>
-                          )}
-                        </div>
-                        <span
-                          className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-sm ${
-                            tIsPaid ? "bg-amber-400" : "bg-emerald-400"
-                          }`}
-                        >
-                          {tIsPaid ? `Inversión: ${formatCurrency(t.price)}` : "100% Gratuito"}
-                        </span>
-                      </div>
-
-                      {/* Contenido Central Frosted de Alto Contraste */}
-                      <div className="relative z-10 mx-4 sm:mx-5 my-auto p-3.5 sm:p-4 rounded-2xl bg-[#070a14]/95 backdrop-blur-md border border-slate-600/80 shadow-xl space-y-2">
-                        <h4
-                          className="banner-title keep-white text-base sm:text-lg font-black text-white leading-snug drop-shadow-sm line-clamp-2"
-                          style={{ color: "#ffffff" }}
-                        >
-                          {t.name}
-                        </h4>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold">
-                          <span className="banner-meta flex items-center gap-1.5 text-slate-100">
-                            <Calendar className="w-3.5 h-3.5 text-[#f4730a] flex-shrink-0" />
-                            <span className="keep-white" style={{ color: "#f8fafc" }}>
-                              {fmtLocalDate(t.eventDate || t.startDate)}
-                            </span>
-                          </span>
+                            {t.brand && (
+                              <span className="text-[10px] font-black uppercase bg-[#2a285c] text-white px-2.5 py-0.5 rounded-full border border-white/25">
+                                {t.brand}
+                              </span>
+                            )}
+                            {isSelected && (
+                              <span className="text-[10px] font-black uppercase bg-emerald-500 text-white px-2.5 py-0.5 rounded-full shadow-sm">
+                                ✓ SELECCIONADO
+                              </span>
+                            )}
+                          </div>
                           <span
-                            className="banner-time flex items-center gap-1.5 text-cyan-300"
-                            style={{ color: "#67e8f9" }}
+                            className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full shadow-sm ${
+                              tIsPaid ? "bg-amber-400" : "bg-emerald-400"
+                            }`}
                           >
-                            <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span style={{ color: "#67e8f9" }}>
-                              {fmtLocalHour(t.eventDate || t.startDate)} (Caracas)
-                            </span>
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold pt-1 border-t border-white/15">
-                          <span
-                            className="banner-meta keep-white text-slate-200 truncate max-w-[65%]"
-                            style={{ color: "#f8fafc" }}
-                          >
-                            Instructor: {t.instructor || "Especialista Certificado OnProtec"}
-                          </span>
-                          <span className="text-[#fdff00] font-extrabold" style={{ color: "#fdff00" }}>
-                            {tAvailable > 0 ? `${tAvailable} cupos libres` : "Lista de espera"}
+                            {tIsPaid ? `Inversión: ${formatCurrency(t.price)}` : "100% Gratuito"}
                           </span>
                         </div>
                       </div>
 
-                      {/* Footer Botón de Acción Unificado */}
-                      <div className="relative z-10 p-4 sm:p-5 pt-2">
+                      {/* Bloque Inferior: Información y CTA en Fondo Oscuro Sólido */}
+                      <div className="p-4 sm:p-5 bg-[#0b0e17] border-t border-slate-800 flex-1 flex flex-col justify-between space-y-3">
+                        <div className="space-y-2">
+                          <h4
+                            className="banner-title keep-white text-base sm:text-lg font-black text-white leading-snug drop-shadow-sm line-clamp-2"
+                            style={{ color: "#ffffff" }}
+                          >
+                            {t.name}
+                          </h4>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold">
+                            <span className="banner-meta flex items-center gap-1.5 text-slate-100">
+                              <Calendar className="w-3.5 h-3.5 text-[#f4730a] flex-shrink-0" />
+                              <span className="keep-white" style={{ color: "#f8fafc" }}>
+                                {fmtLocalDate(t.eventDate || t.startDate)}
+                              </span>
+                            </span>
+                            <span
+                              className="banner-time flex items-center gap-1.5 text-cyan-300"
+                              style={{ color: "#67e8f9" }}
+                            >
+                              <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span style={{ color: "#67e8f9" }}>
+                                {fmtLocalHour(t.eventDate || t.startDate)} (Caracas)
+                              </span>
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold pt-1.5 border-t border-white/15">
+                            <span
+                              className="banner-meta keep-white text-slate-200 truncate max-w-[60%]"
+                              style={{ color: "#f8fafc" }}
+                            >
+                              Instructor: {t.instructor || "Especialista Certificado OnProtec"}
+                            </span>
+                            <span className="text-[#fdff00] font-extrabold" style={{ color: "#fdff00" }}>
+                              Aforo: 18 puestos
+                            </span>
+                          </div>
+                        </div>
+
                         <button
                           type="button"
                           onClick={(e) => {
@@ -652,6 +656,18 @@ export default function HomePage() {
               {/* Ficha Ejecutiva del Evento Seleccionado */}
               {selectedTraining ? (
                 <div className="bg-white dark:bg-[#13182b] rounded-3xl border-2 border-slate-200/90 dark:border-slate-800 shadow-md overflow-hidden">
+                  {/* Foto Llamativa de la Capacitación Seleccionada */}
+                  {(selectedTraining.coverImageUrl ||
+                    (Array.isArray(selectedTraining.coverPhotos) && selectedTraining.coverPhotos[0])) && (
+                    <div className="w-full max-h-[340px] overflow-hidden bg-[#070a14] border-b border-slate-200 dark:border-slate-800">
+                      <img
+                        src={selectedTraining.coverImageUrl || selectedTraining.coverPhotos[0]}
+                        alt={selectedTraining.name || selectedTraining.title}
+                        className="w-full max-h-[340px] object-cover object-center"
+                      />
+                    </div>
+                  )}
+
                   {/* Cabecera del Evento */}
                   <div className="bg-[#2a285c] text-white p-6 sm:p-7 keep-white">
                     <div className="flex items-center justify-between gap-3 mb-2.5 flex-wrap">
@@ -714,47 +730,27 @@ export default function HomePage() {
                       </div>
                     </div>
 
-                    {/* Termómetro de Cupos & Política de Aforo */}
+                    {/* Capacidad de Sala VIP */}
                     <div className="p-4 rounded-2xl bg-orange-50/70 dark:bg-orange-500/10 border border-[#f4730a]/30 space-y-2">
                       <div className="flex items-center justify-between text-xs font-bold">
                         <span className="text-[#2a285c] dark:text-slate-200 flex items-center gap-1.5">
                           <Users className="w-4 h-4 text-[#f4730a]" />
-                          {isPaidCourse
-                            ? "Aforo Estricto de Sala (18 puestos VIP)"
-                            : "Pre-inscripción Abierta (Meta: hasta 40 registrados)"}
+                          Capacidad de Sala VIP
                         </span>
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-black ${
-                            availableSeats > 0
-                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
-                              : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
-                          }`}
-                        >
-                          {availableSeats > 0
-                            ? isPaidCourse
-                              ? `${availableSeats} puestos libres de 18`
-                              : `${occupiedSeats} de ${maxSeats} pre-inscritos`
-                            : "Lista de espera activa"}
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
+                          Aforo: 18 puestos
                         </span>
                       </div>
 
                       <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-[#f4730a] to-[#2a285c] rounded-full transition-all duration-500"
-                          style={{ width: `${Math.max(10, occupancyPct)}%` }}
+                          style={{ width: `${Math.max(15, occupancyPct)}%` }}
                         />
                       </div>
 
                       <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
-                        {isPaidCourse ? (
-                          <>
-                            <strong>Inscripción con asiento garantizado:</strong> Solo 18 puestos VIP disponibles con verificación de comprobante de pago.
-                          </>
-                        ) : (
-                          <>
-                            <strong>Convocatoria abierta para reconfirmación:</strong> Se permite registrar hasta 40 participantes para reconfirmar telefónicamente a los <strong>18 asistentes físicos</strong> que ingresarán a sala (compensando el No-Show habitual).
-                          </>
-                        )}
+                        Sala técnica corporativa equipada con <strong>18 puestos de trabajo individuales</strong> con equipos reales energizados en vivo.
                       </p>
                     </div>
 
@@ -832,26 +828,27 @@ export default function HomePage() {
                     </span>
                   </div>
 
-                  {/* Selector Rápido de Formulario Alterno si hay 2 convocatorias */}
+                  {/* Selector Rápido de Formularios Alternos */}
                   {openTrainings.length >= 2 && (
                     <div className="mt-3 pt-2.5 border-t border-white/20 flex items-center justify-between gap-2 flex-wrap text-xs">
                       <span className="text-[11px] text-slate-300 font-semibold">
-                        ¿Deseas inscribirte en el otro curso?
+                        ¿Deseas inscribirte en otro curso?
                       </span>
-                      {openTrainings
-                        .filter((t) => t.id !== selectedTraining?.id)
-                        .slice(0, 1)
-                        .map((other) => (
-                          <button
-                            key={other.id}
-                            type="button"
-                            onClick={() => setSelectedTraining(other)}
-                            className="bg-white/20 hover:bg-[#f4730a] text-white px-3 py-1 rounded-xl font-black text-[11px] transition-all flex items-center gap-1.5 border border-white/30 cursor-pointer shadow-sm"
-                          >
-                            <span>Cambiar a: {other.brand || other.code}</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        ))}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {openTrainings
+                          .filter((t) => t.id !== selectedTraining?.id)
+                          .map((other) => (
+                            <button
+                              key={other.id}
+                              type="button"
+                              onClick={() => setSelectedTraining(other)}
+                              className="bg-white/20 hover:bg-[#f4730a] text-white px-3 py-1 rounded-xl font-black text-[11px] transition-all flex items-center gap-1.5 border border-white/30 cursor-pointer shadow-sm"
+                            >
+                              <span>Cambiar a: {other.brand && other.brand !== "OnProtec" ? other.brand : other.code}</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+                          ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1007,50 +1004,6 @@ export default function HomePage() {
                                         </option>
                                       ))}
                                     </select>
-                                  ) : q.type === "file" ? (
-                                    <div className="space-y-2">
-                                      {customAnswers[q.id] ? (
-                                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-emerald-500">
-                                          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 truncate">
-                                            <FileCheck className="w-4 h-4 flex-shrink-0" />
-                                            Archivo cargado exitosamente
-                                          </span>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const next = { ...customAnswers };
-                                              delete next[q.id];
-                                              setCustomAnswers(next);
-                                            }}
-                                            className="text-rose-500 hover:text-rose-700 p-1"
-                                          >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl cursor-pointer hover:border-[#f4730a] text-xs font-bold text-slate-600 dark:text-slate-400">
-                                          <UploadCloud className="w-4 h-4 text-[#f4730a]" />
-                                          <span>Clic para adjuntar archivo o comprobante (Máx 8MB)</span>
-                                          <input
-                                            type="file"
-                                            accept="image/*,application/pdf"
-                                            required={q.required}
-                                            className="hidden"
-                                            onChange={(e) => {
-                                              const f = e.target.files?.[0];
-                                              if (!f) return;
-                                              const reader = new FileReader();
-                                              reader.onload = (ev) => {
-                                                const b64 = ev.target?.result as string;
-                                                setCustomAnswers((prev) => ({ ...prev, [q.id]: b64 }));
-                                                setForm((prev) => ({ ...prev, paymentProofUrl: b64 }));
-                                              };
-                                              reader.readAsDataURL(f);
-                                            }}
-                                          />
-                                        </label>
-                                      )}
-                                    </div>
                                   ) : (
                                     <input
                                       type="text"
@@ -1069,7 +1022,7 @@ export default function HomePage() {
                           </div>
                         )}
 
-                        {/* GRUPO 3: VALIDACIÓN OBLIGATORIA DE PAGO BINANCE PAY + PABILO */}
+                        {/* GRUPO 3: VALIDACIÓN OBLIGATORIA DE PAGO BINANCE + PABILO */}
                         {isPaidCourse && (
                           <div
                             id="pago-binance-pabilo"
@@ -1078,26 +1031,26 @@ export default function HomePage() {
                             <div className="flex items-center justify-between gap-2">
                               <span className="text-xs font-black text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
                                 <CreditCard className="w-4 h-4 text-[#f4730a]" />
-                                3. Pago Obligatorio Binance Pay (Pabilo)
+                                3. Pago Obligatorio Binance (Pabilo)
                               </span>
                               <span className="text-base font-black text-amber-950 dark:text-amber-200">
                                 {formatCurrency(selectedTraining.price)} USDT
                               </span>
                             </div>
 
-                            {/* Datos Oficiales de Onprotec Binance Pay */}
+                            {/* Datos Oficiales de Onprotec Binance */}
                             <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 space-y-2 text-xs">
                               <div className="flex items-center justify-between gap-2">
                                 <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">
                                   Cuenta Oficial:
                                 </span>
                                 <span className="font-black text-[#2a285c] dark:text-white">
-                                  Onprotec Binance (Binance Pay)
+                                  Onprotec Binance
                                 </span>
                               </div>
                               <div className="flex items-center justify-between gap-2">
                                 <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">
-                                  Binance Pay ID:
+                                  Binance ID:
                                 </span>
                                 <div className="flex items-center gap-2">
                                   <code className="font-mono font-black text-sm text-[#f4730a] bg-orange-50 dark:bg-orange-500/15 px-2.5 py-0.5 rounded-lg border border-[#f4730a]/30">
@@ -1122,7 +1075,7 @@ export default function HomePage() {
                                 </span>
                               </div>
                               <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">
-                                Transfiere el monto exacto por Binance Pay y valida abajo con los últimos dígitos o el Order ID completo.
+                                Transfiere el monto exacto por Binance y valida abajo con los últimos dígitos de la referencia o el Order ID.
                               </p>
                             </div>
 
@@ -1175,7 +1128,7 @@ export default function HomePage() {
                               {verifyingPayment ? (
                                 <>
                                   <Loader2 className="w-4 h-4 animate-spin" />
-                                  <span>Consultando Binance Pay en Pabilo...</span>
+                                  <span>Consultando Binance en Pabilo...</span>
                                 </>
                               ) : (
                                 <>
@@ -1200,7 +1153,7 @@ export default function HomePage() {
                               <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-400 text-amber-950 dark:text-amber-200 text-[11px] flex items-start gap-2">
                                 <Lock className="w-4 h-4 text-[#f4730a] shrink-0 mt-0.5" />
                                 <p className="leading-snug font-semibold">
-                                  <strong>Validación obligatoria:</strong> Debes validar tu pago real en Binance Pay mediante Pabilo para desbloquear el envío de tu inscripción.
+                                  <strong>Validación obligatoria:</strong> Debes validar tu pago real en Binance mediante Pabilo para desbloquear el envío de tu inscripción.
                                 </p>
                               </div>
                             )}
@@ -1209,7 +1162,7 @@ export default function HomePage() {
                               <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border-2 border-emerald-500 text-emerald-950 dark:text-emerald-200 text-xs space-y-1 shadow-sm">
                                 <div className="flex items-center gap-2 font-black text-emerald-800 dark:text-emerald-300">
                                   <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                  <span>✅ PAGO REAL VERIFICADO EN BINANCE PAY VÍA PABILO</span>
+                                  <span>✅ PAGO REAL VERIFICADO EN BINANCE VÍA PABILO</span>
                                 </div>
                                 <div className="text-[11px] font-mono flex flex-wrap items-center gap-x-4 gap-y-1 text-emerald-900 dark:text-emerald-200">
                                   <span>ID Pabilo: #{pabiloVerification.paymentId}</span>
@@ -1218,64 +1171,6 @@ export default function HomePage() {
                                 </div>
                               </div>
                             )}
-
-                            {/* Carga Opcional de Comprobante de Pago */}
-                            <div className="pt-2 border-t border-amber-200 dark:border-amber-500/20">
-                              <label className="block text-[11px] font-extrabold text-amber-900 dark:text-amber-200 mb-1.5 flex items-center gap-1.5">
-                                <UploadCloud className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                                <span>Adjuntar Captura de Binance (Opcional)</span>
-                              </label>
-
-                              {form.paymentProofUrl ? (
-                                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-400 dark:border-emerald-600 shadow-sm">
-                                  <div className="flex items-center gap-2 truncate">
-                                    {form.paymentProofUrl.startsWith("data:image/") ? (
-                                      <img
-                                        src={form.paymentProofUrl}
-                                        alt="Comprobante"
-                                        className="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700 flex-shrink-0"
-                                      />
-                                    ) : (
-                                      <FileCheck className="w-8 h-8 text-emerald-600 flex-shrink-0" />
-                                    )}
-                                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 truncate">
-                                      Comprobante adjuntado listo
-                                    </span>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => setForm({ ...form, paymentProofUrl: "" })}
-                                    className="p-1.5 text-rose-500 hover:text-rose-700"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              ) : (
-                                <label className="flex flex-col items-center justify-center p-2.5 border-2 border-dashed border-amber-300 dark:border-amber-500/40 hover:border-amber-500 rounded-xl bg-white/70 dark:bg-slate-900/60 cursor-pointer transition text-center">
-                                  <UploadCloud className="w-4 h-4 text-amber-600 mb-0.5" />
-                                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                                    Clic para adjuntar captura (JPG, PNG o PDF - Máx 8MB)
-                                  </span>
-                                  <input
-                                    type="file"
-                                    accept="image/*,application/pdf"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (!file) return;
-                                      const reader = new FileReader();
-                                      reader.onload = (ev) => {
-                                        setForm((prev) => ({
-                                          ...prev,
-                                          paymentProofUrl: ev.target?.result as string,
-                                        }));
-                                      };
-                                      reader.readAsDataURL(file);
-                                    }}
-                                  />
-                                </label>
-                              )}
-                            </div>
                           </div>
                         )}
 
@@ -1468,28 +1363,16 @@ export default function HomePage() {
                   ¡Inscripción Formalmente Confirmada!
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                  Hemos recibido tus datos y tu reporte de pago exitosamente. Tu cupo en la Sala VIP (aforo estricto de 18 puestos) ha quedado reservado y formalmente garantizado al reportar tu comprobante.
+                  Hemos recibido tus datos y validado tu pago en Binance en tiempo real mediante Pabilo. Tu cupo en la Sala VIP (aforo de 18 puestos) ha quedado confirmado y garantizado.
                 </p>
                 <div className="p-3.5 bg-emerald-50/80 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl text-left text-xs space-y-1">
                   <p className="font-extrabold text-emerald-900 dark:text-emerald-200">
                     ¿Qué sigue a continuación?
                   </p>
                   <p className="text-emerald-800 dark:text-emerald-300 text-[11px] leading-snug">
-                    Nuestro equipo verificará el reporte de pago. El equipo de OnProtec se comunicará contigo vía WhatsApp en breve para confirmar los detalles finales y enviarte las instrucciones privadas de acceso a la sala.
+                    Tu pago en Binance ya fue conciliado automáticamente. El equipo de OnProtec se comunicará contigo vía WhatsApp en breve para enviarte las instrucciones privadas de acceso a la sala.
                   </p>
                 </div>
-
-                {form.paymentMethod.toLowerCase().includes("efectivo") && (
-                  <div className="p-3 bg-amber-500/20 border-2 border-amber-500 rounded-2xl text-left text-xs space-y-1">
-                    <p className="font-extrabold text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
-                      <AlertTriangle className="w-4 h-4 text-[#f4730a]" />
-                      Plazo máximo de 48h para pago en tienda
-                    </p>
-                    <p className="text-amber-900 dark:text-amber-300 text-[11px] leading-snug">
-                      Dispones de <strong>48 horas continuas</strong> para acudir a nuestra tienda OnProtec (Sede Corporativa) y formalizar tu pago en efectivo en caja. De lo contrario, tu solicitud y cupo serán <strong>anulados automáticamente</strong>.
-                    </p>
-                  </div>
-                )}
               </div>
             ) : submissionResult.isWaitlist ? (
               <div className="text-center space-y-3">
@@ -1569,7 +1452,7 @@ export default function HomePage() {
                   <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-[11px] pt-1 border-t border-slate-200 dark:border-slate-800">
                     <span>Método de Pago:</span>
                     <strong className="text-emerald-700 dark:text-emerald-400">
-                      Binance Pay (Verificado Pabilo)
+                      Binance (Verificado Pabilo)
                     </strong>
                   </div>
                   {(submissionResult.data?.pabiloTransactionId || pabiloVerification?.paymentId) && (
@@ -1592,11 +1475,7 @@ export default function HomePage() {
                     isPaidCourse ? "inscripción" : "pre-inscripción"
                   } para la capacitación ${selectedTraining?.code} - ${selectedTraining?.name}. Mi nombre es ${form.name} (CI: ${form.docType}-${form.docNumber}).${
                     isPaidCourse
-                      ? ` Método de pago: ${form.paymentMethod}${
-                          form.paymentMethod.toLowerCase().includes("efectivo")
-                            ? " (Plazo máx. 48h para pagar en tienda)"
-                            : ""
-                        }.`
+                      ? ` Método de pago: Binance (Verificado Pabilo • Ref: ${form.paymentReference}).`
                       : ""
                   }`
                 )}`}

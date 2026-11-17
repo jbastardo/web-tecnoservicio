@@ -27,9 +27,9 @@ export interface PabiloVerificationResult {
 
 const PABILO_ERROR_MESSAGES: Record<string, string> = {
   PAYMENT_NOT_FOUND:
-    "El pago no fue encontrado en la cuenta Binance Pay de OnProtec. Verifica el Nro. de Referencia / Order ID, la fecha del pago y que hayas transferido el monto exacto.",
+    "El pago no fue encontrado en la cuenta Binance de OnProtec. Verifica el Nro. de Referencia / Order ID, la fecha del pago y que hayas transferido el monto exacto.",
   PAYMENT_AMOUNT_NOT_VALID:
-    "La referencia existe en Binance Pay, pero el monto transferido no coincide con el valor exacto de esta capacitación.",
+    "La referencia existe en Binance, pero el monto transferido no coincide con el valor exacto de esta capacitación.",
   NOT_ENOUGH_CREDITS:
     "Servicio de validación Pabilo sin créditos disponibles temporalmente. Contacta a soporte OnProtec.",
   USER_BANK_IS_DISABLED:
@@ -51,7 +51,7 @@ const PABILO_ERROR_MESSAGES: Record<string, string> = {
   REQUEST_LIMIT_REACHED:
     "Límite de consultas del plan de Pabilo alcanzado temporalmente.",
   ALREADY_CONSUMED:
-    "Este pago de Binance Pay ya fue utilizado anteriormente para registrar otra inscripción.",
+    "Este pago de Binance ya fue utilizado anteriormente para registrar otra inscripción.",
 };
 
 export function getCaracasTodayDate(): string {
@@ -154,7 +154,7 @@ export class PabiloService {
   }
 
   /**
-   * Verifica un pago real contra la cuenta Binance Pay de OnProtec en Pabilo (endpoint betaserio)
+   * Verifica un pago real contra la cuenta Binance de OnProtec en Pabilo (endpoint betaserio)
    */
   async verifyPayment(
     reference: string,
@@ -264,7 +264,7 @@ export class PabiloService {
             currency: "USD",
             fechaPago: resolvedFecha,
             errorCode: "",
-            message: "Pago real en Binance Pay validado exitosamente por Pabilo.",
+            message: "Pago real en Binance validado exitosamente por Pabilo.",
           };
         }
 
@@ -286,7 +286,7 @@ export class PabiloService {
       const mappedMessage =
         PABILO_ERROR_MESSAGES[errorCode] ||
         body?.message ||
-        "No se pudo verificar el pago en Binance Pay.";
+        "No se pudo verificar el pago en Binance.";
 
       console.warn(
         `[PabiloService] Verificación rechazada Ref=${cleanRef}: ${errorCode} - ${body?.message || mappedMessage}`
@@ -318,7 +318,7 @@ export class PabiloService {
         fechaPago: resolvedFecha,
         errorCode: isTimeout ? "TIMEOUT" : "CONNECTION_ERROR",
         message: isTimeout
-          ? "La consulta a Binance Pay / Pabilo excedió el tiempo de espera. Intenta verificar nuevamente en unos segundos."
+          ? "La consulta a Binance / Pabilo excedió el tiempo de espera. Intenta verificar nuevamente en unos segundos."
           : "No se pudo conectar con Pabilo para validar el pago. Verifica tu conexión e intenta de nuevo.",
       };
     }

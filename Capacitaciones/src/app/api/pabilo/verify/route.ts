@@ -15,7 +15,7 @@ export async function POST(request: Request) {
           verified: false,
           errorCode: "INVALID_INPUT",
           error:
-            "Debes indicar la capacitación y una referencia / Order ID válida de Binance Pay (mínimo 4 caracteres).",
+            "Debes indicar la capacitación y una referencia / Order ID válida de Binance (mínimo 4 caracteres).",
         },
         { status: 400 }
       );
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
           verified: false,
           errorCode: "ALREADY_CONSUMED",
           error:
-            "Este pago de Binance Pay ya fue utilizado anteriormente para registrar otra inscripción.",
+            "Este pago de Binance ya fue utilizado anteriormente para registrar otra inscripción.",
         },
         { status: 409 }
       );
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
           success: false,
           verified: false,
           errorCode: result.errorCode || "VERIFICATION_FAILED",
-          error: result.message || "No se pudo verificar el pago en Binance Pay.",
+          error: result.message || "No se pudo verificar el pago en Binance.",
         },
         { status: 400 }
       );
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
           success: false,
           verified: false,
           errorCode: "ALREADY_CONSUMED",
-          error: "Este pago de Binance Pay ya fue registrado en otra inscripción.",
+          error: "Este pago de Binance ya fue registrado en otra inscripción.",
         },
         { status: 409 }
       );

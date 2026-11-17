@@ -739,11 +739,21 @@ export default function CapacitacionesAdminPage() {
                           <button
                             type="button"
                             onClick={() => openEditModal(t, "general")}
-                            className="px-2.5 py-1.5 bg-brand-600/20 hover:bg-brand-600/30 text-brand-300 border border-brand-500/40 rounded-lg text-xs font-bold flex items-center gap-1 transition"
+                            className="px-2.5 py-1.5 bg-brand-600/20 hover:bg-brand-600/30 text-brand-300 border border-brand-500/40 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer"
                             title="Editar Capacitación, Preguntas, Portada y Notas"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                             <span>Editar</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(t, "portada")}
+                            className="px-2.5 py-1.5 bg-[#f4730a]/15 hover:bg-[#f4730a]/30 text-[#f4730a] border border-[#f4730a]/40 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer"
+                            title="Subir o cambiar la foto llamativa del banner principal"
+                          >
+                            <ImageIcon className="w-3.5 h-3.5" />
+                            <span>🖼️ Foto Banner</span>
                           </button>
 
                           <button
@@ -1130,6 +1140,60 @@ export default function CapacitacionesAdminPage() {
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                       className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-medium focus:border-brand-500"
                     />
+                  </div>
+
+                  {/* Foto Llamativa del Banner Principal */}
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-24 h-16 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 flex-shrink-0 flex items-center justify-center">
+                        {formData.coverImageUrl || formData.coverPhotos[0] ? (
+                          <img
+                            src={formData.coverImageUrl || formData.coverPhotos[0]}
+                            alt="Preview Banner"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <ImageIcon className="w-6 h-6 text-slate-600" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-black text-white block">
+                          🖼️ Foto Llamativa del Banner Principal
+                        </span>
+                        <span className="text-[11px] text-slate-400 block leading-snug">
+                          Imagen destacada a todo color que aparece en el banner de inicio para atraer instaladores.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <label className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#f4730a] hover:bg-[#ef7922] text-white text-xs font-black shadow transition">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Subir / Cambiar Foto del Banner</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              const dataUrl = ev.target?.result as string;
+                              if (dataUrl) {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  coverImageUrl: dataUrl,
+                                  coverPhotos: [dataUrl, ...prev.coverPhotos.filter((p) => p !== dataUrl)],
+                                }));
+                                notify("Foto llamativa del banner actualizada.");
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                      </label>
+                    </div>
                   </div>
 
                   {/* MODALIDAD DE ACCESO Y COBRO (REGLA DE NEGOCIO ONPROTEC) */}

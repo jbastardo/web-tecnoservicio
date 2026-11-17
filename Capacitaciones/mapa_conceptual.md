@@ -74,16 +74,16 @@ flowchart TD
 
 ## 3. Características Globales y Filosofía UX/UI
 
-1. **Widescreen-First, Hero Centrado & Sistema de 2 Banners Duales:**
+1. **Widescreen-First, Hero Centrado & Grid Dinámico de Banners por Capacitación:**
    * En pantallas de escritorio (1080p, 1440p, laptops), la información de primer nivel y métricas críticas se presentan con alta legibilidad y flujo visual directo sin duplicidades.
-   * **Hero Corporativo Centrado (`max-w-4xl mx-auto`):** Encabezado ejecutivo limpio centrado con altura compacta (`py-7 lg:py-9`) para mostrar de inmediato la propuesta de valor de la Sala Técnica VIP OnProtec y permitir que los 2 Banners de selección queden visibles desde el primer pantallazo.
-   * **Sistema de 2 Banners de Convocatoria (Uno para cada Formulario) en `#registro-express`:**
-     * Diseñado para facilitar la identificación visual inmediata de las certificaciones concurrentes (ej. EZVIZ y Dahua) sin bloques duplicados en el Hero.
-     * Despliega un bloque de ancho completo con los **2 Banners Principales de Inscripción** lado a lado (`grid-cols-1 md:grid-cols-2`).
-     * Cada banner incluye tarjeta central frosted (`bg-[#0b0e17]/90`) con título blanco de alto contraste, fecha, horario Caracas, instructor, cupos libres, badge de inversión/gratuidad y distintivo `✓ SELECCIONADO` en la convocatoria activa.
-     * **Botones Unificados y Enfoque Directo:** Ambos banners incorporan al pie un botón accionable claro *"✍️ Clic para llenar formulario • [Marca/Código] ↓"*. Al hacer clic, selecciona esa capacitación, actualiza temario/preguntas/pagos, desplaza fluidamente hacia `#formulario-oficial` y coloca el foco en el campo inicial del formulario (`#input-participant-name`).
-     * **En la Cabecera del Formulario (`#formulario-oficial`):** Indica con total claridad cuál curso se está completando e incorpora un botón rápido de conmutación: *"¿Deseas inscribirte en el otro curso? Cambiar a: [Marca/Código]"*.
-     * **Soporte de Campañas de Marketing por URL:** Reconoce parámetros de enlace para anuncios (`/?curso=ezviz`, `/?curso=dahua`, `/?id=39`, `/?id=40`), cargando y seleccionando automáticamente la capacitación y el formulario respectivo.
+   * **Hero Corporativo Centrado (`max-w-4xl mx-auto`):** Encabezado ejecutivo limpio centrado con altura compacta (`py-7 lg:py-9`) para mostrar de inmediato la propuesta de valor de la Sala Técnica VIP OnProtec y permitir que los banners de selección queden visibles desde el primer pantallazo.
+   * **Banners Individuales por Cada Capacitación Activa en `#registro-express`:**
+     * Muestra un banner dedicado por **cada capacitación activa** (`Planificado` / `En Publicidad`), adaptando las columnas del grid automáticamente (`grid-cols-1`, `md:grid-cols-2` o `lg:grid-cols-3`) cuando hay 1, 2, 3 o más convocatorias simultáneas.
+     * Cada banner luce en su bloque superior la **foto llamativa a todo color (`opacity-100`)** configurada para el curso (editable directamente desde la pestaña principal y listado de `/admin/capacitaciones`), acompañada de una barra superior flotante con código, marca, `✓ SELECCIONADO` e inversión/gratuidad.
+     * Su bloque inferior sólido (`#0b0e17`) muestra el título blanco de alto contraste, fecha, horario Caracas, instructor y etiqueta uniforme **`Aforo: 18 puestos`** (sin mostrar textos de 40 cupos libres).
+     * **Botones Unificados y Enfoque Directo:** Todos los banners incorporan al pie el botón *"✍️ Clic para llenar formulario • [Marca/Código] ↓"*. Al hacer clic, selecciona esa capacitación, actualiza la foto destacada y temario de la ficha izquierda, desplaza fluidamente hacia `#formulario-oficial` y enfoca `#input-participant-name`.
+     * **En la Cabecera del Formulario (`#formulario-oficial`):** Indica qué curso se está completando e incorpora botones de cambio rápido hacia todas las demás capacitaciones abiertas.
+     * **Soporte de Campañas de Marketing por URL:** Reconoce parámetros de enlace para anuncios (`/?curso=ezviz`, `/?curso=dahua`, `/?id=39`, `/?id=40`, `/?id=41`), cargando automáticamente la capacitación y el formulario respectivo.
    * **Prioridad Visual de la Convocatoria EZVIZ:** Por directriz operativa, la capacitación de certificación oficial EZVIZ (`CAP-2026-039`) se posiciona **de primera** tanto en el orden de convocatorias activas como pre-seleccionada por defecto en el formulario `#registro-express`, seguida cronológicamente por las demás capacitaciones según su fecha de inicio más próxima.
    * **Blindaje Anti-Colisión en Banners (`.dark-banner-card`):** La clase `.dark-banner-card` y sus reglas dedicadas en `globals.css` garantizan texto blanco (`#ffffff`), horario cian (`#67e8f9`) y badges de inversión (`#090d16` sobre `.bg-amber-400`/`.bg-emerald-400`) con contraste perfecto tanto en Modo Claro como en Modo Oscuro.
    * La Landing Page pública funciona como la **carta de presentación ejecutiva de la Sala de Capacitaciones OnProtec**, con layout split-view inferior (7 cols ficha técnica/temario, 5 cols formulario oficial con comprobante de pago).
@@ -124,9 +124,9 @@ flowchart TD
      * Solo si la pre-inscripción supera los 40 registros entra en estado **`Lista de Espera`**.
      * **Confirmación Post-Envío:** Informa claramente que el participante está **Pre-inscrito**, explicando que se realiza una preselección de asistentes para garantizar la rotación y diversidad de técnicos en sala antes de remitir la invitación formal.
   2. **Actividades Cobradas / Pagas (`isFree = false` o `price > 0`):**
-     * Aforo estricto de **solo 18 puestos VIP garantizados**.
-     * **Validación Real Obligatoria vía Pabilo + Binance Pay (`betaserio`):**
-       * El formulario exige pago electrónico en tiempo real hacia la cuenta oficial **Onprotec Binance (`Binance Pay ID: 1076181690`, `pabilo_id: 6a8628f7ea21f60026765c37`)** por el monto exacto en USD/USDT de la capacitación.
+     * Aforo estricto de **solo 18 puestos VIP garantizados** (en la interfaz pública todas las fichas muestran únicamente `Aforo: 18 puestos`).
+     * **Validación Real Obligatoria vía Pabilo + Binance (`betaserio`) sin carga redundante de imagen:**
+       * El formulario exige pago electrónico en tiempo real hacia la cuenta oficial **Onprotec Binance (`Binance ID: 1076181690`, `pabilo_id: 6a8628f7ea21f60026765c37`)** por el monto exacto en USD/USDT de la capacitación (sin solicitar adjuntar captura/comprobante de imagen, dado que Pabilo valida el abono real en línea).
        * Al ingresar la referencia/Order ID y la fecha del pago (hora Caracas), el botón **"⚡ Validar Pago en Binance con Pabilo"** consulta `POST /api/pabilo/verify` $\rightarrow$ `POST https://api.pabilo.app/userbankpayment/6a8628f7ea21f60026765c37/betaserio` con cabecera `appKey`.
        * **Bloqueo Estricto:** Tanto la UI (`src/app/page.tsx`) como el backend (`POST /api/inscripciones`) impiden continuar o registrar la inscripción si `status !== "paid"` o si la referencia/`payment_id` ya fue consumida (control Anti-Replay).
        * Los pagos validados generan un token criptográfico HMAC-SHA256 vinculando `paymentId`, `reference`, `amount` y `trainingId`, y la inscripción nace confirmada automáticamente (`isPaid: true`, `pabiloStatus: "approved"`, `status: "Confirmado"`).
@@ -170,8 +170,8 @@ flowchart TD
 ### E. Integraciones
 1. **Odoo ERP:**
    * Conexión JSON-RPC con `product.template` para importar los SKUs de los equipos que se utilizan en los laboratorios prácticos (cámaras Hikvision, grabadores NVR, fusionadoras de fibra, biométricos).
-2. **Pabilo Pay (`https://api.pabilo.app`):**
-   * **Validación Real Obligatoria de Binance Pay (`betaserio`):** Endpoint interno `POST /api/pabilo/verify` que autentica con header `appKey` (`PABILO_API_KEY`) contra `POST /userbankpayment/{PABILO_BINANCE_BANK_ID}/betaserio` (`6a8628f7ea21f60026765c37` — `Onprotec Binance` / Binance Pay ID `1076181690`). Exige coincidencia exacta de monto USD, fecha en `America/Caracas`, estado `"paid"` y verificación anti-reuso (`pabiloTransactionId` y `paymentReference`).
+2. **Pabilo (`https://api.pabilo.app`):**
+   * **Validación Real Obligatoria de Binance (`betaserio`):** Endpoint interno `POST /api/pabilo/verify` que autentica con header `appKey` (`PABILO_API_KEY`) contra `POST /userbankpayment/{PABILO_BINANCE_BANK_ID}/betaserio` (`6a8628f7ea21f60026765c37` — `Onprotec Binance` / Binance ID `1076181690`). Exige coincidencia exacta de monto USD, fecha en `America/Caracas`, estado `"paid"` y verificación anti-reuso (`pabiloTransactionId` y `paymentReference`).
    * **Webhook Firmado:** Validación asincrónica mediante firma HMAC-SHA256 (`/api/pabilo/webhook`).
    * Al validarse la transacción en Pabilo, la inscripción queda automáticamente marcada como `isPaid = true`, `pabiloStatus = "approved"` y estado `Confirmado`.
 3. **WhatsApp Engine:**

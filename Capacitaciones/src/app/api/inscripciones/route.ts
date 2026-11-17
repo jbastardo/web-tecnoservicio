@@ -161,7 +161,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Bloqueo Estricto y Validación Real de Pago con Binance Pay + Pabilo para Eventos Cobrados
+    // 3. Bloqueo Estricto y Validación Real de Pago con Binance + Pabilo para Eventos Cobrados
     let isPaid = false;
     let pabiloStatus: "pending" | "approved" | "rejected" | "manual" = "pending";
     let verifiedPaymentId: string | null = null;
@@ -173,7 +173,7 @@ export async function POST(request: Request) {
           {
             success: false,
             error:
-              "Es obligatorio validar un pago real de Binance Pay mediante Pabilo para inscribirse en esta capacitación.",
+              "Es obligatorio validar un pago real de Binance mediante Pabilo para inscribirse en esta capacitación.",
           },
           { status: 400 }
         );
@@ -191,7 +191,7 @@ export async function POST(request: Request) {
           {
             success: false,
             error:
-              "Este pago de Binance Pay ya fue utilizado anteriormente para registrar otra inscripción.",
+              "Este pago de Binance ya fue utilizado anteriormente para registrar otra inscripción.",
           },
           { status: 409 }
         );
@@ -235,7 +235,7 @@ export async function POST(request: Request) {
             success: false,
             error:
               pabiloErrorMessage ||
-              "No se ha establecido un pago real en Binance Pay. Por favor verifica tu referencia y monto con Pabilo antes de continuar.",
+              "No se ha establecido un pago real en Binance. Por favor verifica tu referencia y monto con Pabilo antes de continuar.",
           },
           { status: 402 }
         );
@@ -253,7 +253,7 @@ export async function POST(request: Request) {
           {
             success: false,
             error:
-              "Este pago de Binance Pay ya fue utilizado para registrar otra inscripción.",
+              "Este pago de Binance ya fue utilizado para registrar otra inscripción.",
           },
           { status: 409 }
         );
@@ -318,7 +318,7 @@ export async function POST(request: Request) {
       currency: training.currency,
       isPaid,
       paymentDate: isPaid ? nowIso : null,
-      paymentMethod: isPaidEvent ? "Binance Pay (Pabilo)" : "Gratuito",
+      paymentMethod: isPaidEvent ? "Binance (Pabilo)" : "Gratuito",
       paymentReference: isPaidEvent ? cleanRef : null,
       pabiloTransactionId: verifiedPaymentId,
       pabiloStatus,
