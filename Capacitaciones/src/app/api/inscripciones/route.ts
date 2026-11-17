@@ -82,7 +82,10 @@ export async function POST(request: Request) {
       referralSource,
       paymentMethod,
       paymentReference,
+      paymentDate,
       paymentProofUrl,
+      pabiloPaymentId,
+      pabiloVerificationToken,
       specialNotes,
       customAnswers = {},
     } = body;
@@ -158,7 +161,106 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Registrar o actualizar el participante en el CRM
+    // 3. Bloqueo Estricto y Validación Real de Pago con Binance Pay + Pabilo para Eventos Cobrados
+    let isPaid = false;
+    let pabiloStatus: "pending" | "approved" | "rejected" | "manual" = "pending";
+    let verifiedPaymentId: string | null = null;
+    const cleanRef = String(paymentReference || "").trim();
+
+    if (isPaidEvent) {
+      if (cleanRef.length < 4) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Es obligatorio validar un pago real de Binance Pay mediante Pabilo para inscribirse en esta capacitación.",
+          },
+          { status: 400 }
+        );
+      }
+
+      // Control Anti-Replay por referencia de pago
+      const refAlreadyConsumed = initialRegistrations.some(
+        (r) =>
+          r.status !== "Cancelado" &&
+          r.isPaid &&
+          String(r.paymentReference || "").trim().toLowerCase() === cleanRef.toLowerCase()
+      );
+      if (refAlreadyConsumed) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Este pago de Binance Pay ya fue utilizado anteriormente para registrar otra inscripción.",
+          },
+          { status: 409 }
+        );
+      }
+
+      const expectedAmount = Math.round((Number(training.price) || 0) * 100) / 100;
+      let pabiloErrorMessage = "";
+
+      if (
+        pabiloPaymentId &&
+        pabiloVerificationToken &&
+        pabiloService.verifyVerificationToken(
+          String(pabiloVerificationToken),
+          String(pabiloPaymentId),
+          cleanRef,
+          expectedAmount,
+          Number(training.id)
+        )
+      ) {
+        isPaid = true;
+        pabiloStatus = "approved";
+        verifiedPaymentId = String(pabiloPaymentId).trim();
+      } else {
+        const pabiloCheck = await pabiloService.verifyPayment(
+          cleanRef,
+          expectedAmount,
+          paymentDate
+        );
+        if (pabiloCheck.isValid && pabiloCheck.verified && pabiloCheck.paymentId) {
+          isPaid = true;
+          pabiloStatus = "approved";
+          verifiedPaymentId = pabiloCheck.paymentId;
+        } else {
+          pabiloErrorMessage = pabiloCheck.message;
+        }
+      }
+
+      if (!isPaid || !verifiedPaymentId) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              pabiloErrorMessage ||
+              "No se ha establecido un pago real en Binance Pay. Por favor verifica tu referencia y monto con Pabilo antes de continuar.",
+          },
+          { status: 402 }
+        );
+      }
+
+      // Control Anti-Replay por ID de transacción único en Pabilo
+      const paymentIdAlreadyConsumed = initialRegistrations.some(
+        (r) =>
+          r.status !== "Cancelado" &&
+          r.pabiloTransactionId &&
+          String(r.pabiloTransactionId).trim() === verifiedPaymentId
+      );
+      if (paymentIdAlreadyConsumed) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Este pago de Binance Pay ya fue utilizado para registrar otra inscripción.",
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    // 4. Registrar o actualizar el participante en el CRM (solo si el pago fue verificado o es evento gratuito)
     let participant = initialParticipants.find(
       (p) =>
         (p.docNumber && p.docNumber.replace(/\D/g, "") === String(docNumber).replace(/\D/g, "")) ||
@@ -198,36 +300,27 @@ export async function POST(request: Request) {
       participant.updatedAt = new Date().toISOString();
     }
 
-    // 3. Validación de Pago con Pabilo si aplica
-    let isPaid = false;
-    let pabiloStatus: any = "pending";
-    let pabiloTransactionId: string | null = null;
-
-    if (paymentReference && paymentMethod?.toLowerCase().includes("pabilo")) {
-      const pabiloCheck = await pabiloService.verifyPayment(paymentReference);
-      if (pabiloCheck.isValid) {
-        isPaid = true;
-        pabiloStatus = "approved";
-        pabiloTransactionId = `tx_pab_${Date.now()}`;
-      }
-    }
-
-    // 4. Crear la inscripción
+    // 5. Crear la inscripción
+    const nowIso = new Date().toISOString();
     const maxRegId = initialRegistrations.reduce((m, r) => Math.max(m, Number(r.id) || 0), 0);
     const newRegId = maxRegId + 1;
     const newRegistration = {
       id: newRegId,
       trainingId: training.id,
       participantId: participant.id,
-      status: isWaitlist ? ("Lista de Espera" as const) : ("Inscrito" as const),
-      confirmationDate: null,
+      status: isWaitlist
+        ? ("Lista de Espera" as const)
+        : isPaidEvent
+        ? ("Confirmado" as const)
+        : ("Inscrito" as const),
+      confirmationDate: !isWaitlist && isPaidEvent ? nowIso : null,
       amount: training.price,
       currency: training.currency,
       isPaid,
-      paymentDate: isPaid ? new Date().toISOString() : null,
-      paymentMethod: training.price > 0 ? paymentMethod || "Transferencia" : "Gratuito",
-      paymentReference: paymentReference || null,
-      pabiloTransactionId,
+      paymentDate: isPaid ? nowIso : null,
+      paymentMethod: isPaidEvent ? "Binance Pay (Pabilo)" : "Gratuito",
+      paymentReference: isPaidEvent ? cleanRef : null,
+      pabiloTransactionId: verifiedPaymentId,
       pabiloStatus,
       invoiceNumber: null,
       paymentProofUrl: paymentProofUrl || null,
@@ -238,12 +331,12 @@ export async function POST(request: Request) {
       experienceLevel: resolvedExp,
       carnetNumber: body.carnetNumber || null,
       customAnswers: customAnswers || {},
-      formSubmittedAt: new Date().toISOString(),
+      formSubmittedAt: nowIso,
       reminderSentAt: null,
       surveySentAt: null,
       checkInAt: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: nowIso,
+      updatedAt: nowIso,
       training,
       participant,
     };

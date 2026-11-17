@@ -125,13 +125,11 @@ flowchart TD
      * **Confirmación Post-Envío:** Informa claramente que el participante está **Pre-inscrito**, explicando que se realiza una preselección de asistentes para garantizar la rotación y diversidad de técnicos en sala antes de remitir la invitación formal.
   2. **Actividades Cobradas / Pagas (`isFree = false` o `price > 0`):**
      * Aforo estricto de **solo 18 puestos VIP garantizados**.
-     * Exige método de pago, referencia de transacción y **zona de carga de comprobante de pago (voucher/captura/PDF)**.
-     * **Métodos de Pago Expresados:** La lista de métodos de pago en el formulario solo exhibe los expresamente configurados para ese curso.
-     * **Regla de Negocio para Pago en Efectivo en Tienda:**
-       * **Plazo de 48 Horas Post-Envío:** Al seleccionar *"Efectivo en Tienda OnProtec"*, el participante cuenta con un lapso máximo de 48 horas continuas para acudir a la Sede Corporativa y cancelar en caja; transcurrido este tiempo sin reporte, su reserva y cupo VIP son automáticamente anulados.
-       * **Restricción 48 Horas Pre-Evento:** A menos de 48 horas de la fecha y hora de inicio de la capacitación, el sistema inhabilita y bloquea la opción de efectivo en tienda, exigiendo únicamente medios de pago electrónicos inmediatos (Pago Móvil, Transferencia Bancaria o Binance Pay).
-       * **Avisos Informativos:** El formulario muestra banners preventivos destacados, la carga de comprobante se vuelve opcional al pagar en caja, y tanto el modal de confirmación como el texto de WhatsApp recuerdan el plazo perentorio de 48 horas.
-     * **Confirmación Post-Envío:** Notifica de inmediato que el participante está **Formalmente Inscrito** con cupo VIP asegurado.
+     * **Validación Real Obligatoria vía Pabilo + Binance Pay (`betaserio`):**
+       * El formulario exige pago electrónico en tiempo real hacia la cuenta oficial **Onprotec Binance (`Binance Pay ID: 1076181690`, `pabilo_id: 6a8628f7ea21f60026765c37`)** por el monto exacto en USD/USDT de la capacitación.
+       * Al ingresar la referencia/Order ID y la fecha del pago (hora Caracas), el botón **"⚡ Validar Pago en Binance con Pabilo"** consulta `POST /api/pabilo/verify` $\rightarrow$ `POST https://api.pabilo.app/userbankpayment/6a8628f7ea21f60026765c37/betaserio` con cabecera `appKey`.
+       * **Bloqueo Estricto:** Tanto la UI (`src/app/page.tsx`) como el backend (`POST /api/inscripciones`) impiden continuar o registrar la inscripción si `status !== "paid"` o si la referencia/`payment_id` ya fue consumida (control Anti-Replay).
+       * Los pagos validados generan un token criptográfico HMAC-SHA256 vinculando `paymentId`, `reference`, `amount` y `trainingId`, y la inscripción nace confirmada automáticamente (`isPaid: true`, `pabiloStatus: "approved"`, `status: "Confirmado"`).
 * **Validación Anti-Duplicados:**
   * El sistema valida mediante normalización de caracteres que ningún número de Cédula o RIF (o correo electrónico) se registre más de una vez en la misma capacitación activa. Retorna error `409 Conflict` con indicaciones claras para contactar al equipo de OnProtec vía WhatsApp si requiere gestionar su registro.
 * **Sección de Preguntas del Formulario 100% Editable:**
@@ -172,9 +170,10 @@ flowchart TD
 ### E. Integraciones
 1. **Odoo ERP:**
    * Conexión JSON-RPC con `product.template` para importar los SKUs de los equipos que se utilizan en los laboratorios prácticos (cámaras Hikvision, grabadores NVR, fusionadoras de fibra, biométricos).
-2. **Pabilo Pay:**
-   * Validación automática de pagos con webhook firmado mediante HMAC-SHA256 (`/api/pabilo/webhook`).
-   * Al validarse la transacción en Pabilo, la inscripción pasa automáticamente a `isPaid = true` y estado `Confirmado`.
+2. **Pabilo Pay (`https://api.pabilo.app`):**
+   * **Validación Real Obligatoria de Binance Pay (`betaserio`):** Endpoint interno `POST /api/pabilo/verify` que autentica con header `appKey` (`PABILO_API_KEY`) contra `POST /userbankpayment/{PABILO_BINANCE_BANK_ID}/betaserio` (`6a8628f7ea21f60026765c37` — `Onprotec Binance` / Binance Pay ID `1076181690`). Exige coincidencia exacta de monto USD, fecha en `America/Caracas`, estado `"paid"` y verificación anti-reuso (`pabiloTransactionId` y `paymentReference`).
+   * **Webhook Firmado:** Validación asincrónica mediante firma HMAC-SHA256 (`/api/pabilo/webhook`).
+   * Al validarse la transacción en Pabilo, la inscripción queda automáticamente marcada como `isPaid = true`, `pabiloStatus = "approved"` y estado `Confirmado`.
 3. **WhatsApp Engine:**
    * Automatización de 3 plantillas críticas: Confirmación inmediata de registro, recordatorio 24h antes del evento con la ubicación de la sala Onprotec, y envío del link de encuesta post-evento.
 4. **Códigos QR de Encuesta:**
@@ -249,6 +248,9 @@ A partir del volcado real de Google Forms (hojas de cálculo `.xlsx`) y exportac
 * **Eliminación Segura (`DELETE /api/inscripciones` & `/api/participantes`):**
   * Permite borrar formularios registrados individuales (con confirmación visual modal en `/admin/inscripciones` y `/admin/checkin`, o confirmación en dos pasos dentro del expediente en `/admin/participantes`). Al eliminar la única inscripción de un participante, se depura su ficha huérfana en `initialParticipants` para evitar bloqueos por validación anti-duplicados si vuelve a registrarse.
   * Desde `/admin/participantes`, también se puede eliminar un participante junto con todos sus formularios vinculados, persistiendo atómicamente vía `persistDataset()`.
+* **Filtro de Rango de Fechas & Centro de Reportes (`/admin/inscripciones`):**
+  * **Filtro de Fechas (`America/Caracas`):** Permite filtrar la matriz por **Fecha de Inscripción** o **Fecha del Evento** mediante selector `Desde`/`Hasta` y accesos rápidos (`Hoy`, `7 días`, `Este mes`, `Limpiar`). Muestra en cada fila la marca temporal exacta de registro en hora Caracas.
+  * **Centro de Reportes (`📊 Reportes`):** Modal widescreen con conmutación entre **Vista Filtrada Actual** y **Total Histórico**, mostrando KPIs (Total Inscripciones, Confirmados/Asistieron, Recaudación Confirmada USD, Por Cobrar USD, Pabilo Auto vs Validación Manual), desglose por capacitación, **Exportación Excel/CSV Detallada (.csv con BOM UTF-8)** y **Reporte Ejecutivo PDF Imprimible**.
 
 ### D. Sistema de Credenciales de Acceso Administrativo (`admin_users` & `/api/auth`)
 * **Protección de `/admin`:** Pantalla de inicio de sesión corporativa en `src/app/admin/layout.tsx` respaldada por cookies de sesión HTTP-only (`onprotec_admin_session`) y la tabla `admin_users` (sincronizada en `src/db/schema.ts` y `src/lib/autoMigrate.ts`).

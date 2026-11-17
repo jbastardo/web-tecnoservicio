@@ -30,8 +30,48 @@ import {
   Sparkles,
   User,
   Trash2,
+  Calendar,
+  Download,
+  Printer,
+  BarChart3,
 } from "lucide-react";
 import { fmtLocalDate, fmtLocalTime, formatCurrency } from "@/utils/formatUtils";
+
+function toCaracasYMD(dateInput?: string | number | Date | null): string {
+  if (!dateInput) return "";
+  const date =
+    typeof dateInput === "string" || typeof dateInput === "number"
+      ? new Date(dateInput)
+      : dateInput;
+  if (isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Caracas",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function getCaracasDateShift(daysOffset: number): string {
+  const todayStr = toCaracasYMD(new Date());
+  const [y, m, d] = todayStr.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + daysOffset, 12, 0, 0));
+  return dt.toISOString().slice(0, 10);
+}
+
+function escapeHtml(val: unknown): string {
+  return String(val ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function csvCell(val: unknown): string {
+  const str = String(val ?? "").replace(/"/g, '""');
+  return `"${str}"`;
+}
 
 export default function InscripcionesAdminPage() {
   const [registrations, setRegistrations] = useState<any[]>([]);
@@ -39,6 +79,11 @@ export default function InscripcionesAdminPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [trainingFilter, setTrainingFilter] = useState("all");
+  const [dateField, setDateField] = useState<"registration" | "event">("registration");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportScope, setReportScope] = useState<"filtered" | "all">("filtered");
   const [trainings, setTrainings] = useState<any[]>([]);
 
   // Estado para el Modal de Validación Manual de Pagos
@@ -302,8 +347,346 @@ export default function InscripcionesAdminPage() {
 
     const matchesStatus = statusFilter === "all" || r.status === statusFilter;
     const matchesTraining = trainingFilter === "all" || String(r.trainingId) === trainingFilter;
-    return matchesSearch && matchesStatus && matchesTraining;
+
+    let matchesDate = true;
+    if (dateFrom || dateTo) {
+      const rawDate =
+        dateField === "registration"
+          ? r.formSubmittedAt || r.createdAt || r.training?.eventDate
+          : r.training?.eventDate || r.createdAt;
+      const ymd = toCaracasYMD(rawDate);
+      if (!ymd) {
+        matchesDate = false;
+      } else {
+        if (dateFrom && ymd < dateFrom) matchesDate = false;
+        if (dateTo && ymd > dateTo) matchesDate = false;
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesTraining && matchesDate;
   });
+
+  const hasActiveFilters = Boolean(
+    search || statusFilter !== "all" || trainingFilter !== "all" || dateFrom || dateTo
+  );
+
+  const clearAllFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setTrainingFilter("all");
+    setDateFrom("");
+    setDateTo("");
+  };
+
+  const reportRows = reportScope === "filtered" ? filtered : registrations;
+
+  const reportStats = React.useMemo(() => {
+    const total = reportRows.length;
+    const confirmedCount = reportRows.filter((r) => r.status === "Confirmado").length;
+    const attendedCount = reportRows.filter((r) => r.status === "Asistió").length;
+    const inscritoCount = reportRows.filter((r) => r.status === "Inscrito").length;
+    const waitlistCount = reportRows.filter((r) => r.status === "Lista de Espera").length;
+    const noShowCount = reportRows.filter((r) => r.status === "No Asistió").length;
+    const canceledCount = reportRows.filter((r) => r.status === "Cancelado").length;
+
+    const collectedUsd = reportRows
+      .filter((r) => r.isPaid)
+      .reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+    const pendingUsd = reportRows
+      .filter((r) => !r.isPaid && r.status !== "Cancelado" && Number(r.amount) > 0)
+      .reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+
+    const pabiloApprovedCount = reportRows.filter(
+      (r) => r.isPaid && r.pabiloStatus === "approved"
+    ).length;
+    const manualApprovedCount = reportRows.filter(
+      (r) => r.isPaid && r.pabiloStatus === "manual"
+    ).length;
+
+    const byCourseMap = new Map<
+      number,
+      {
+        trainingId: number;
+        code: string;
+        name: string;
+        eventDate: string;
+        total: number;
+        confirmedOrAttended: number;
+        paidCount: number;
+        collectedUsd: number;
+      }
+    >();
+
+    for (const r of reportRows) {
+      const tid = Number(r.trainingId) || 0;
+      const existing = byCourseMap.get(tid) || {
+        trainingId: tid,
+        code: r.training?.code || `CAP-${tid}`,
+        name: r.training?.name || r.originalFormName || "Capacitación",
+        eventDate: r.training?.eventDate || "",
+        total: 0,
+        confirmedOrAttended: 0,
+        paidCount: 0,
+        collectedUsd: 0,
+      };
+      existing.total += 1;
+      if (r.status === "Confirmado" || r.status === "Asistió") {
+        existing.confirmedOrAttended += 1;
+      }
+      if (r.isPaid) {
+        existing.paidCount += 1;
+        existing.collectedUsd += Number(r.amount) || 0;
+      }
+      byCourseMap.set(tid, existing);
+    }
+
+    const courseBreakdown = Array.from(byCourseMap.values()).sort(
+      (a, b) => b.total - a.total
+    );
+
+    return {
+      total,
+      confirmedCount,
+      attendedCount,
+      inscritoCount,
+      waitlistCount,
+      noShowCount,
+      canceledCount,
+      collectedUsd,
+      pendingUsd,
+      pabiloApprovedCount,
+      manualApprovedCount,
+      courseBreakdown,
+    };
+  }, [reportRows]);
+
+  const handleExportCsv = () => {
+    const headers = [
+      "ID",
+      "Fecha Inscripcion (Caracas)",
+      "Codigo Curso",
+      "Capacitacion",
+      "Fecha Evento",
+      "Participante",
+      "Tipo Doc",
+      "Cedula/RIF",
+      "Telefono",
+      "Correo",
+      "Empresa",
+      "Cargo",
+      "Ciudad",
+      "Estado",
+      "Pagado",
+      "Monto USD",
+      "Metodo Pago",
+      "Tipo Validacion",
+      "Referencia Pago",
+      "ID Transaccion Pabilo",
+      "Nro Factura",
+      "Check-In",
+    ];
+
+    const lines = [headers.map(csvCell).join(",")];
+    for (const r of reportRows) {
+      const row = [
+        r.id,
+        fmtLocalTime(r.formSubmittedAt || r.createdAt),
+        r.training?.code || `CAP-${r.trainingId}`,
+        r.training?.name || r.originalFormName || "",
+        r.training?.eventDate ? fmtLocalDate(r.training.eventDate) : "N/D",
+        r.participant?.name || "",
+        r.participant?.docType || "",
+        r.participant?.docNumber || "",
+        r.participant?.phone || "",
+        r.participant?.email || "",
+        r.participant?.company || "",
+        r.participant?.cargo || r.customAnswers?.cargo || "",
+        r.participant?.city || "",
+        r.status || "",
+        r.isPaid ? "Sí" : Number(r.amount) > 0 ? "No" : "Gratis",
+        Number(r.amount || 0).toFixed(2),
+        r.paymentMethod || (Number(r.amount) > 0 ? "Sin especificar" : "Gratuito"),
+        r.pabiloStatus === "approved"
+          ? "Pabilo Auto"
+          : r.pabiloStatus === "manual"
+          ? "Manual"
+          : r.pabiloStatus || "pending",
+        r.paymentReference || "",
+        r.pabiloTransactionId || "",
+        r.invoiceNumber || "",
+        r.checkInAt ? fmtLocalTime(r.checkInAt) : "",
+      ];
+      lines.push(row.map(csvCell).join(","));
+    }
+
+    const csvContent = "\uFEFF" + lines.join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `reporte-inscripciones-onprotec-${toCaracasYMD(new Date())}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast(`Reporte CSV exportado (${reportRows.length} registros).`);
+  };
+
+  const handlePrintReport = () => {
+    const printWin = window.open("", "_blank", "width=1100,height=800");
+    if (!printWin) {
+      showToast("Por favor permite ventanas emergentes para imprimir el reporte PDF.");
+      return;
+    }
+
+    const filterSummary =
+      reportScope === "all"
+        ? "Total Histórico Completo"
+        : [
+            dateFrom || dateTo
+              ? `${dateField === "registration" ? "Fecha Inscripción" : "Fecha Evento"}: ${dateFrom || "..."} a ${dateTo || "..."}`
+              : "Todas las fechas",
+            trainingFilter !== "all"
+              ? `Curso: ${trainings.find((t) => String(t.id) === trainingFilter)?.code || trainingFilter}`
+              : "Todos los cursos",
+            statusFilter !== "all" ? `Estado: ${statusFilter}` : "Todos los estados",
+          ].join(" • ");
+
+    const courseRowsHtml = reportStats.courseBreakdown
+      .map(
+        (c) => `
+        <tr>
+          <td><strong>${escapeHtml(c.code)}</strong> — ${escapeHtml(c.name)}</td>
+          <td>${c.eventDate ? escapeHtml(fmtLocalDate(c.eventDate)) : "N/D"}</td>
+          <td style="text-align:center">${c.total}</td>
+          <td style="text-align:center">${c.confirmedOrAttended}</td>
+          <td style="text-align:center">${c.paidCount}</td>
+          <td style="text-align:right"><strong>$${c.collectedUsd.toFixed(2)}</strong></td>
+        </tr>`
+      )
+      .join("");
+
+    const detailRowsHtml = reportRows
+      .map(
+        (r) => `
+        <tr>
+          <td>#${escapeHtml(r.id)}</td>
+          <td>${escapeHtml(fmtLocalDate(r.formSubmittedAt || r.createdAt))}</td>
+          <td><strong>${escapeHtml(r.participant?.name || "Sin Nombre")}</strong><br/><span style="color:#64748b;font-size:10px">${escapeHtml(r.participant?.phone || "")}</span></td>
+          <td>${escapeHtml(r.participant?.docType || "V")}-${escapeHtml(r.participant?.docNumber || "S/D")}</td>
+          <td>${escapeHtml(r.training?.code || "")} — ${escapeHtml(r.training?.name || "")}</td>
+          <td>${escapeHtml(r.status)}</td>
+          <td>${
+            r.isPaid
+              ? r.pabiloStatus === "approved"
+                ? `Pabilo (${escapeHtml(r.paymentReference || r.pabiloTransactionId || "OK")})`
+                : `Manual (${escapeHtml(r.paymentReference || "OK")})`
+              : Number(r.amount) > 0
+              ? "Pendiente"
+              : "Gratis"
+          }</td>
+          <td style="text-align:right">$${Number(r.amount || 0).toFixed(2)}</td>
+        </tr>`
+      )
+      .join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Reporte Ejecutivo de Inscripciones — OnProtec</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; color: #0f172a; margin: 24px; font-size: 12px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #2a285c; padding-bottom: 12px; margin-bottom: 16px; }
+    .brand { font-size: 20px; font-weight: 900; color: #2a285c; margin: 0; }
+    .sub { color: #f4730a; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+    .meta { text-align: right; font-size: 11px; color: #475569; }
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+    .kpi { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; background: #f8fafc; }
+    .kpi-label { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700; }
+    .kpi-val { font-size: 18px; font-weight: 900; color: #0f172a; margin-top: 4px; }
+    h2 { font-size: 13px; text-transform: uppercase; color: #2a285c; border-left: 4px solid #f4730a; padding-left: 8px; margin: 16px 0 8px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 11px; }
+    th { background: #2a285c; color: #fff; text-align: left; padding: 6px 8px; font-size: 10px; text-transform: uppercase; }
+    td { border-bottom: 1px solid #e2e8f0; padding: 6px 8px; vertical-align: top; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    @media print { body { margin: 10mm; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 class="brand">OnProtec® • Sala de Capacitaciones</h1>
+      <div class="sub">Reporte Ejecutivo de Inscripciones & Conciliación de Pagos</div>
+      <div style="font-size:11px;color:#475569;margin-top:4px;">Alcance: ${escapeHtml(filterSummary)}</div>
+    </div>
+    <div class="meta">
+      <div><strong>Generado (Caracas):</strong></div>
+      <div>${escapeHtml(fmtLocalTime(new Date()))}</div>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi">
+      <div class="kpi-label">Total Inscripciones</div>
+      <div class="kpi-val">${reportStats.total}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Confirmados / Asistieron</div>
+      <div class="kpi-val">${reportStats.confirmedCount + reportStats.attendedCount}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Recaudación Confirmada</div>
+      <div class="kpi-val" style="color:#047857">$${reportStats.collectedUsd.toFixed(2)}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Pabilo Auto / Manual</div>
+      <div class="kpi-val">${reportStats.pabiloApprovedCount} / ${reportStats.manualApprovedCount}</div>
+    </div>
+  </div>
+
+  <h2>Resumen por Capacitación</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Capacitación</th>
+        <th>Fecha Evento</th>
+        <th style="text-align:center">Inscritos</th>
+        <th style="text-align:center">Confirm./Asist.</th>
+        <th style="text-align:center">Pagados</th>
+        <th style="text-align:right">Recaudado USD</th>
+      </tr>
+    </thead>
+    <tbody>${courseRowsHtml}</tbody>
+  </table>
+
+  <h2>Listado Nominal de Inscripciones (${reportRows.length})</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Fecha Reg.</th>
+        <th>Participante</th>
+        <th>Cédula / RIF</th>
+        <th>Capacitación</th>
+        <th>Estado</th>
+        <th>Validación / Ref</th>
+        <th style="text-align:right">Monto</th>
+      </tr>
+    </thead>
+    <tbody>${detailRowsHtml}</tbody>
+  </table>
+</body>
+</html>`;
+
+    printWin.document.open();
+    printWin.document.write(html);
+    printWin.document.close();
+    setTimeout(() => {
+      printWin.focus();
+      printWin.print();
+    }, 350);
+  };
 
   return (
     <div className="space-y-6">
@@ -316,33 +699,64 @@ export default function InscripcionesAdminPage() {
       )}
 
       {/* Cintillo Widescreen de Cabecera y Filtros */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-300 dark:border-slate-800">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            <ClipboardList className="w-6 h-6 text-[#f4730a]" />
-            <span>Matriz de Inscripciones, Pagos & Validación Manual</span>
-          </h1>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium">
-            Gestión y conciliación de {registrations.length} inscripciones reales con validación manual y soporte Pabilo Pay.
-          </p>
+      <div className="space-y-3 pb-4 border-b border-slate-300 dark:border-slate-800">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <ClipboardList className="w-6 h-6 text-[#f4730a]" />
+              <span>Matriz de Inscripciones, Pagos & Validación Manual</span>
+            </h1>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium">
+              Gestión y conciliación de {registrations.length} inscripciones reales con validación manual y soporte Pabilo Pay.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="text-[11px] font-mono text-cyan-300 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-xl">
+              {filtered.length} reg. {hasActiveFilters ? `(de ${registrations.length})` : ""}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => {
+                setReportScope("filtered");
+                setShowReportModal(true);
+              }}
+              className="px-3.5 py-2 bg-[#f4730a] hover:bg-[#ef7922] text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition shadow-md cursor-pointer"
+              title="Abrir Centro de Reportes y Exportación Excel/PDF"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>📊 Reportes</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={fetchRegistrations}
+              className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl text-xs transition cursor-pointer"
+              title="Recargar"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        {/* Barra Horizontal de Filtros (Búsqueda + Curso + Estado + Rango de Fechas Caracas) */}
+        <div className="bg-white dark:bg-slate-900/90 border border-slate-300 dark:border-slate-800 rounded-2xl p-3 flex flex-wrap items-center gap-2.5 shadow-sm">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder="Buscar participante, cédula o curso..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#f4730a] w-52 shadow-sm"
+              className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#f4730a] w-52"
             />
           </div>
 
           <select
             value={trainingFilter}
             onChange={(e) => setTrainingFilter(e.target.value)}
-            className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a] max-w-[260px] truncate shadow-sm font-medium"
+            className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a] max-w-[230px] truncate font-medium"
           >
             <option value="all">Todas las Capacitaciones ({trainings.length})</option>
             {trainings
@@ -352,13 +766,13 @@ export default function InscripcionesAdminPage() {
                 <option key={t.id} value={String(t.id)}>
                   [{fmtLocalDate(t.eventDate)}] {t.name}
                 </option>
-            ))}
+              ))}
           </select>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500"
+            className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a] font-medium"
           >
             <option value="all">Todos los Estados</option>
             <option value="Inscrito">Inscrito</option>
@@ -369,17 +783,95 @@ export default function InscripcionesAdminPage() {
             <option value="Cancelado">Cancelado</option>
           </select>
 
-          <span className="text-[11px] font-mono text-cyan-300 bg-slate-900 border border-slate-700 px-2.5 py-1.5 rounded-xl">
-            {filtered.length} reg.
-          </span>
+          <div className="h-5 w-px bg-slate-300 dark:bg-slate-700 hidden xl:block" />
 
-          <button
-            onClick={fetchRegistrations}
-            className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl text-xs transition"
-            title="Recargar"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-          </button>
+          {/* Filtro por Fecha */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300">
+              <Calendar className="w-3.5 h-3.5 text-[#f4730a]" />
+              <select
+                value={dateField}
+                onChange={(e) => setDateField(e.target.value as "registration" | "event")}
+                className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a] font-semibold"
+                title="Criterio de fecha para el filtro"
+              >
+                <option value="registration">Fecha Inscripción</option>
+                <option value="event">Fecha Evento</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                Desde:
+              </span>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a]"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                Hasta:
+              </span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a]"
+              />
+            </div>
+
+            {/* Presets Rápidos */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const today = toCaracasYMD(new Date());
+                  setDateFrom(today);
+                  setDateTo(today);
+                }}
+                className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-[#f4730a] hover:text-white dark:bg-slate-800 dark:hover:bg-[#f4730a] text-slate-700 dark:text-slate-200 text-[11px] font-bold transition cursor-pointer"
+              >
+                Hoy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDateFrom(getCaracasDateShift(-6));
+                  setDateTo(toCaracasYMD(new Date()));
+                }}
+                className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-[#f4730a] hover:text-white dark:bg-slate-800 dark:hover:bg-[#f4730a] text-slate-700 dark:text-slate-200 text-[11px] font-bold transition cursor-pointer"
+              >
+                7 días
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const today = toCaracasYMD(new Date());
+                  setDateFrom(today.slice(0, 8) + "01");
+                  setDateTo(today);
+                }}
+                className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-[#f4730a] hover:text-white dark:bg-slate-800 dark:hover:bg-[#f4730a] text-slate-700 dark:text-slate-200 text-[11px] font-bold transition cursor-pointer"
+              >
+                Este mes
+              </button>
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-600 text-rose-600 dark:text-rose-300 hover:text-white border border-rose-500/30 text-[11px] font-bold transition cursor-pointer flex items-center gap-1"
+                  title="Limpiar todos los filtros"
+                >
+                  <X className="w-3 h-3" />
+                  <span>Limpiar</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -428,6 +920,9 @@ export default function InscripcionesAdminPage() {
                         </button>
                         <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-mono">
                           {r.participant?.docNumber || "S/D"} | {r.participant?.phone}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block font-mono mt-0.5">
+                          Reg: {fmtLocalTime(r.formSubmittedAt || r.createdAt)}
                         </span>
                         {r.participant?.participations && (
                           <button
@@ -1718,6 +2213,218 @@ export default function InscripcionesAdminPage() {
                 )}
                 <span>Sí, Borrar Registro</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Widescreen: Centro de Reportes y Exportación de Inscripciones */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Cabecera del Modal */}
+            <div className="p-5 sm:p-6 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-950/70">
+              <div>
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#f4730a]">
+                  ONPROTEC SALA VIP • ANALÍTICA & CONCILIACIÓN
+                </span>
+                <h3 className="text-xl font-black text-white flex items-center gap-2 mt-0.5">
+                  <BarChart3 className="w-5 h-5 text-[#f4730a]" />
+                  <span>Centro de Reportes de Inscripciones</span>
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setReportScope("filtered")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                    reportScope === "filtered"
+                      ? "bg-[#f4730a] text-white border-[#f4730a]"
+                      : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
+                  }`}
+                >
+                  Vista Filtrada ({filtered.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReportScope("all")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                    reportScope === "all"
+                      ? "bg-[#f4730a] text-white border-[#f4730a]"
+                      : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
+                  }`}
+                >
+                  Total Histórico ({registrations.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowReportModal(false)}
+                  className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition cursor-pointer"
+                  title="Cerrar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Cuerpo Widescreen Scrollable solo si excede altura */}
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
+              {/* Filtro activo visual */}
+              {reportScope === "filtered" && (
+                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 flex flex-wrap items-center justify-between gap-2">
+                  <span>
+                    <strong className="text-cyan-300">Criterio activo:</strong>{" "}
+                    {dateFrom || dateTo
+                      ? `${dateField === "registration" ? "Fecha Inscripción" : "Fecha Evento"}: ${dateFrom || "..."} a ${dateTo || "..."}`
+                      : "Todas las fechas"}
+                    {trainingFilter !== "all"
+                      ? ` • Curso ID #${trainingFilter}`
+                      : " • Todos los cursos"}
+                    {statusFilter !== "all" ? ` • Estado: ${statusFilter}` : ""}
+                  </span>
+                  <span className="font-mono text-[11px] text-slate-400">
+                    Generado en UTC-4 (Caracas)
+                  </span>
+                </div>
+              )}
+
+              {/* Tarjetas KPI Horizontales */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Total Inscripciones
+                  </span>
+                  <p className="text-2xl font-black text-white mt-1">{reportStats.total}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Confirm.: <strong className="text-cyan-300">{reportStats.confirmedCount}</strong> • Asist.:{" "}
+                    <strong className="text-emerald-300">{reportStats.attendedCount}</strong>
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    Inscritos: {reportStats.inscritoCount} • Espera: {reportStats.waitlistCount} • No Asistió: {reportStats.noShowCount}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Recaudación Confirmada
+                  </span>
+                  <p className="text-2xl font-black text-emerald-400 mt-1">
+                    ${reportStats.collectedUsd.toFixed(2)}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Pagos conciliados y cobrados (USD)
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Por Cobrar / Pendiente
+                  </span>
+                  <p className="text-2xl font-black text-amber-400 mt-1">
+                    ${reportStats.pendingUsd.toFixed(2)}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Saldo pendiente de registros activos
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Validación Pabilo vs Manual
+                  </span>
+                  <p className="text-2xl font-black text-cyan-300 mt-1">
+                    {reportStats.pabiloApprovedCount}{" "}
+                    <span className="text-sm font-bold text-slate-500">/</span>{" "}
+                    <span className="text-emerald-300">{reportStats.manualApprovedCount}</span>
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Binance Pabilo Auto vs Validados Manual
+                  </p>
+                </div>
+              </div>
+
+              {/* Tabla Resumen por Capacitación */}
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">
+                    Desglose por Capacitación ({reportStats.courseBreakdown.length})
+                  </h4>
+                </div>
+                <div className="overflow-x-auto max-h-60">
+                  <table className="w-full text-left text-xs text-slate-300">
+                    <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+                      <tr>
+                        <th className="py-2.5 px-4">Capacitación</th>
+                        <th className="py-2.5 px-4">Fecha Evento</th>
+                        <th className="py-2.5 px-4 text-center">Total Inscritos</th>
+                        <th className="py-2.5 px-4 text-center">Confirmados / Asist.</th>
+                        <th className="py-2.5 px-4 text-center">Pagados</th>
+                        <th className="py-2.5 px-4 text-right">Recaudado USD</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/70">
+                      {reportStats.courseBreakdown.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-6 text-center text-slate-500">
+                            No hay registros en el rango seleccionado.
+                          </td>
+                        </tr>
+                      ) : (
+                        reportStats.courseBreakdown.map((c) => (
+                          <tr key={c.trainingId} className="hover:bg-slate-900/60">
+                            <td className="py-2.5 px-4 font-semibold text-white">
+                              <span className="font-mono text-[#f4730a] mr-1.5">{c.code}</span>
+                              {c.name}
+                            </td>
+                            <td className="py-2.5 px-4 text-slate-400">
+                              {c.eventDate ? fmtLocalDate(c.eventDate) : "N/D"}
+                            </td>
+                            <td className="py-2.5 px-4 text-center font-bold">{c.total}</td>
+                            <td className="py-2.5 px-4 text-center text-cyan-300 font-bold">
+                              {c.confirmedOrAttended}
+                            </td>
+                            <td className="py-2.5 px-4 text-center text-emerald-300 font-bold">
+                              {c.paidCount}
+                            </td>
+                            <td className="py-2.5 px-4 text-right font-mono font-black text-emerald-400">
+                              ${c.collectedUsd.toFixed(2)}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Pie del Modal con Botones de Exportación */}
+            <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-950/80 flex flex-wrap items-center justify-between gap-3">
+              <span className="text-[11px] text-slate-400">
+                Exportando <strong className="text-white">{reportRows.length}</strong> registros según alcance seleccionado.
+              </span>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleExportCsv}
+                  disabled={reportRows.length === 0}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-black flex items-center gap-2 transition shadow-md cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>📥 Exportar Excel / CSV Detallado (.csv)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handlePrintReport}
+                  disabled={reportRows.length === 0}
+                  className="px-4 py-2.5 rounded-xl bg-[#2a285c] hover:bg-[#3a377c] disabled:opacity-50 text-white text-xs font-black flex items-center gap-2 transition shadow-md cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>🖨️ Imprimir / Guardar Reporte PDF</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
