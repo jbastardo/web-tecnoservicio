@@ -73,6 +73,21 @@ export default function ParticipantesAdminPage() {
     fetchParticipants();
   }, []);
 
+  useEffect(() => {
+    if (!deletingParticipant && !editingParticipant && !selectedParticipant) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (deletingParticipant && !isDeletingParticipant) setDeletingParticipant(null);
+      else if (editingParticipant) setEditingParticipant(null);
+      else if (selectedParticipant) {
+        setSelectedParticipant(null);
+        setConfirmDeleteRegId(null);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [deletingParticipant, isDeletingParticipant, editingParticipant, selectedParticipant]);
+
   const openEditParticipant = (p: any) => {
     setEditingParticipant(p);
     setEditForm({
@@ -481,7 +496,17 @@ export default function ParticipantesAdminPage() {
 
       {/* Modal de Historial Completo de Participaciones del Inscrito */}
       {selectedParticipant && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSelectedParticipant(null);
+              setConfirmDeleteRegId(null);
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+        >
           <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-3xl p-6 max-w-3xl w-full shadow-2xl relative my-8 text-slate-900 dark:text-white">
             <button
               onClick={() => {
@@ -700,7 +725,14 @@ export default function ParticipantesAdminPage() {
 
       {/* Modal Editar Datos del Participante */}
       {editingParticipant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingParticipant(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        >
           <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-xl p-6 shadow-2xl relative">
             <button
               onClick={() => setEditingParticipant(null)}
@@ -834,7 +866,14 @@ export default function ParticipantesAdminPage() {
 
       {/* Modal Confirmación Eliminar Participante */}
       {deletingParticipant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeletingParticipant) setDeletingParticipant(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        >
           <div className="bg-slate-900 border-2 border-red-500/40 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-red-500/15 text-red-400 flex items-center justify-center">

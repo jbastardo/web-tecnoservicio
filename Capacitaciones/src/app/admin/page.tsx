@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   TrendingUp,
   Users,
@@ -61,11 +62,12 @@ export default function AdminDashboardPage() {
 
         <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={fetchMetrics}
             disabled={loading}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition"
+            className="flex items-center gap-2 px-3.5 py-2 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-xl transition shadow-sm cursor-pointer"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-brand-400" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#f4730a]" : ""}`} />
             <span>Actualizar Métricas</span>
           </button>
         </div>
@@ -74,7 +76,10 @@ export default function AdminDashboardPage() {
       {/* KPI Cards: Fila Horizontal Compacta de 4 Columnas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: No-Show Rate */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+        <Link
+          href="/admin/checkin"
+          className="bg-slate-900 border border-slate-800 hover:border-[#f4730a] rounded-2xl p-4 shadow-sm relative overflow-hidden transition group block"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-400">Tasa de No-Show</span>
             <div className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center">
@@ -89,14 +94,20 @@ export default function AdminDashboardPage() {
               ({attendanceRate.totalNoShow} de {attendanceRate.totalConfirmed} confirmados)
             </span>
           </div>
-          <div className="mt-2 text-[11px] text-emerald-400 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" />
-            <span>Asistencia efectiva: {attendanceRate.attendanceRatePercent.toFixed(1)}%</span>
+          <div className="mt-2 text-[11px] text-emerald-400 flex items-center justify-between gap-1">
+            <span className="flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" />
+              Asistencia efectiva: {attendanceRate.attendanceRatePercent.toFixed(1)}%
+            </span>
+            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#f4730a] transition" />
           </div>
-        </div>
+        </Link>
 
         {/* KPI 2: ROI Financiero */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+        <Link
+          href="/admin/capacitaciones"
+          className="bg-slate-900 border border-slate-800 hover:border-[#f4730a] rounded-2xl p-4 shadow-sm relative overflow-hidden transition group block"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-400">Retorno de Inversión (ROI)</span>
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
@@ -111,13 +122,19 @@ export default function AdminDashboardPage() {
               (Neto: {formatCurrency(roiMetrics.netProfit)})
             </span>
           </div>
-          <div className="mt-2 text-[11px] text-slate-400">
-            Ingresos: <strong className="text-white">{formatCurrency(roiMetrics.totalRevenue)}</strong> vs Costos: {formatCurrency(roiMetrics.totalCosts)}
+          <div className="mt-2 text-[11px] text-slate-400 flex items-center justify-between gap-1">
+            <span>
+              Ingresos: <strong className="text-white">{formatCurrency(roiMetrics.totalRevenue)}</strong> vs Costos: {formatCurrency(roiMetrics.totalCosts)}
+            </span>
+            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#f4730a] transition flex-shrink-0" />
           </div>
-        </div>
+        </Link>
 
         {/* KPI 3: Fidelización / Prospectos Vírgenes */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+        <Link
+          href="/admin/participantes"
+          className="bg-slate-900 border border-slate-800 hover:border-[#f4730a] rounded-2xl p-4 shadow-sm relative overflow-hidden transition group block"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-400">Oportunidad Cross-Selling</span>
             <div className="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
@@ -132,13 +149,19 @@ export default function AdminDashboardPage() {
               ({fidelizationMap.prospectsCount} prospectos sin compras)
             </span>
           </div>
-          <div className="mt-2 text-[11px] text-cyan-300">
-            {fidelizationMap.recurringWithoutPurchasesPercent.toFixed(1)}% recurrentes aún sin compra en tienda
+          <div className="mt-2 text-[11px] text-cyan-300 flex items-center justify-between gap-1">
+            <span>
+              {fidelizationMap.recurringWithoutPurchasesPercent.toFixed(1)}% recurrentes aún sin compra en tienda
+            </span>
+            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#f4730a] transition flex-shrink-0" />
           </div>
-        </div>
+        </Link>
 
         {/* KPI 4: Validación y Recaudación de Pagos */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm relative overflow-hidden">
+        <Link
+          href="/admin/inscripciones"
+          className="bg-slate-900 border border-slate-800 hover:border-[#f4730a] rounded-2xl p-4 shadow-sm relative overflow-hidden transition group block"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-400">Total Recaudado (Cursos)</span>
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
@@ -153,18 +176,21 @@ export default function AdminDashboardPage() {
               ({paymentStatus.totalCollectedManual > 0 ? "Manual + Pabilo" : "Pabilo auto"})
             </span>
           </div>
-          <div className="mt-2 text-[11px] flex items-center justify-between">
+          <div className="mt-2 text-[11px] flex items-center justify-between gap-1">
             <span className="text-amber-400">Pendiente: {formatCurrency(paymentStatus.totalPending)}</span>
-            <span className="text-slate-500 font-mono">Pabilo: {formatCurrency(paymentStatus.totalCollectedPabilo)}</span>
+            <span className="text-slate-500 font-mono flex items-center gap-1">
+              <span>Pabilo: {formatCurrency(paymentStatus.totalCollectedPabilo)}</span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#f4730a] transition" />
+            </span>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Gráficos y Desgloses Principales en Rejilla Widescreen (2x2) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gráfico 1: Tasa de Asistencia vs. Inscripción (Funnel No-Show) */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between gap-2 mb-4">
             <div>
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-brand-400" />
@@ -174,9 +200,13 @@ export default function AdminDashboardPage() {
                 Comparativa de aforo para controlar sobrecupos y no-show (Meta: 18 cupos)
               </span>
             </div>
-            <span className="text-xs font-mono bg-slate-800 px-2 py-1 rounded text-brand-300">
-              Aforo Sala: 18
-            </span>
+            <Link
+              href="/admin/checkin"
+              className="text-xs font-bold bg-slate-800 hover:bg-[#f4730a] hover:text-white px-2.5 py-1 rounded-lg text-brand-300 flex items-center gap-1 transition whitespace-nowrap"
+            >
+              <span>Check-in</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
           <div className="space-y-4">
@@ -257,7 +287,7 @@ export default function AdminDashboardPage() {
 
         {/* Gráfico 2: ROI Financiero de la Capacitación */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between gap-2 mb-4">
             <div>
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-emerald-400" />
@@ -267,9 +297,13 @@ export default function AdminDashboardPage() {
                 Ingresos cobrados vs. Costos de Publicidad y Logística/Refrigerios
               </span>
             </div>
-            <span className="text-xs font-mono bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full font-bold">
-              ROI: +{roiMetrics.roiPercent.toFixed(1)}%
-            </span>
+            <Link
+              href="/admin/capacitaciones"
+              className="text-xs font-mono bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 px-2.5 py-1 rounded-full font-bold flex items-center gap-1 hover:opacity-85 transition whitespace-nowrap"
+            >
+              <span>ROI: +{roiMetrics.roiPercent.toFixed(1)}%</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
@@ -308,7 +342,7 @@ export default function AdminDashboardPage() {
 
         {/* Gráfico 3: Mapa de Fidelización y Conversión de Hardware */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between gap-2 mb-4">
             <div>
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <Target className="w-4 h-4 text-cyan-400" />
@@ -318,6 +352,13 @@ export default function AdminDashboardPage() {
                 Identifica cuántos asistentes son prospectos vírgenes para vender equipos Odoo
               </span>
             </div>
+            <Link
+              href="/admin/participantes"
+              className="text-xs font-bold bg-slate-800 hover:bg-[#f4730a] hover:text-white px-2.5 py-1 rounded-lg text-cyan-300 flex items-center gap-1 transition whitespace-nowrap"
+            >
+              <span>Ver CRM</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
           <div className="grid grid-cols-3 gap-3 mb-4 text-center">
@@ -346,12 +387,12 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="p-3.5 bg-gradient-to-r from-brand-950/60 to-cyan-950/60 rounded-xl border border-brand-800/40 text-xs">
-            <div className="flex items-center gap-2 text-brand-300 font-bold mb-1">
+          <div className="p-3.5 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-brand-950/60 dark:to-cyan-950/60 rounded-xl border border-blue-200 dark:border-brand-800/40 text-xs">
+            <div className="flex items-center gap-2 text-[#0e5cd7] dark:text-brand-300 font-bold mb-1">
               <ShoppingBag className="w-4 h-4" />
               <span>Oportunidad de Venta Cruzada Comercial</span>
             </div>
-            <p className="text-slate-300 leading-relaxed">
+            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
               El <strong>{fidelizationMap.prospectConversionOpportunityPercent.toFixed(1)}%</strong> de
               los asistentes son técnicos o empresas que aún no adquieren suministros en la tienda de
               Onprotec. Puedes ofrecerles descuentos en los SKUs de Odoo utilizados durante la
@@ -362,7 +403,7 @@ export default function AdminDashboardPage() {
 
         {/* Gráfico 4: Conciliación de Pagos (Pabilo vs Manual) */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between gap-2 mb-4">
             <div>
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <CreditCard className="w-4 h-4 text-brand-400" />
@@ -372,6 +413,13 @@ export default function AdminDashboardPage() {
                 Pagos automáticos validados por webhook vs pendientes por conciliar
               </span>
             </div>
+            <Link
+              href="/admin/inscripciones"
+              className="text-xs font-bold bg-slate-800 hover:bg-[#f4730a] hover:text-white px-2.5 py-1 rounded-lg text-cyan-300 flex items-center gap-1 transition whitespace-nowrap"
+            >
+              <span>Conciliar</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
           <div className="space-y-3 text-xs">
@@ -413,21 +461,21 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-amber-900/40 bg-amber-950/10">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-900/40">
               <div className="flex items-center gap-2.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500 dark:bg-amber-400" />
                 <div>
-                  <span className="font-bold text-amber-200 block">Pendientes por Cobrar</span>
-                  <span className="text-[10px] text-amber-400/80">
+                  <span className="font-bold text-amber-950 dark:text-amber-200 block">Pendientes por Cobrar</span>
+                  <span className="text-[10px] text-amber-700 dark:text-amber-400/80">
                     Inscritos sin comprobante validado
                   </span>
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-sm font-bold text-amber-400 block">
+                <span className="text-sm font-bold text-amber-700 dark:text-amber-400 block">
                   {formatCurrency(paymentStatus.totalPending)}
                 </span>
-                <span className="text-[10px] text-amber-300">
+                <span className="text-[10px] text-amber-800 dark:text-amber-300 font-semibold">
                   {paymentStatus.pendingCount} personas
                 </span>
               </div>

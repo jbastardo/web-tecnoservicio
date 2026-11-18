@@ -359,3 +359,24 @@ Para erradicar por completo la pérdida de capacitaciones, preguntas personaliza
    * Se habilitó el endpoint `DELETE /api/capacitaciones?id=<id>` con eliminación en cascada de inscripciones y encuestas asociadas para garantizar integridad referencial.
    * En `/admin/capacitaciones`, se añadieron botones de eliminación rápida en la tabla (`[ 🗑️ Borrar ]`) y en el pie del modal de edición (`[ 🗑️ Eliminar Capacitación ]`).
    * **Salvaguarda Visual:** Modal de confirmación con alerta de impacto antes de ejecutar la eliminación definitiva en el almacenamiento persistente.
+
+---
+
+## 12. Auditoría UX/UI Integral, Rapidez SSR & Navegación Contextual (Noviembre 2026)
+
+1. **Optimización de Rapidez SSR y Carga Sin Saltos Visuales (CLS = 0):**
+   * **`src/lib/autoMigrate.ts` & `src/app/layout.tsx`:** Se desacopló `runAutoMigrate()` del flujo bloqueante de `RootLayout` mediante ejecución no bloqueante y bandera `migrationAttempted` / `migrationPromise` deduplicada, evitando esperas de conexión o reintentos repetidos en cada petición SSR cuando no hay `DATABASE_URL`.
+   * **Skeletons Widescreen en Portada (`src/app/page.tsx`) y Encuesta (`src/app/encuesta/[id]/page.tsx`):** Mientras cargan los datos de `/api/capacitaciones`, se renderizan skeletons widescreen para banners, ficha izquierda y formulario, eliminando el falso mensaje transitorio de *"Inscripciones Cerradas"* y evitando saltos de layout. Las imágenes principales incorporan `fetchPriority="high"` y `decoding="async"`.
+
+2. **Coherencia Visual & Contraste Certificado en Modo Claro / Oscuro:**
+   * **Logotipos Adaptables (`variant="auto"`):** Tanto el login administrativo (`src/app/admin/layout.tsx`) como la encuesta pública (`src/app/encuesta/[id]/page.tsx`) ahora emplean `<OnprotecBrand variant="auto" />`, asegurando visibilidad total del logo a color sobre fondos claros y blanco sobre fondos oscuros.
+   * **Reglas de Contraste en `src/app/globals.css`:** Se blindó el contraste de botones, badges y tarjetas con clases oscuras reutilizadas (`.bg-slate-900`, `.bg-slate-800`, `.bg-slate-950`, `.text-brand-300/400`) en Modo Claro, se excluyeron los backdrops modales (`.fixed.inset-0`) del override de `.bg-slate-950/80` para mantener desenfoque translúcido oscuro, y se añadió `overscroll-behavior: contain` junto con anillo `:focus-visible` corporativo (`#f4730a`).
+   * **Mapa Físico de 18 Puestos (`tailwind.config.js` & `/admin/checkin`):** Se extendió `gridTemplateColumns` con `18: "repeat(18, minmax(0, 1fr))"` para que la clase `lg:grid-cols-18` despliegue los 18 asientos físicos de la Sala VIP en una sola fila horizontal en pantallas widescreen.
+
+3. **Navegación Cruzada, Formularios Completos y Accesibilidad:**
+   * **Barra Administrativa Responsiva (`src/app/admin/layout.tsx`):** Menú horizontal visible desde `lg:flex` (`1024px+`) con `aria-current="page"`, y barra secundaria móvil/tablet (`lg:hidden`) corregida con contraste alto en ambos temas.
+   * **Flujo Contextual entre Módulos Admin:**
+     * `/admin` (`Dashboard`): Tarjetas KPI y encabezados de gráficos con enlaces directos a `/admin/checkin`, `/admin/capacitaciones`, `/admin/participantes` y `/admin/inscripciones`.
+     * `/admin/capacitaciones`: Contador de aforo enlazado a `/admin/inscripciones?trainingId={id}` y acción directa a `/admin/checkin?trainingId={id}`.
+     * `/admin/inscripciones` y `/admin/checkin`: Lectura automática de `?trainingId=` en URL para prefiltrar el evento seleccionado.
+   * **Formulario Público Completo (`src/app/page.tsx`):** Soporte para los 5 tipos de pregunta del constructor (`text`, `textarea`, `select`, `radio`, `checkbox`), atributos `autocomplete` / `inputMode` para autofill nativo, botón flotante móvil inteligente (`IntersectionObserver` sobre `#formulario-oficial`) y cierre de todos los modales públicos y privados con tecla `Escape` o clic fuera del diálogo.

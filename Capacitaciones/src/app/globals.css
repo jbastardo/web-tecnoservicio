@@ -189,10 +189,10 @@ html:not([data-theme="dark"]) .bg-slate-950 {
   color: #0f172a !important;
 }
 
-html[data-theme="light"] .bg-slate-950\/80,
-html[data-theme="light"] .bg-slate-950\/90,
-html:not([data-theme="dark"]) .bg-slate-950\/80,
-html:not([data-theme="dark"]) .bg-slate-950\/90 {
+html[data-theme="light"] .bg-slate-950\/80:not(.fixed),
+html[data-theme="light"] .bg-slate-950\/90:not(.fixed),
+html:not([data-theme="dark"]) .bg-slate-950\/80:not(.fixed),
+html:not([data-theme="dark"]) .bg-slate-950\/90:not(.fixed) {
   background-color: #f1f5f9 !important;
   color: #0f172a !important;
 }
@@ -252,12 +252,51 @@ html:not([data-theme="dark"]) th {
   color: #0f172a;
 }
 
-/* En Modo Claro, los textos que se encuentren en superficies que se volvieron claras deben ser OSCUROS DE ALTO CONTRASTE */
-html[data-theme="light"] .bg-slate-900 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *):not(.dark-banner-card *),
-html[data-theme="light"] .bg-slate-950 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *):not(.dark-banner-card *),
+/* En Modo Claro, los textos y controles oscuros que se convirtieron a superficies claras deben mantener alto contraste */
+html[data-theme="light"] .bg-slate-900.text-white:not(.keep-white):not(.dark-banner-card),
+html[data-theme="light"] .bg-slate-950.text-white:not(.keep-white):not(.dark-banner-card),
+html[data-theme="light"] .bg-slate-800.text-white:not(.keep-white):not(.dark-banner-card),
+html:not([data-theme="dark"]) .bg-slate-900.text-white:not(.keep-white):not(.dark-banner-card),
+html:not([data-theme="dark"]) .bg-slate-950.text-white:not(.keep-white):not(.dark-banner-card),
+html:not([data-theme="dark"]) .bg-slate-800.text-white:not(.keep-white):not(.dark-banner-card) {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .bg-slate-900.text-slate-200,
+html[data-theme="light"] .bg-slate-900.text-slate-300,
+html[data-theme="light"] .bg-slate-950.text-slate-200,
+html[data-theme="light"] .bg-slate-950.text-slate-300,
+html[data-theme="light"] .bg-slate-950.text-slate-400,
+html[data-theme="light"] .bg-slate-800.text-slate-200,
+html[data-theme="light"] .bg-slate-800.text-slate-300,
+html[data-theme="light"] .bg-slate-800.text-slate-400,
+html:not([data-theme="dark"]) .bg-slate-900.text-slate-200,
+html:not([data-theme="dark"]) .bg-slate-900.text-slate-300,
+html:not([data-theme="dark"]) .bg-slate-950.text-slate-300,
+html:not([data-theme="dark"]) .bg-slate-950.text-slate-400,
+html:not([data-theme="dark"]) .bg-slate-800.text-slate-200,
+html:not([data-theme="dark"]) .bg-slate-800.text-slate-300,
+html:not([data-theme="dark"]) .bg-slate-800.text-slate-400 {
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme="light"] .bg-slate-900.hover\:text-white:hover,
+html[data-theme="light"] .bg-slate-950.hover\:text-white:hover,
+html[data-theme="light"] .bg-slate-800.hover\:text-white:hover,
+html:not([data-theme="dark"]) .bg-slate-900.hover\:text-white:hover,
+html:not([data-theme="dark"]) .bg-slate-950.hover\:text-white:hover,
+html:not([data-theme="dark"]) .bg-slate-800.hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .bg-slate-900 .text-white:not(.keep-white):not([class*="bg-"]):not(.dark-banner-card *):not(.onprotec-btn-primary *):not([class*="bg-[#"] *):not([class*="bg-emerald"] *):not([class*="bg-cyan"] *):not([class*="bg-red"] *):not([class*="bg-amber"] *):not([class*="bg-brand"] *),
+html[data-theme="light"] .bg-slate-950 .text-white:not(.keep-white):not([class*="bg-"]):not(.dark-banner-card *):not(.onprotec-btn-primary *):not([class*="bg-[#"] *):not([class*="bg-emerald"] *):not([class*="bg-cyan"] *):not([class*="bg-red"] *):not([class*="bg-amber"] *):not([class*="bg-brand"] *),
+html[data-theme="light"] .bg-slate-800 .text-white:not(.keep-white):not([class*="bg-"]):not(.dark-banner-card *):not(.onprotec-btn-primary *):not([class*="bg-[#"] *):not([class*="bg-emerald"] *):not([class*="bg-cyan"] *):not([class*="bg-red"] *):not([class*="bg-amber"] *):not([class*="bg-brand"] *),
 html[data-theme="light"] .bg-white .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *):not(.dark-banner-card *),
-html:not([data-theme="dark"]) .bg-slate-900 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *):not(.dark-banner-card *),
-html:not([data-theme="dark"]) .bg-slate-950 .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *):not(.dark-banner-card *),
+html:not([data-theme="dark"]) .bg-slate-900 .text-white:not(.keep-white):not([class*="bg-"]):not(.dark-banner-card *):not(.onprotec-btn-primary *):not([class*="bg-[#"] *):not([class*="bg-emerald"] *):not([class*="bg-cyan"] *):not([class*="bg-red"] *):not([class*="bg-amber"] *):not([class*="bg-brand"] *),
+html:not([data-theme="dark"]) .bg-slate-950 .text-white:not(.keep-white):not([class*="bg-"]):not(.dark-banner-card *):not(.onprotec-btn-primary *):not([class*="bg-[#"] *):not([class*="bg-emerald"] *):not([class*="bg-cyan"] *):not([class*="bg-red"] *):not([class*="bg-amber"] *):not([class*="bg-brand"] *),
+html:not([data-theme="dark"]) .bg-slate-800 .text-white:not(.keep-white):not([class*="bg-"]):not(.dark-banner-card *):not(.onprotec-btn-primary *):not([class*="bg-[#"] *):not([class*="bg-emerald"] *):not([class*="bg-cyan"] *):not([class*="bg-red"] *):not([class*="bg-amber"] *):not([class*="bg-brand"] *),
 html:not([data-theme="dark"]) .bg-white .text-white:not(.keep-white):not([class*="bg-"]):not(button *):not(a *):not(.dark-banner-card *) {
   color: #0f172a !important;
 }
@@ -267,7 +306,9 @@ html[data-theme="light"] .bg-slate-900 .text-slate-300,
 html[data-theme="light"] .bg-slate-950 .text-slate-200,
 html[data-theme="light"] .bg-slate-950 .text-slate-300,
 html:not([data-theme="dark"]) .bg-slate-900 .text-slate-200,
-html:not([data-theme="dark"]) .bg-slate-900 .text-slate-300 {
+html:not([data-theme="dark"]) .bg-slate-900 .text-slate-300,
+html:not([data-theme="dark"]) .bg-slate-950 .text-slate-200,
+html:not([data-theme="dark"]) .bg-slate-950 .text-slate-300 {
   color: #1e293b !important;
 }
 
@@ -276,6 +317,17 @@ html[data-theme="light"] .bg-slate-950 .text-slate-400,
 html:not([data-theme="dark"]) .bg-slate-900 .text-slate-400,
 html:not([data-theme="dark"]) .bg-slate-950 .text-slate-400 {
   color: #475569 !important;
+}
+
+html[data-theme="light"] .bg-slate-900 .text-brand-300,
+html[data-theme="light"] .bg-slate-900 .text-brand-400,
+html[data-theme="light"] .bg-slate-950 .text-brand-300,
+html[data-theme="light"] .bg-slate-950 .text-brand-400,
+html:not([data-theme="dark"]) .bg-slate-900 .text-brand-300,
+html:not([data-theme="dark"]) .bg-slate-900 .text-brand-400,
+html:not([data-theme="dark"]) .bg-slate-950 .text-brand-300,
+html:not([data-theme="dark"]) .bg-slate-950 .text-brand-400 {
+  color: #0e5cd7 !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -598,6 +650,26 @@ html[data-theme="dark"] textarea::placeholder,
 .dark input::placeholder,
 .dark textarea::placeholder {
   color: #94a3b8 !important;
+}
+
+/* Accesibilidad: foco visible corporativo, acento nativo y contención de scroll en modales */
+html {
+  accent-color: #f4730a;
+}
+
+:focus-visible {
+  outline: 2px solid #f4730a;
+  outline-offset: 2px;
+}
+
+.fixed.inset-0,
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 /* Scrollbars */

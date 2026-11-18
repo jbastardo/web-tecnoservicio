@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   CalendarCheck,
   Plus,
   Users,
+  UserCheck,
   Layers,
   QrCode,
   ExternalLink,
@@ -132,6 +134,22 @@ export default function CapacitacionesAdminPage() {
     fetchTrainings();
     setOdooSkus(initialOdooSkus);
   }, [sortOrder]);
+
+  useEffect(() => {
+    if (!deletingTraining && !showModal && !selectedSurveyModal) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (deletingTraining) {
+        setDeletingTraining(null);
+      } else if (showModal) {
+        setShowModal(false);
+      } else if (selectedSurveyModal) {
+        setSelectedSurveyModal(null);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [deletingTraining, showModal, selectedSurveyModal]);
 
   const handleSyncOdoo = async () => {
     setSyncingOdoo(true);
@@ -659,34 +677,40 @@ export default function CapacitacionesAdminPage() {
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`font-bold ${
-                              isFull ? "text-amber-400" : "text-emerald-400"
-                            }`}
-                          >
-                            {stats.totalOccupied} / {maxCap}
-                          </span>
-                          {isFull ? (
-                            <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/30 font-bold">
-                              Lleno
+                        <Link
+                          href={`/admin/inscripciones?trainingId=${t.id}`}
+                          className="group inline-block"
+                          title={`Ver inscripciones de ${t.code}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`font-bold group-hover:underline ${
+                                isFull ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"
+                              }`}
+                            >
+                              {stats.totalOccupied} / {maxCap}
                             </span>
-                          ) : (
-                            <span className="text-[10px] bg-emerald-500/15 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30 font-semibold">
-                              {stats.availableSeats} libres
-                            </span>
-                          )}
-                        </div>
-                        <div className="w-24 bg-slate-800 h-1.5 rounded-full mt-1.5 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${
-                              isFull ? "bg-amber-500" : "bg-emerald-500"
-                            }`}
-                            style={{
-                              width: `${Math.min(100, (stats.totalOccupied / maxCap) * 100)}%`,
-                            }}
-                          />
-                        </div>
+                            {isFull ? (
+                              <span className="text-[10px] bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-300 dark:border-amber-500/30 font-bold">
+                                Lleno
+                              </span>
+                            ) : (
+                              <span className="text-[10px] bg-emerald-100 text-emerald-900 dark:bg-emerald-500/15 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-300 dark:border-emerald-500/30 font-semibold">
+                                {stats.availableSeats} libres
+                              </span>
+                            )}
+                          </div>
+                          <div className="w-24 bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${
+                                isFull ? "bg-amber-500" : "bg-emerald-500"
+                              }`}
+                              style={{
+                                width: `${Math.min(100, (stats.totalOccupied / maxCap) * 100)}%`,
+                              }}
+                            />
+                          </div>
+                        </Link>
                       </td>
 
                       <td className="py-3.5 px-4">
@@ -735,11 +759,20 @@ export default function CapacitacionesAdminPage() {
                       </td>
 
                       <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          <Link
+                            href={`/admin/checkin?trainingId=${t.id}`}
+                            className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-300 dark:bg-emerald-500/15 dark:hover:bg-emerald-600 dark:text-emerald-300 dark:border-emerald-500/40 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer"
+                            title="Abrir Check-in y Lista de Asistencia de esta capacitación"
+                          >
+                            <UserCheck className="w-3.5 h-3.5" />
+                            <span>Check-in</span>
+                          </Link>
+
                           <button
                             type="button"
                             onClick={() => openEditModal(t, "general")}
-                            className="px-2.5 py-1.5 bg-brand-600/20 hover:bg-brand-600/30 text-brand-300 border border-brand-500/40 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer"
+                            className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0e5cd7] border border-blue-300 dark:bg-brand-600/20 dark:hover:bg-brand-600/30 dark:text-brand-300 dark:border-brand-500/40 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer"
                             title="Editar Capacitación, Preguntas, Portada y Notas"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
@@ -759,7 +792,7 @@ export default function CapacitacionesAdminPage() {
                           <button
                             type="button"
                             onClick={() => openSurveyViewer(t)}
-                            className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                            className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-amber-700 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-amber-300 dark:border-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
                             title="Ver Código QR y Encuesta de Fin de Curso"
                           >
                             <QrCode className="w-3.5 h-3.5" />
@@ -769,7 +802,7 @@ export default function CapacitacionesAdminPage() {
                           <button
                             type="button"
                             onClick={() => setDeletingTraining(t)}
-                            className="px-2 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-300 border border-red-800/50 rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                            className="px-2 py-1.5 bg-rose-50 hover:bg-red-600 text-rose-700 hover:text-white border border-rose-300 dark:bg-red-950/40 dark:hover:bg-red-900/60 dark:text-red-400 dark:hover:text-red-300 dark:border-red-800/50 rounded-lg text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
                             title={`Eliminar capacitación ${t.code}`}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -788,7 +821,14 @@ export default function CapacitacionesAdminPage() {
 
       {/* Modal Ver QR y Resultados de Encuesta al Final del Curso */}
       {selectedSurveyModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedSurveyModal(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+        >
           <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-4xl w-full relative shadow-2xl my-8">
             <button
               onClick={() => setSelectedSurveyModal(null)}
@@ -930,7 +970,14 @@ export default function CapacitacionesAdminPage() {
 
       {/* Modal Completo Crear / Editar Capacitación (Con Pestañas) */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowModal(false);
+          }}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+        >
           <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-4xl w-full shadow-2xl my-8">
             <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
               <div>
@@ -1215,20 +1262,20 @@ export default function CapacitacionesAdminPage() {
                         }
                         className={`p-3.5 rounded-xl border-2 text-left transition cursor-pointer flex flex-col justify-between ${
                           formData.isFree
-                            ? "bg-emerald-950/40 border-emerald-500 text-white shadow-md shadow-emerald-900/20"
-                            : "bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700"
+                            ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 text-emerald-950 dark:text-white shadow-md shadow-emerald-900/10"
+                            : "bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-700"
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs font-black text-emerald-400 flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                          <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
                             🟢 EVENTO GRATUITO
                           </span>
-                          <span className="text-[10px] font-mono font-bold bg-emerald-900/60 text-emerald-200 px-2 py-0.5 rounded">
+                          <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-200 px-2 py-0.5 rounded">
                             Cupo: 40 Pre-inscritos
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-300 leading-snug">
+                        <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-snug">
                           Convocatoria abierta de <strong>hasta 40 registrados</strong> para contactar y reconfirmar los <strong>18 cupos físicos en sala</strong> (compensa la tasa habitual de No-Show).
                         </p>
                       </button>
@@ -1245,20 +1292,20 @@ export default function CapacitacionesAdminPage() {
                         }
                         className={`p-3.5 rounded-xl border-2 text-left transition cursor-pointer flex flex-col justify-between ${
                           !formData.isFree
-                            ? "bg-amber-950/40 border-amber-500 text-white shadow-md shadow-amber-900/20"
-                            : "bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700"
+                            ? "bg-amber-50 dark:bg-amber-950/40 border-amber-500 text-amber-950 dark:text-white shadow-md shadow-amber-900/10"
+                            : "bg-white dark:bg-slate-900/60 border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-700"
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs font-black text-amber-400 flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                          <span className="text-xs font-black text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 dark:bg-amber-400" />
                             🔵 ACTIVIDAD COBRADA (PAGA)
                           </span>
-                          <span className="text-[10px] font-mono font-bold bg-amber-900/60 text-amber-200 px-2 py-0.5 rounded">
+                          <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 px-2 py-0.5 rounded">
                             Aforo Estricto: 18
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-300 leading-snug">
+                        <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-snug">
                           Requiere pago y comprobante. <strong>Solo 18 puestos VIP garantizados</strong> (el puesto 19 pasa automáticamente a lista de espera).
                         </p>
                       </button>
@@ -1839,7 +1886,7 @@ export default function CapacitacionesAdminPage() {
                         const t = trainings.find((item) => item.id === editingId);
                         if (t) setDeletingTraining(t);
                       }}
-                      className="px-3.5 py-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/60 text-xs font-bold flex items-center gap-1.5 transition"
+                      className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-red-600 text-rose-700 hover:text-white border border-rose-300 dark:bg-red-950/40 dark:hover:bg-red-900/60 dark:text-red-400 dark:border-red-800/60 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
                       title="Eliminar esta capacitación de la base de datos"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -1883,7 +1930,14 @@ export default function CapacitacionesAdminPage() {
 
       {/* Modal de Confirmación de Eliminación de Capacitación (Permiso Diana / Coordinación) */}
       {deletingTraining && (
-        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeleting) setDeletingTraining(null);
+          }}
+          className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+        >
           <div className="bg-slate-900 border border-red-500/30 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto mb-4 text-red-400">
               <Trash2 className="w-6 h-6" />
@@ -1897,8 +1951,8 @@ export default function CapacitacionesAdminPage() {
                 {deletingTraining.code} · {deletingTraining.name}
               </span>
             </p>
-            <div className="p-3 bg-red-950/30 border border-red-900/40 rounded-xl mb-5 text-[11px] text-red-300 flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+            <div className="p-3 bg-rose-50 dark:bg-red-950/30 border border-rose-300 dark:border-red-900/40 rounded-xl mb-5 text-[11px] text-rose-800 dark:text-red-300 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-red-400 shrink-0 mt-0.5" />
               <span>
                 Esta acción eliminará el evento, su formulario de preguntas personalizadas y todos los registros vinculados de la base de datos persistente.
               </span>

@@ -94,16 +94,26 @@ export default function CheckinAdminPage() {
   };
 
   useEffect(() => {
+    const queryTid =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("trainingId")
+        : null;
+
     fetch("/api/capacitaciones?order=desc")
       .then((r) => r.json())
       .then((d) => {
         if (d.success && d.data?.length > 0) {
           setTrainings(d.data);
-          // Priorizar el evento planificado o el más reciente
+          const matchedFromUrl = queryTid
+            ? d.data.find((t: any) => String(t.id) === queryTid)
+            : null;
+          // Priorizar el evento de la URL, o el planificado / en publicidad o el más reciente
           const planned =
+            matchedFromUrl ||
             d.data.find(
               (t: any) => t.status === "Planificado" || t.status === "En Publicidad"
-            ) || d.data[0];
+            ) ||
+            d.data[0];
           setSelectedTrainingId(planned.id);
         }
       })
@@ -111,6 +121,18 @@ export default function CheckinAdminPage() {
 
     fetchRegistrations();
   }, []);
+
+  useEffect(() => {
+    if (!deletingReg && !editingReg && !printModalOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (deletingReg && !isDeletingReg) setDeletingReg(null);
+      else if (editingReg) setEditingReg(null);
+      else if (printModalOpen) setPrintModalOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [deletingReg, isDeletingReg, editingReg, printModalOpen]);
 
   const currentTraining =
     trainings.find((t) => Number(t.id) === Number(selectedTrainingId)) || trainings[0];
@@ -520,11 +542,11 @@ export default function CheckinAdminPage() {
                   key={seatNumber}
                   className={`h-11 rounded-xl flex flex-col items-center justify-center border font-mono text-xs transition duration-200 ${
                     isOccupied
-                      ? "bg-emerald-500/20 border-emerald-500/60 text-emerald-300 font-black shadow-sm shadow-emerald-500/20"
-                      : "bg-slate-950 border-slate-800 text-slate-600 font-bold"
+                      ? "bg-emerald-100 border-emerald-400 text-emerald-900 dark:bg-emerald-500/20 dark:border-emerald-500/60 dark:text-emerald-300 font-black shadow-sm shadow-emerald-500/20"
+                      : "bg-slate-100 border-slate-300 text-slate-700 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-400 font-bold"
                   }`}
                 >
-                  <span className="text-[9px] text-slate-500 uppercase">Puesto</span>
+                  <span className="text-[9px] text-slate-600 dark:text-slate-400 uppercase">Puesto</span>
                   <span>{seatNumber}</span>
                 </div>
               );
@@ -582,8 +604,8 @@ export default function CheckinAdminPage() {
               onClick={() => setFilterAttendance("all")}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                 filterAttendance === "all"
-                  ? "bg-[#f4730a] text-white shadow-sm"
-                  : "bg-slate-950 text-slate-400 hover:text-white border border-slate-800"
+                  ? "bg-[#f4730a] text-white keep-white shadow-sm"
+                  : "bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-800"
               }`}
             >
               Todos ({eventRegistrations.length})
@@ -593,8 +615,8 @@ export default function CheckinAdminPage() {
               onClick={() => setFilterAttendance("pending")}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                 filterAttendance === "pending"
-                  ? "bg-amber-600 text-white shadow-sm"
-                  : "bg-slate-950 text-slate-400 hover:text-white border border-slate-800"
+                  ? "bg-amber-600 text-white keep-white shadow-sm"
+                  : "bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-800"
               }`}
             >
               Pendientes por Llegar ({pendingCount})
@@ -604,8 +626,8 @@ export default function CheckinAdminPage() {
               onClick={() => setFilterAttendance("attended")}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                 filterAttendance === "attended"
-                  ? "bg-emerald-600 text-white shadow-sm"
-                  : "bg-slate-950 text-slate-400 hover:text-white border border-slate-800"
+                  ? "bg-emerald-600 text-white keep-white shadow-sm"
+                  : "bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-800"
               }`}
             >
               Presentes en Sala (✓ {attendedCount})
@@ -662,8 +684,8 @@ export default function CheckinAdminPage() {
                       key={r.id}
                       className={`transition ${
                         isPresent
-                          ? "bg-emerald-950/20 hover:bg-emerald-950/30"
-                          : "hover:bg-slate-800/40"
+                          ? "bg-emerald-50/80 hover:bg-emerald-100/70 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/30"
+                          : "hover:bg-slate-50 dark:hover:bg-slate-800/40"
                       }`}
                     >
                       {/* Nº de Fila */}
@@ -731,7 +753,7 @@ export default function CheckinAdminPage() {
                       {/* Hora de Ingreso */}
                       <td className="py-3.5 px-4 font-mono text-xs">
                         {r.checkInAt ? (
-                          <span className="text-emerald-300 font-bold flex items-center gap-1">
+                          <span className="text-emerald-700 dark:text-emerald-300 font-bold flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {fmtLocalTime(r.checkInAt)}
                           </span>
@@ -748,8 +770,8 @@ export default function CheckinAdminPage() {
                             onClick={() => handleToggleAttendance(r.id)}
                             className={`px-3.5 py-2 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                               isPresent
-                                ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400/50"
-                                : "bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-300 border border-slate-700 hover:border-emerald-500"
+                                ? "bg-emerald-600 hover:bg-emerald-700 text-white keep-white shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400/50"
+                                : "bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:border-emerald-500"
                             }`}
                           >
                             {isPresent ? (
@@ -808,7 +830,14 @@ export default function CheckinAdminPage() {
           Idéntica a la hoja que fotografió Diana Barrero en recepción
       ===================================================================== */}
       {printModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPrintModalOpen(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto"
+        >
           <div className="bg-white text-black rounded-2xl w-full max-w-5xl p-6 sm:p-10 shadow-2xl relative my-8 print:p-0 print:m-0 print:shadow-none print:w-full">
             {/* Barra de Acciones del Modal (No se imprime) */}
             <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-6 border-b border-slate-300 print:hidden">
@@ -1006,7 +1035,14 @@ export default function CheckinAdminPage() {
 
       {/* Modal Edición Rápida de Inscrito en Check-in */}
       {editingReg && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingReg(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        >
           <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-xl p-6 shadow-2xl relative">
             <button
               onClick={() => setEditingReg(null)}
@@ -1146,7 +1182,14 @@ export default function CheckinAdminPage() {
 
       {/* Modal Confirmación Eliminar en Check-in */}
       {deletingReg && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeletingReg) setDeletingReg(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        >
           <div className="bg-slate-900 border-2 border-red-500/40 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-red-500/15 text-red-400 flex items-center justify-center">
