@@ -7,7 +7,7 @@ import {
 } from "@/lib/serverStorage";
 import { pabiloService } from "@/services/pabiloService";
 import { whatsappService } from "@/services/whatsappService";
-import { fmtLocalTime } from "@/utils/formatUtils";
+import { fmtLocalTime, ONPROTEC_WHATSAPP_DISPLAY } from "@/utils/formatUtils";
 
 function buildParticipantParticipations(participantId: number) {
   return initialRegistrations
@@ -155,7 +155,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: `El documento de identidad (${docType}-${docNumber}) o correo electrónico ya se encuentra registrado en esta capacitación. Si necesitas verificar tu estatus, comunícate con el equipo de OnProtec por WhatsApp.`,
+          error: `El documento de identidad (${docType}-${docNumber}) o correo electrónico ya se encuentra registrado en esta capacitación. Si necesitas verificar tu estatus, comunícate con el equipo de OnProtec por WhatsApp (${ONPROTEC_WHATSAPP_DISPLAY}).`,
         },
         { status: 409 }
       );

@@ -26,7 +26,13 @@ import {
   Loader2,
 } from "lucide-react";
 import { FormQuestion } from "@/types";
-import { fmtLocalDate, fmtLocalHour, formatCurrency } from "@/utils/formatUtils";
+import {
+  fmtLocalDate,
+  fmtLocalHour,
+  formatCurrency,
+  ONPROTEC_WHATSAPP_DISPLAY,
+  buildOnprotecWhatsAppUrl,
+} from "@/utils/formatUtils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { OnprotecBrand } from "@/components/OnprotecBrand";
 
@@ -1306,7 +1312,17 @@ export default function HomePage() {
               Sede Corporativa OnProtec • Caracas, Venezuela (Acceso exclusivo con invitación confirmada).
             </p>
             <p className="text-[11px] text-slate-400">
-              RIF: J-40685449-2 • Contacto: ventas@onprotec.com | WhatsApp: +58 412 9635648
+              RIF: J-40685449-2 • Contacto: ventas@onprotec.com | WhatsApp:{" "}
+              <a
+                href={buildOnprotecWhatsAppUrl(
+                  "Hola equipo de OnProtec, deseo información sobre las capacitaciones."
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#25d366] hover:underline font-bold"
+              >
+                {ONPROTEC_WHATSAPP_DISPLAY} (+58 412 2318398)
+              </a>
             </p>
           </div>
 
@@ -1343,6 +1359,22 @@ export default function HomePage() {
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
+
+      {/* =====================================================================
+          8.5 BOTÓN FLOTANTE DE CONTACTO WHATSAPP OFICIAL ONPROTEC (0412-2318398)
+      ===================================================================== */}
+      <a
+        href={buildOnprotecWhatsAppUrl(
+          "Hola equipo de OnProtec, tengo una consulta sobre las capacitaciones en Sala VIP."
+        )}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-20 lg:bottom-6 right-5 z-40 inline-flex items-center gap-2 bg-[#25d366] hover:bg-[#1ebe5d] text-white font-black text-xs px-4 py-3 rounded-full shadow-2xl shadow-emerald-600/40 transition-all hover:-translate-y-0.5 keep-white"
+        title={`Escribir al WhatsApp oficial de OnProtec (${ONPROTEC_WHATSAPP_DISPLAY})`}
+      >
+        <Phone className="w-4 h-4" />
+        <span className="hidden sm:inline">WhatsApp {ONPROTEC_WHATSAPP_DISPLAY}</span>
+      </a>
 
       {/* =====================================================================
           9. MODAL EJECUTIVO DE CONFIRMACIÓN POST-ENVÍO (PAGAS VS. GRATUITAS)
@@ -1470,7 +1502,7 @@ export default function HomePage() {
             {/* Acciones */}
             <div className="mt-5 space-y-2">
               <a
-                href={`https://wa.me/584129635648?text=${encodeURIComponent(
+                href={buildOnprotecWhatsAppUrl(
                   `Hola equipo de OnProtec, acabo de completar mi ${
                     isPaidCourse ? "inscripción" : "pre-inscripción"
                   } para la capacitación ${selectedTraining?.code} - ${selectedTraining?.name}. Mi nombre es ${form.name} (CI: ${form.docType}-${form.docNumber}).${
@@ -1478,9 +1510,9 @@ export default function HomePage() {
                       ? ` Método de pago: Binance (Verificado Pabilo • Ref: ${form.paymentReference}).`
                       : ""
                   }`
-                )}`}
+                )}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition cursor-pointer"
               >
                 <Phone className="w-4 h-4" />

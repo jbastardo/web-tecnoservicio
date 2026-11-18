@@ -25,7 +25,14 @@ import {
   Trash2,
   AlertTriangle,
 } from "lucide-react";
-import { fmtLocalTime, fmtLocalDate, formatCurrency } from "@/utils/formatUtils";
+import {
+  fmtLocalTime,
+  fmtLocalDate,
+  fmtLocalHour,
+  formatCurrency,
+  buildParticipantWhatsAppUrl,
+  ONPROTEC_WHATSAPP_DISPLAY,
+} from "@/utils/formatUtils";
 import { OnprotecBrand } from "@/components/OnprotecBrand";
 
 export default function CheckinAdminPage() {
@@ -60,6 +67,16 @@ export default function CheckinAdminPage() {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 3500);
+  };
+
+  const getCheckinWhatsAppUrl = (r: any) => {
+    const pName = r.participant?.name || "Participante";
+    const tName = currentTraining?.name || r.training?.name || "Capacitación OnProtec";
+    const tCode = currentTraining?.code || r.training?.code || "";
+    const tDate = currentTraining?.eventDate ? fmtLocalDate(currentTraining.eventDate) : "";
+    const tHour = currentTraining?.eventDate ? fmtLocalHour(currentTraining.eventDate) : "";
+    const msg = `Hola ${pName}, te escribimos del equipo de OnProtec (${ONPROTEC_WHATSAPP_DISPLAY}) respecto a tu asistencia a la capacitación "${tName}"${tCode ? ` (${tCode})` : ""}${tDate ? ` el ${tDate}` : ""}${tHour ? ` a las ${tHour}` : ""}.`;
+    return buildParticipantWhatsAppUrl(r.participant?.phone, msg);
   };
 
   const fetchRegistrations = async () => {
@@ -662,11 +679,11 @@ export default function CheckinAdminPage() {
                           </span>
                           {p.phone && (
                             <a
-                              href={`https://wa.me/${p.phone.replace(/\D/g, "")}`}
+                              href={getCheckinWhatsAppUrl(r)}
                               target="_blank"
-                              rel="noreferrer"
+                              rel="noopener noreferrer"
                               className="text-emerald-400 hover:text-emerald-300 p-1 rounded-md hover:bg-emerald-950 transition"
-                              title="Enviar mensaje WhatsApp"
+                              title={`Enviar mensaje WhatsApp a ${p.phone}`}
                             >
                               <Phone className="w-3 h-3" />
                             </a>
@@ -747,6 +764,18 @@ export default function CheckinAdminPage() {
                               </>
                             )}
                           </button>
+                          <a
+                            href={getCheckinWhatsAppUrl(r)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() =>
+                              showToast(`Abriendo WhatsApp para ${p.name || "participante"}...`)
+                            }
+                            className="p-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/40 transition cursor-pointer"
+                            title={`Enviar mensaje por WhatsApp a ${p.name || "participante"} (${p.phone || ONPROTEC_WHATSAPP_DISPLAY})`}
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </a>
                           <button
                             type="button"
                             onClick={() => openEditModal(r)}

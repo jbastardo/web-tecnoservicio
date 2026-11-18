@@ -11,12 +11,17 @@ import {
   Calendar,
   UserCheck,
   Sparkles,
+  Phone,
 } from "lucide-react";
 import { SurveyQuestion } from "@/types";
 import { defaultSurveyQuestions } from "@/lib/mockData";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { OnprotecBrand } from "@/components/OnprotecBrand";
-import { fmtLocalDate } from "@/utils/formatUtils";
+import {
+  fmtLocalDate,
+  ONPROTEC_WHATSAPP_DISPLAY,
+  buildOnprotecWhatsAppUrl,
+} from "@/utils/formatUtils";
 
 export default function SurveyPage() {
   const params = useParams();
@@ -171,13 +176,24 @@ export default function SurveyPage() {
                 Tus respuestas han sido registradas exitosamente en el sistema de calidad de{" "}
                 <strong>OnProtec C.A.</strong>
               </p>
-              <div className="pt-4 flex justify-center gap-3">
+              <div className="pt-4 flex flex-wrap justify-center gap-3">
                 <Link
                   href="/"
                   className="onprotec-btn-primary px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold"
                 >
                   Ver Próximas Capacitaciones
                 </Link>
+                <a
+                  href={buildOnprotecWhatsAppUrl(
+                    `Hola equipo de OnProtec, acabo de completar la encuesta de satisfacción de "${training?.name || "capacitación"}".`
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 rounded-xl bg-[#25d366] hover:bg-[#1ebe5d] text-white text-xs font-bold inline-flex items-center gap-1.5 keep-white"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>WhatsApp ({ONPROTEC_WHATSAPP_DISPLAY})</span>
+                </a>
                 <a
                   href="https://www.onprotec.com"
                   target="_blank"
@@ -315,6 +331,18 @@ export default function SurveyPage() {
           )}
         </div>
       </main>
+
+      <footer className="py-4 text-center text-xs text-slate-400 border-t border-slate-800/70">
+        ¿Consultas o requerimientos técnicos? Escríbenos por WhatsApp:{" "}
+        <a
+          href={buildOnprotecWhatsAppUrl("Hola equipo de OnProtec, tengo una consulta post-capacitación.")}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-emerald-400 font-bold hover:underline"
+        >
+          {ONPROTEC_WHATSAPP_DISPLAY} (+58 412 2318398)
+        </a>
+      </footer>
     </div>
   );
 }

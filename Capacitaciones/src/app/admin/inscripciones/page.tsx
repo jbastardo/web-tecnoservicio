@@ -35,7 +35,14 @@ import {
   Printer,
   BarChart3,
 } from "lucide-react";
-import { fmtLocalDate, fmtLocalTime, formatCurrency } from "@/utils/formatUtils";
+import {
+  fmtLocalDate,
+  fmtLocalTime,
+  fmtLocalHour,
+  formatCurrency,
+  buildParticipantWhatsAppUrl,
+  ONPROTEC_WHATSAPP_DISPLAY,
+} from "@/utils/formatUtils";
 
 function toCaracasYMD(dateInput?: string | number | Date | null): string {
   if (!dateInput) return "";
@@ -138,6 +145,16 @@ export default function InscripcionesAdminPage() {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 4500);
+  };
+
+  const getRegistrationWhatsAppUrl = (r: any) => {
+    const pName = r.participant?.name || "Participante";
+    const tName = r.training?.name || "Capacitación OnProtec";
+    const tCode = r.training?.code ? ` (${r.training.code})` : "";
+    const tDate = r.training?.eventDate ? fmtLocalDate(r.training.eventDate) : "";
+    const tHour = r.training?.eventDate ? fmtLocalHour(r.training.eventDate) : "";
+    const msg = `Hola ${pName}, te escribimos del equipo de OnProtec (${ONPROTEC_WHATSAPP_DISPLAY}) respecto a tu inscripción en la capacitación "${tName}"${tCode}${tDate ? ` programada para el ${tDate}` : ""}${tHour ? ` a las ${tHour} (hora Caracas)` : ""} en nuestra Sede Corporativa en Caracas. Por favor confírmanos tu asistencia por esta vía. ¡Te esperamos!`;
+    return buildParticipantWhatsAppUrl(r.participant?.phone, msg);
   };
 
   const fetchRegistrations = () => {
@@ -1097,18 +1114,22 @@ export default function InscripcionesAdminPage() {
                             <span>Validar</span>
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              alert(
-                                `Recordatorio WhatsApp 24h enviado al participante ${r.participant?.name} (${r.participant?.phone})`
-                              )
-                            }
-                            className="p-1.5 hover:bg-slate-800 rounded text-emerald-400 transition cursor-pointer"
-                            title="Enviar Recordatorio WhatsApp"
+                          <a
+                            href={getRegistrationWhatsAppUrl(r)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => {
+                              patchRegistration(r.id, { reminderSentAt: new Date().toISOString() });
+                              showToast(
+                                `Abriendo WhatsApp para ${r.participant?.name || "participante"}...`
+                              );
+                            }}
+                            className="px-2 py-1 bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded text-[11px] font-bold border border-emerald-500/40 flex items-center gap-1 transition cursor-pointer"
+                            title={`Enviar mensaje por WhatsApp a ${r.participant?.name || "participante"} (${r.participant?.phone || ONPROTEC_WHATSAPP_DISPLAY})`}
                           >
-                            <Send className="w-3.5 h-3.5" />
-                          </button>
+                            <Send className="w-3 h-3" />
+                            <span>Mensaje</span>
+                          </a>
 
                           <button
                             type="button"
@@ -1238,9 +1259,14 @@ export default function InscripcionesAdminPage() {
               <div className="flex items-center gap-2">
                 {viewingDetailsReg.participant?.phone && (
                   <a
-                    href={`https://wa.me/${viewingDetailsReg.participant.phone.replace(/\D/g, "")}`}
+                    href={getRegistrationWhatsAppUrl(viewingDetailsReg)}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      patchRegistration(viewingDetailsReg.id, {
+                        reminderSentAt: new Date().toISOString(),
+                      });
+                    }}
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-sm transition"
                   >
                     <Send className="w-3.5 h-3.5" />

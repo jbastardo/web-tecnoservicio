@@ -103,3 +103,44 @@ export function formatCurrency(amount: number | string | null | undefined, curre
     maximumFractionDigits: 2,
   }).format(safeAmount)}`;
 }
+
+/**
+ * Contacto oficial WhatsApp OnProtec Capacitaciones: 04122318398 (+58 412 2318398)
+ */
+export const ONPROTEC_WHATSAPP_RAW = "04122318398";
+export const ONPROTEC_WHATSAPP_DISPLAY = "0412-2318398";
+export const ONPROTEC_WHATSAPP_INTL = "584122318398";
+export const ONPROTEC_WHATSAPP_URL = "https://wa.me/584122318398";
+
+export function buildOnprotecWhatsAppUrl(message?: string): string {
+  const base = ONPROTEC_WHATSAPP_URL;
+  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
+}
+
+export function normalizeWhatsAppPhone(rawPhone?: string | null): string {
+  let digits = String(rawPhone || "").replace(/\D/g, "");
+  if (digits.startsWith("00")) {
+    digits = digits.slice(2);
+  }
+  if (digits.length === 11 && digits.startsWith("0")) {
+    digits = `58${digits.slice(1)}`;
+  } else if (
+    digits.length === 10 &&
+    /^(412|414|424|416|426|212)/.test(digits)
+  ) {
+    digits = `58${digits}`;
+  }
+  if (digits.length < 10) {
+    return ONPROTEC_WHATSAPP_INTL;
+  }
+  return digits;
+}
+
+export function buildParticipantWhatsAppUrl(
+  rawPhone?: string | null,
+  message?: string
+): string {
+  const phone = normalizeWhatsAppPhone(rawPhone);
+  const base = `https://wa.me/${phone}`;
+  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
+}

@@ -3,7 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { OnprotecBrand } from "@/components/OnprotecBrand";
-import { ArrowLeft, Home, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Home, Phone, ShieldCheck } from "lucide-react";
+import { ONPROTEC_WHATSAPP_DISPLAY, buildOnprotecWhatsAppUrl } from "@/utils/formatUtils";
 
 export default function NotFound() {
   return (
@@ -54,11 +55,29 @@ export default function NotFound() {
             <ShieldCheck className="w-4 h-4 text-[#f4730a]" />
             <span>Portal Admin</span>
           </Link>
+
+          <a
+            href={buildOnprotecWhatsAppUrl("Hola equipo de OnProtec, necesito ayuda para encontrar una capacitación.")}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#25d366] hover:bg-[#1ebe5d] text-white font-extrabold text-xs px-5 py-3 rounded-full transition shadow-md keep-white"
+          >
+            <Phone className="w-4 h-4" />
+            <span>WhatsApp: {ONPROTEC_WHATSAPP_DISPLAY}</span>
+          </a>
         </div>
       </main>
 
       <footer className="py-6 text-center text-xs text-slate-500 border-t border-slate-200 dark:border-slate-800">
-        © {new Date().getFullYear()} OnProtec C.A. • La Tienda del Instalador • Caracas, Venezuela
+        © {new Date().getFullYear()} OnProtec C.A. • La Tienda del Instalador • Caracas, Venezuela •{" "}
+        <a
+          href={buildOnprotecWhatsAppUrl("Hola equipo de OnProtec, deseo soporte.")}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline"
+        >
+          WhatsApp {ONPROTEC_WHATSAPP_DISPLAY}
+        </a>
       </footer>
     </div>
   );

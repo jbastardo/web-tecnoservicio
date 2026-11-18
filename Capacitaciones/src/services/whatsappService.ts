@@ -1,3 +1,5 @@
+import { ONPROTEC_WHATSAPP_DISPLAY } from "@/utils/formatUtils";
+
 export interface WhatsAppMessageResult {
   success: boolean;
   messageId?: string;
@@ -29,8 +31,8 @@ export class WhatsAppService {
     isWaitlist?: boolean;
   }): Promise<WhatsAppMessageResult> {
     const text = params.isWaitlist
-      ? `👋 Hola *${params.participantName}*, hemos recibido tu solicitud para el curso *"${params.trainingName}"* en Onprotec.\n\n⚠️ Dado que el aforo de 18 cupos está actualmente completo, has quedado en nuestra *Lista de Espera prioritaria*. Te notificaremos de inmediato si se libera un cupo.`
-      : `🎉 ¡Hola *${params.participantName}*! Tu registro al evento *"${params.trainingName}"* en la Sala de Capacitaciones de Onprotec ha sido recibido con éxito.\n\n📅 Fecha: *${params.eventDate}*\n📍 Ubicación: Sala de Capacitaciones Onprotec (Aforo: 18 cupos).\n\nNos comunicaremos contigo 24 horas antes para reconfirmar tu asistencia. ¡Te esperamos!`;
+      ? `👋 Hola *${params.participantName}*, hemos recibido tu solicitud para el curso *"${params.trainingName}"* en Onprotec.\n\n⚠️ Dado que el aforo de 18 cupos está actualmente completo, has quedado en nuestra *Lista de Espera prioritaria*. Te notificaremos de inmediato si se libera un cupo.\n\n📱 Contacto oficial OnProtec: ${ONPROTEC_WHATSAPP_DISPLAY}`
+      : `🎉 ¡Hola *${params.participantName}*! Tu registro al evento *"${params.trainingName}"* en la Sala de Capacitaciones de Onprotec ha sido recibido con éxito.\n\n📅 Fecha: *${params.eventDate}*\n📍 Ubicación: Sala de Capacitaciones Onprotec (Aforo: 18 puestos).\n\nNos comunicaremos contigo 24 horas antes para reconfirmar tu asistencia. ¡Te esperamos!\n\n📱 WhatsApp OnProtec: ${ONPROTEC_WHATSAPP_DISPLAY}`;
 
     return this.sendTextMessage(params.to, text);
   }
@@ -44,7 +46,7 @@ export class WhatsAppService {
     trainingName: string;
     eventHour: string;
   }): Promise<WhatsAppMessageResult> {
-    const text = `⏰ *Recordatorio Onprotec*: Hola *${params.participantName}*, te recordamos que mañana es tu capacitación *"${params.trainingName}"*.\n\n⏰ Hora: *${params.eventHour}*\n📍 Sede Onprotec: Sala de Capacitaciones Técnica.\n\nPor favor, responde a este mensaje con un *"CONFIRMAR"* para asegurar tu puesto dentro de los 18 cupos asignados. ¡Nos vemos mañana!`;
+    const text = `⏰ *Recordatorio Onprotec*: Hola *${params.participantName}*, te recordamos que mañana es tu capacitación *"${params.trainingName}"*.\n\n⏰ Hora: *${params.eventHour}*\n📍 Sede Onprotec: Sala de Capacitaciones Técnica.\n\nPor favor, responde a este mensaje con un *"CONFIRMAR"* para asegurar tu puesto dentro de los 18 puestos asignados (o escríbenos al ${ONPROTEC_WHATSAPP_DISPLAY}). ¡Nos vemos mañana!`;
 
     return this.sendTextMessage(params.to, text);
   }
@@ -58,7 +60,7 @@ export class WhatsAppService {
     trainingName: string;
     surveyUrl: string;
   }): Promise<WhatsAppMessageResult> {
-    const text = `🌟 ¡Gracias por asistir hoy a *"${params.trainingName}"* en Onprotec, *${params.participantName}*!\n\nTu opinión es vital para nosotros. Por favor tómate 1 minuto para calificar al instructor, el contenido y las instalaciones de nuestra sala en el siguiente enlace:\n👉 ${params.surveyUrl}\n\n¡Al completar la encuesta recibirás tu certificado digital!`;
+    const text = `🌟 ¡Gracias por asistir hoy a *"${params.trainingName}"* en Onprotec, *${params.participantName}*!\n\nTu opinión es vital para nosotros. Por favor tómate 1 minuto para calificar al instructor, el contenido y las instalaciones de nuestra sala en el siguiente enlace:\n👉 ${params.surveyUrl}\n\n¡Al completar la encuesta recibirás tu certificado digital!\n📱 WhatsApp OnProtec: ${ONPROTEC_WHATSAPP_DISPLAY}`;
 
     return this.sendTextMessage(params.to, text);
   }

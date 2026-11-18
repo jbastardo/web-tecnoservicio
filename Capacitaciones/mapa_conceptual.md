@@ -174,8 +174,10 @@ flowchart TD
    * **Validación Real Obligatoria de Binance (`betaserio`):** Endpoint interno `POST /api/pabilo/verify` que autentica con header `appKey` (`PABILO_API_KEY`) contra `POST /userbankpayment/{PABILO_BINANCE_BANK_ID}/betaserio` (`6a8628f7ea21f60026765c37` — `Onprotec Binance` / Binance ID `1076181690`). Exige coincidencia exacta de monto USD, fecha en `America/Caracas`, estado `"paid"` y verificación anti-reuso (`pabiloTransactionId` y `paymentReference`).
    * **Webhook Firmado:** Validación asincrónica mediante firma HMAC-SHA256 (`/api/pabilo/webhook`).
    * Al validarse la transacción en Pabilo, la inscripción queda automáticamente marcada como `isPaid = true`, `pabiloStatus = "approved"` y estado `Confirmado`.
-3. **WhatsApp Engine:**
-   * Automatización de 3 plantillas críticas: Confirmación inmediata de registro, recordatorio 24h antes del evento con la ubicación de la sala Onprotec, y envío del link de encuesta post-evento.
+3. **WhatsApp Oficial (`0412-2318398` / `+58 412 2318398`) & WhatsApp Engine:**
+   * **Contacto Centralizado (`src/utils/formatUtils.ts`):** Constantes globales `ONPROTEC_WHATSAPP_URL` (`https://wa.me/584122318398`), `buildOnprotecWhatsAppUrl` y `buildParticipantWhatsAppUrl` (con normalización automática de códigos `0412`/`0414`/`0424`/`0416`/`0426` al prefijo `+58`). Todos los puntos de contacto públicos (`/`, `/not-found`, `/encuesta/[id]`, footer y modal de confirmación) redirigen siempre a **`0412-2318398`**.
+   * **Envío Directo desde Listados Admin (`/admin/inscripciones`, `/admin/checkin`, `/admin/participantes`):** El botón de mensaje abre directamente WhatsApp con mensaje personalizado del evento (fecha y hora en `America/Caracas`) y registra `reminderSentAt`.
+   * Automatización de 3 plantillas críticas en `whatsappService.ts`: Confirmación inmediata de registro, recordatorio 24h antes del evento y envío del link de encuesta post-evento.
 4. **Códigos QR de Encuesta:**
    * Generación de código QR único por evento para evaluar al instructor, contenido e instalaciones de la sala (escala 1 a 5 y NPS 1 a 10).
    * Modo Kiosk / Proyector en el módulo de Check-in para proyectar el QR en pantalla gigante.
@@ -276,7 +278,7 @@ Se reconstruyó desde cero la página principal de **"OnProtec® | Sala de Capac
 5. **Fricción Cero en el Registro (`#registro-express`):**
    * Formulario corporativo sticky agrupado lógicamente (1. Identificación del Instalador, 2. Contacto & Empresa Integradora, 3. Perfil Técnico / Preguntas Dinámicas `formQuestions`, 4. Reporte de Pago condicional) utilizando **etiquetas flotantes (`peer` Floating Labels)** y botón ancho de confirmación.
 6. **Prueba Social, Autoridad y Cintillo Oficial Cashea:**
-   * Tarjetas interactivas de marcas certificadas (`Hikvision`, `Dahua Technology`, `TP-Link / Omada`, `Ubiquiti UniFi`, `WatchGuard`, `EZVIZ`, `Marsriva`), cintillo oficial `.cashea-banner` (`#fdff00` con `/brand/icono-cashea.png`) y botón flotante `.float-wa` de WhatsApp (`http://wa.me/584129635648`).
+   * Tarjetas interactivas de marcas certificadas (`Hikvision`, `Dahua Technology`, `TP-Link / Omada`, `Ubiquiti UniFi`, `WatchGuard`, `EZVIZ`, `Marsriva`), cintillo oficial `.cashea-banner` (`#fdff00` con `/brand/icono-cashea.png`) y botón flotante de contacto WhatsApp (`https://wa.me/584122318398`, `0412-2318398`).
 
 ---
 

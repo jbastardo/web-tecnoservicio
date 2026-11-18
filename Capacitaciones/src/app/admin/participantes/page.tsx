@@ -17,8 +17,14 @@ import {
   Trash2,
   AlertTriangle,
   Check,
+  Send,
 } from "lucide-react";
-import { formatCurrency, fmtLocalDate } from "@/utils/formatUtils";
+import {
+  formatCurrency,
+  fmtLocalDate,
+  buildParticipantWhatsAppUrl,
+  ONPROTEC_WHATSAPP_DISPLAY,
+} from "@/utils/formatUtils";
 
 export default function ParticipantesAdminPage() {
   const [participants, setParticipants] = useState<any[]>([]);
@@ -426,6 +432,18 @@ export default function ParticipantesAdminPage() {
 
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <a
+                            href={buildParticipantWhatsAppUrl(
+                              p.phone,
+                              `Hola ${p.name || "Participante"}, te escribimos del equipo de OnProtec (${ONPROTEC_WHATSAPP_DISPLAY}) respecto a nuestras próximas capacitaciones.`
+                            )}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-300 dark:bg-emerald-500/15 dark:border-emerald-500/40 dark:text-emerald-400 transition cursor-pointer"
+                            title={`Enviar mensaje por WhatsApp a ${p.phone || ONPROTEC_WHATSAPP_DISPLAY}`}
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                          </a>
                           <button
                             type="button"
                             onClick={() => setSelectedParticipant(p)}
@@ -501,6 +519,18 @@ export default function ParticipantesAdminPage() {
               </div>
 
               <div className="flex items-center gap-2">
+                <a
+                  href={buildParticipantWhatsAppUrl(
+                    selectedParticipant.phone,
+                    `Hola ${selectedParticipant.name || "Participante"}, te escribimos del equipo de OnProtec (${ONPROTEC_WHATSAPP_DISPLAY}) respecto a tus participaciones en nuestra Sala VIP.`
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>WhatsApp</span>
+                </a>
                 <button
                   type="button"
                   onClick={() => openEditParticipant(selectedParticipant)}
