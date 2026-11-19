@@ -1383,32 +1383,173 @@ export default function HomePage() {
                               </span>
                             </div>
 
-                            {/* Selector de Método de Pago */}
+                            {/* Selector Visual de Método de Pago con Iconos Alusivos */}
                             <div>
-                              <label className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1">
-                                Método de Pago *
-                              </label>
-                              <select
-                                value={form.paymentMethod}
-                                onChange={(e) => {
-                                  const nextMethod = e.target.value;
-                                  setForm((prev) => ({ ...prev, paymentMethod: nextMethod }));
-                                  setPabiloError(null);
-                                  setSubmissionResult(null);
-                                }}
-                                className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3 py-2.5 text-xs font-black text-slate-900 dark:text-white outline-none"
+                              <span
+                                id="payment-method-group-label"
+                                className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-2"
+                              >
+                                Selecciona tu Método de Pago *
+                              </span>
+                              <div
+                                role="radiogroup"
+                                aria-labelledby="payment-method-group-label"
+                                className="grid grid-cols-2 sm:grid-cols-3 gap-2.5"
                               >
                                 {allowedPaymentMethods.map((m) => {
+                                  const isBinanceOpt = /binance/i.test(m);
+                                  const isZelleOpt = /zelle/i.test(m);
                                   const isCashOpt = /efectivo/i.test(m);
+                                  const isPagoMovilOpt = /pago\s*m[oó]vil/i.test(m);
+                                  const isTransferOpt = /transferencia/i.test(m);
                                   const disabled = isCashOpt && isCashDisabledByDeadline;
+                                  const isSelected = form.paymentMethod === m;
+
+                                  const shortTitle = isBinanceOpt
+                                    ? "Binance"
+                                    : isZelleOpt
+                                    ? "Zelle USD"
+                                    : isCashOpt
+                                    ? "Efectivo Tienda"
+                                    : isPagoMovilOpt
+                                    ? "Pago Móvil"
+                                    : isTransferOpt
+                                    ? "Transferencia Bs"
+                                    : m;
+
+                                  const subtitle = disabled
+                                    ? "Cerrado (<48h)"
+                                    : isBinanceOpt
+                                    ? "Validación en línea"
+                                    : isCashOpt
+                                    ? "Sede OnProtec (>48h)"
+                                    : isPagoMovilOpt
+                                    ? "Transferencia móvil"
+                                    : "Subir comprobante";
+
                                   return (
-                                    <option key={m} value={m} disabled={disabled}>
-                                      {m}
-                                      {disabled ? " (No disponible a menos de 48h del evento)" : ""}
-                                    </option>
+                                    <button
+                                      key={m}
+                                      type="button"
+                                      role="radio"
+                                      aria-checked={isSelected}
+                                      disabled={disabled}
+                                      title={
+                                        disabled
+                                          ? `${m} (No disponible a menos de 48h del evento)`
+                                          : m
+                                      }
+                                      onClick={() => {
+                                        setForm((prev) => ({ ...prev, paymentMethod: m }));
+                                        setPabiloError(null);
+                                        setSubmissionResult(null);
+                                      }}
+                                      className={`relative flex flex-col items-center justify-center text-center gap-1.5 p-2.5 rounded-xl border-2 transition-all ${
+                                        disabled
+                                          ? "opacity-45 grayscale cursor-not-allowed bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                                          : isSelected
+                                          ? "cursor-pointer border-[#f4730a] ring-2 ring-[#f4730a]/25 bg-white dark:bg-slate-900 shadow-md"
+                                          : "cursor-pointer bg-white/80 dark:bg-slate-900/70 border-slate-300 dark:border-slate-700 hover:border-[#f4730a]/60 hover:bg-white dark:hover:bg-slate-900"
+                                      }`}
+                                    >
+                                      {isSelected && (
+                                        <span
+                                          aria-hidden="true"
+                                          className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#f4730a] text-white flex items-center justify-center text-[9px] font-black shadow-sm"
+                                        >
+                                          ✓
+                                        </span>
+                                      )}
+
+                                      {isBinanceOpt ? (
+                                        <span className="w-9 h-9 rounded-xl bg-[#1E2026] text-[#F3BA2F] border border-[#F3BA2F]/40 flex items-center justify-center shadow-sm">
+                                          <svg
+                                            viewBox="0 0 24 24"
+                                            fill="currentColor"
+                                            className="w-5 h-5"
+                                            aria-hidden="true"
+                                          >
+                                            <path d="M12 2L6.8 7.2l1.95 1.95L12 5.9l3.25 3.25 1.95-1.95L12 2zm-7.2 7.2L2.85 11.15 4.8 13.1l1.95-1.95-1.95-1.95zm14.4 0l-1.95 1.95 1.95 1.95 1.95-1.95L19.2 9.2zM12 9.05L9.05 12 12 14.95 14.95 12 12 9.05zM6.8 16.8L12 22l5.2-5.2-1.95-1.95L12 18.1l-3.25-3.25-1.95 1.95z" />
+                                          </svg>
+                                        </span>
+                                      ) : isZelleOpt ? (
+                                        <span className="w-9 h-9 rounded-xl bg-[#6D1ED4] text-white flex items-center justify-center shadow-sm">
+                                          <svg
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2.4"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className="w-5 h-5"
+                                            aria-hidden="true"
+                                          >
+                                            <path d="M12 3v2.5M12 18.5V21" />
+                                            <path d="M7.5 6.5h9l-9 11h9" />
+                                          </svg>
+                                        </span>
+                                      ) : isCashOpt ? (
+                                        <span className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+                                          <svg
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className="w-5 h-5"
+                                            aria-hidden="true"
+                                          >
+                                            <rect x="2" y="6" width="20" height="12" rx="2.5" />
+                                            <circle cx="12" cy="12" r="2.75" />
+                                            <path d="M6 12h.01M18 12h.01" />
+                                          </svg>
+                                        </span>
+                                      ) : isPagoMovilOpt ? (
+                                        <span className="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-sm">
+                                          <svg
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className="w-5 h-5"
+                                            aria-hidden="true"
+                                          >
+                                            <rect x="7" y="2.5" width="10" height="19" rx="2.2" />
+                                            <path d="M11 18h2" />
+                                            <path d="M12.5 7.5L10 11h4l-2.5 3.5" />
+                                          </svg>
+                                        </span>
+                                      ) : (
+                                        <span className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
+                                          <svg
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className="w-5 h-5"
+                                            aria-hidden="true"
+                                          >
+                                            <path d="M3 9.5L12 4l9 5.5H3z" />
+                                            <path d="M5 10v7M9.5 10v7M14.5 10v7M19 10v7M3 20h18" />
+                                          </svg>
+                                        </span>
+                                      )}
+
+                                      <span className="text-[11px] font-black text-slate-900 dark:text-white leading-tight">
+                                        {shortTitle}
+                                      </span>
+                                      <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 leading-none">
+                                        {subtitle}
+                                      </span>
+                                    </button>
                                   );
                                 })}
-                              </select>
+                              </div>
                             </div>
 
                             {/* Alerta si el efectivo está bloqueado por faltar <= 48 horas */}
