@@ -8,6 +8,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      gridTemplateColumns: {
+        18: "repeat(18, minmax(0, 1fr))",
+      },
       colors: {
         brand: {
           50: "#eef8ff",

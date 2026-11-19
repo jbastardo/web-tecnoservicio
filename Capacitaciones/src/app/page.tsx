@@ -27,6 +27,7 @@ import {
   Zap,
   Copy,
   Loader2,
+  X,
 } from "lucide-react";
 import { FormQuestion } from "@/types";
 import {
@@ -95,6 +96,30 @@ export default function HomePage() {
   const [submissionResult, setSubmissionResult] = useState<any | null>(null);
 
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [isFormVisible, setIsFormVisible] = useState(false);
+
+  useEffect(() => {
+    if (!showConfirmationModal) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowConfirmationModal(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showConfirmationModal]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof IntersectionObserver === "undefined") return;
+    const formEl = document.getElementById("formulario-oficial");
+    if (!formEl) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsFormVisible(entry.isIntersecting);
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(formEl);
+    return () => observer.disconnect();
+  }, [loading]);
 
   useEffect(() => {
     fetch("/api/capacitaciones?order=desc")
@@ -563,7 +588,32 @@ export default function HomePage() {
           {/* =============================================================
               BANNERS PRINCIPALES DE SELECCIÓN DE CAPACITACIÓN & FORMULARIO
           ============================================================= */}
-          {openTrainings.length >= 1 && (
+          {loading ? (
+            <div className="mb-8 p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#13182b] border-2 border-slate-200 dark:border-slate-800 shadow-md animate-pulse">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                <div className="space-y-2">
+                  <div className="h-4 w-56 rounded-full bg-slate-200 dark:bg-slate-800" />
+                  <div className="h-6 w-80 max-w-full rounded-lg bg-slate-200 dark:bg-slate-800" />
+                </div>
+                <div className="h-4 w-56 rounded-lg bg-slate-200 dark:bg-slate-800" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6">
+                {[0, 1].map((idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-3xl overflow-hidden border-2 border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-[#0b0e17]"
+                  >
+                    <div className="h-48 sm:h-52 w-full bg-slate-200 dark:bg-slate-800" />
+                    <div className="p-4 sm:p-5 space-y-3">
+                      <div className="h-5 w-3/4 rounded bg-slate-200 dark:bg-slate-800" />
+                      <div className="h-4 w-1/2 rounded bg-slate-200 dark:bg-slate-800" />
+                      <div className="h-10 w-full rounded-xl bg-slate-200 dark:bg-slate-800" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : openTrainings.length >= 1 && (
             <div className="mb-8 p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#13182b] border-2 border-slate-200 dark:border-slate-800 shadow-md">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                 <div>
@@ -631,6 +681,8 @@ export default function HomePage() {
                           alt={t.name}
                           width={1080}
                           height={550}
+                          fetchPriority={idx === 0 ? "high" : "auto"}
+                          decoding="async"
                           className="w-full h-full object-cover object-center opacity-100 group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/75 via-black/35 to-transparent" />
@@ -743,6 +795,8 @@ export default function HomePage() {
                         alt={selectedTraining.name || selectedTraining.title}
                         width={1080}
                         height={550}
+                        fetchPriority="high"
+                        decoding="async"
                         className="w-full h-full object-cover object-center"
                       />
                     </div>
@@ -870,9 +924,22 @@ export default function HomePage() {
                     </div>
                   </div>
                 </div>
+              ) : loading ? (
+                <div className="bg-white dark:bg-[#13182b] rounded-3xl border-2 border-slate-200 dark:border-slate-800 shadow-md overflow-hidden animate-pulse">
+                  <div className="h-56 w-full bg-slate-200 dark:bg-slate-800" />
+                  <div className="p-6 sm:p-7 space-y-4">
+                    <div className="h-7 w-3/4 rounded-lg bg-slate-200 dark:bg-slate-800" />
+                    <div className="h-4 w-1/2 rounded bg-slate-200 dark:bg-slate-800" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+                      <div className="h-20 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+                      <div className="h-20 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+                    </div>
+                    <div className="h-24 rounded-2xl bg-slate-200 dark:bg-slate-800" />
+                  </div>
+                </div>
               ) : (
-                <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 text-center text-slate-500">
-                  Cargando capacitaciones...
+                <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center text-slate-600 dark:text-slate-400">
+                  No hay capacitaciones disponibles en este momento. Contáctanos por WhatsApp para próximas fechas.
                 </div>
               )}
             </div>
@@ -934,7 +1001,32 @@ export default function HomePage() {
                 </div>
 
                 <div className="p-6">
-                  {!isSelectedTrainingOpen ? (
+                  {loading ? (
+                    <div className="space-y-4 animate-pulse">
+                      <div className="h-4 w-48 rounded bg-slate-200 dark:bg-slate-800" />
+                      <div className="h-10 w-full rounded-xl bg-slate-200 dark:bg-slate-800" />
+                      <div className="grid grid-cols-12 gap-2">
+                        <div className="col-span-4 h-10 rounded-xl bg-slate-200 dark:bg-slate-800" />
+                        <div className="col-span-8 h-10 rounded-xl bg-slate-200 dark:bg-slate-800" />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="h-10 rounded-xl bg-slate-200 dark:bg-slate-800" />
+                        <div className="h-10 rounded-xl bg-slate-200 dark:bg-slate-800" />
+                      </div>
+                      <div className="h-10 w-full rounded-xl bg-slate-200 dark:bg-slate-800" />
+                      <div className="h-12 w-full rounded-2xl bg-slate-200 dark:bg-slate-800 mt-2" />
+                    </div>
+                  ) : !selectedTraining ? (
+                    <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 text-center space-y-3">
+                      <Calendar className="w-8 h-8 text-[#f4730a] mx-auto" />
+                      <h4 className="text-base font-extrabold text-[#2a285c] dark:text-white">
+                        Selecciona una Capacitación
+                      </h4>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        Pronto publicaremos nuevas convocatorias en nuestra Sala Técnica VIP.
+                      </p>
+                    </div>
+                  ) : !isSelectedTrainingOpen ? (
                     <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 text-center space-y-3">
                       <Lock className="w-8 h-8 text-amber-500 mx-auto" />
                       <h4 className="text-base font-extrabold text-[#2a285c] dark:text-white">
@@ -949,6 +1041,8 @@ export default function HomePage() {
                       {/* Mensaje de Resultado de Inscripción */}
                       {submissionResult && (
                         <div
+                          role="alert"
+                          aria-live="polite"
                           className={`mb-5 p-4 rounded-2xl border-2 ${
                             submissionResult.success
                               ? "bg-emerald-50 border-emerald-300 text-emerald-900 dark:bg-emerald-500/10 dark:border-emerald-500/40 dark:text-emerald-200"
@@ -978,15 +1072,20 @@ export default function HomePage() {
                       <form onSubmit={handleSubmit} className="space-y-4">
                         {/* GRUPO 1: DATOS DEL PARTICIPANTE */}
                         <div className="space-y-3">
-                          <label className="block text-xs font-black uppercase tracking-wider text-[#2a285c] dark:text-slate-200">
+                          <label
+                            htmlFor="input-participant-name"
+                            className="block text-xs font-black uppercase tracking-wider text-[#2a285c] dark:text-slate-200"
+                          >
                             1. Datos del Instalador / Participante
                           </label>
 
                           <div>
                             <input
                               id="input-participant-name"
+                              name="name"
                               type="text"
                               required
+                              autoComplete="name"
                               placeholder="Nombre y Apellido Completo *"
                               value={form.name}
                               onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -996,7 +1095,12 @@ export default function HomePage() {
 
                           <div className="grid grid-cols-12 gap-2">
                             <div className="col-span-4">
+                              <label htmlFor="input-participant-doctype" className="sr-only">
+                                Tipo de Documento
+                              </label>
                               <select
+                                id="input-participant-doctype"
+                                name="docType"
                                 value={form.docType}
                                 onChange={(e) => setForm({ ...form, docType: e.target.value })}
                                 className="w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-2.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none"
@@ -1008,8 +1112,16 @@ export default function HomePage() {
                               </select>
                             </div>
                             <div className="col-span-8">
+                              <label htmlFor="input-participant-doc" className="sr-only">
+                                Cédula o RIF
+                              </label>
                               <input
+                                id="input-participant-doc"
+                                name="docNumber"
                                 type="text"
+                                inputMode="numeric"
+                                autoComplete="off"
+                                autoCorrect="off"
                                 required
                                 placeholder="Cédula / RIF *"
                                 value={form.docNumber}
@@ -1020,40 +1132,68 @@ export default function HomePage() {
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                              <label htmlFor="input-participant-phone" className="sr-only">
+                                WhatsApp
+                              </label>
+                              <input
+                                id="input-participant-phone"
+                                name="phone"
+                                type="tel"
+                                inputMode="tel"
+                                autoComplete="tel"
+                                required
+                                placeholder="WhatsApp (0412/0414) *"
+                                value={form.phone}
+                                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                                className="w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label htmlFor="input-participant-email" className="sr-only">
+                                Correo Electrónico
+                              </label>
+                              <input
+                                id="input-participant-email"
+                                name="email"
+                                type="email"
+                                autoComplete="email"
+                                autoCorrect="off"
+                                autoCapitalize="none"
+                                spellCheck={false}
+                                required
+                                placeholder="Correo Electrónico *"
+                                value={form.email}
+                                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                                className="w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label htmlFor="input-participant-company" className="sr-only">
+                              Empresa o Emprendimiento
+                            </label>
                             <input
-                              type="tel"
-                              required
-                              placeholder="WhatsApp (0412/0414) *"
-                              value={form.phone}
-                              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                              className="w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none"
-                            />
-                            <input
-                              type="email"
-                              required
-                              placeholder="Correo Electrónico *"
-                              value={form.email}
-                              onChange={(e) => setForm({ ...form, email: e.target.value })}
+                              id="input-participant-company"
+                              name="company"
+                              type="text"
+                              autoComplete="organization"
+                              placeholder="Empresa / Emprendimiento (Opcional)"
+                              value={form.company}
+                              onChange={(e) => setForm({ ...form, company: e.target.value })}
                               className="w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none"
                             />
                           </div>
-
-                          <input
-                            type="text"
-                            placeholder="Empresa / Emprendimiento (Opcional)"
-                            value={form.company}
-                            onChange={(e) => setForm({ ...form, company: e.target.value })}
-                            className="w-full bg-[#f8f9fc] dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none"
-                          />
                         </div>
 
                         {/* GRUPO 2: PREGUNTAS ESPECÍFICAS DE LA CAPACITACIÓN (TOTALMENTE EDITABLE) */}
                         {displayFormQuestions.length > 0 && (
                           <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-800">
                             <div>
-                              <label className="block text-xs font-black uppercase tracking-wider text-[#2a285c] dark:text-slate-200">
+                              <span className="block text-xs font-black uppercase tracking-wider text-[#2a285c] dark:text-slate-200">
                                 2. {selectedTraining?.formQuestionsTitle || "Preguntas Específicas del Curso"} ({displayFormQuestions.length})
-                              </label>
+                              </span>
                               {selectedTraining?.formQuestionsDescription && (
                                 <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                                   {selectedTraining.formQuestionsDescription}
@@ -1064,12 +1204,17 @@ export default function HomePage() {
                             <div className="space-y-2.5 bg-slate-50 dark:bg-slate-900/90 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800">
                               {displayFormQuestions.map((q) => (
                                 <div key={q.id}>
-                                  <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1">
+                                  <label
+                                    htmlFor={`form-q-${q.id}`}
+                                    className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1"
+                                  >
                                     {q.label} {q.required && <span className="text-[#f4730a]">*</span>}
                                   </label>
 
                                   {q.type === "select" && Array.isArray(q.options) ? (
                                     <select
+                                      id={`form-q-${q.id}`}
+                                      name={`custom_${q.id}`}
                                       required={q.required}
                                       value={customAnswers[q.id] || ""}
                                       onChange={(e) =>
@@ -1086,6 +1231,8 @@ export default function HomePage() {
                                     </select>
                                   ) : q.type === "textarea" ? (
                                     <textarea
+                                      id={`form-q-${q.id}`}
+                                      name={`custom_${q.id}`}
                                       rows={2}
                                       required={q.required}
                                       placeholder={q.placeholder || "Escribe tu comentario..."}
@@ -1096,7 +1243,7 @@ export default function HomePage() {
                                       className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white outline-none resize-none"
                                     />
                                   ) : q.type === "radio" && Array.isArray(q.options) ? (
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={q.label}>
                                       {q.options.map((opt, i) => {
                                         const checked = customAnswers[q.id] === opt;
                                         return (
@@ -1110,7 +1257,7 @@ export default function HomePage() {
                                           >
                                             <input
                                               type="radio"
-                                              name={`radio-${q.id}`}
+                                              name={`custom_${q.id}`}
                                               value={opt}
                                               required={q.required}
                                               checked={checked}
@@ -1128,8 +1275,13 @@ export default function HomePage() {
                                       })}
                                     </div>
                                   ) : q.type === "checkbox" ? (
-                                    <label className="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 cursor-pointer text-xs font-bold text-slate-800 dark:text-white">
+                                    <label
+                                      htmlFor={`form-q-${q.id}`}
+                                      className="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 cursor-pointer text-xs font-bold text-slate-800 dark:text-white"
+                                    >
                                       <input
+                                        id={`form-q-${q.id}`}
+                                        name={`custom_${q.id}`}
                                         type="checkbox"
                                         required={q.required}
                                         checked={Boolean(customAnswers[q.id])}
@@ -1164,10 +1316,15 @@ export default function HomePage() {
                                           </button>
                                         </div>
                                       ) : (
-                                        <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl cursor-pointer hover:border-[#f4730a] text-xs font-bold text-slate-600 dark:text-slate-400">
+                                        <label
+                                          htmlFor={`form-q-${q.id}`}
+                                          className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl cursor-pointer hover:border-[#f4730a] text-xs font-bold text-slate-600 dark:text-slate-400"
+                                        >
                                           <UploadCloud className="w-4 h-4 text-[#f4730a]" />
                                           <span>Clic para adjuntar archivo o comprobante (Máx 8MB)</span>
                                           <input
+                                            id={`form-q-${q.id}`}
+                                            name={`custom_${q.id}`}
                                             type="file"
                                             accept="image/*,application/pdf"
                                             required={q.required}
@@ -1192,6 +1349,8 @@ export default function HomePage() {
                                     </div>
                                   ) : (
                                     <input
+                                      id={`form-q-${q.id}`}
+                                      name={`custom_${q.id}`}
                                       type="text"
                                       required={q.required}
                                       placeholder={q.placeholder || "Escribe tu respuesta..."}
@@ -1308,12 +1467,20 @@ export default function HomePage() {
 
                                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
                                   <div className="sm:col-span-7">
-                                    <label className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1">
+                                    <label
+                                      htmlFor="input-payment-reference"
+                                      className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1"
+                                    >
                                       Nro. Referencia / Order ID Binance *
                                     </label>
                                     <input
+                                      id="input-payment-reference"
+                                      name="paymentReference"
                                       type="text"
-                                      required
+                                      required={isPaidCourse}
+                                      autoCorrect="off"
+                                      autoCapitalize="none"
+                                      spellCheck={false}
                                       placeholder="Ej. últimos 6-8 dígitos o Order ID"
                                       value={form.paymentReference}
                                       onChange={(e) => {
@@ -1327,12 +1494,17 @@ export default function HomePage() {
                                   </div>
 
                                   <div className="sm:col-span-5">
-                                    <label className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1">
+                                    <label
+                                      htmlFor="input-payment-date"
+                                      className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1"
+                                    >
                                       Fecha del Pago *
                                     </label>
                                     <input
+                                      id="input-payment-date"
+                                      name="paymentDate"
                                       type="date"
-                                      required
+                                      required={isPaidCourse}
                                       value={paymentDate}
                                       onChange={(e) => {
                                         setPaymentDate(e.target.value);
@@ -1364,7 +1536,10 @@ export default function HomePage() {
                                 </button>
 
                                 {pabiloError && (
-                                  <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/15 border border-rose-400 text-rose-900 dark:text-rose-200 text-xs flex items-start gap-2">
+                                  <div
+                                    role="alert"
+                                    className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/15 border border-rose-400 text-rose-900 dark:text-rose-200 text-xs flex items-start gap-2"
+                                  >
                                     <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                                     <div className="space-y-0.5">
                                       <p className="font-extrabold">Pago no validado en Pabilo</p>
@@ -1425,12 +1600,20 @@ export default function HomePage() {
 
                                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
                                   <div className="sm:col-span-7">
-                                    <label className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1">
+                                    <label
+                                      htmlFor="input-payment-reference-manual"
+                                      className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1"
+                                    >
                                       Nro. Referencia / Confirmación {form.paymentMethod} *
                                     </label>
                                     <input
+                                      id="input-payment-reference-manual"
+                                      name="paymentReference"
                                       type="text"
                                       required
+                                      autoCorrect="off"
+                                      autoCapitalize="none"
+                                      spellCheck={false}
                                       placeholder="Ej. código de confirmación"
                                       value={form.paymentReference}
                                       onChange={(e) =>
@@ -1444,10 +1627,15 @@ export default function HomePage() {
                                   </div>
 
                                   <div className="sm:col-span-5">
-                                    <label className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1">
+                                    <label
+                                      htmlFor="input-payment-date-manual"
+                                      className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1"
+                                    >
                                       Fecha del Pago *
                                     </label>
                                     <input
+                                      id="input-payment-date-manual"
+                                      name="paymentDate"
                                       type="date"
                                       required
                                       value={paymentDate}
@@ -1710,16 +1898,23 @@ export default function HomePage() {
       {/* =====================================================================
           8. BOTÓN FLOTANTE STICKY PARA MÓVIL (FÁCIL ACCESO A INSCRIPCIÓN)
       ===================================================================== */}
-      <div className="lg:hidden fixed bottom-4 left-4 right-4 z-40">
-        <button
-          type="button"
-          onClick={() => scrollToSection("registro-express")}
-          className="w-full bg-[#f4730a] hover:bg-[#ef7922] text-white font-black py-3.5 px-4 rounded-2xl shadow-2xl shadow-[#f4730a]/40 flex items-center justify-center gap-2 text-sm uppercase tracking-wider transition-all"
-        >
-          <span>✍️ Inscribirme en la Capacitación</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
+      {!isFormVisible && !showConfirmationModal && (
+        <div className="lg:hidden fixed bottom-4 left-4 right-4 z-40">
+          <button
+            type="button"
+            onClick={() => {
+              scrollToSection("formulario-oficial");
+              setTimeout(() => {
+                document.getElementById("input-participant-name")?.focus({ preventScroll: true });
+              }, 350);
+            }}
+            className="w-full bg-[#f4730a] hover:bg-[#ef7922] text-white font-black py-3.5 px-4 rounded-2xl shadow-2xl shadow-[#f4730a]/40 flex items-center justify-center gap-2 text-sm uppercase tracking-wider transition-all cursor-pointer"
+          >
+            <span>✍️ Inscribirme en la Capacitación</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* =====================================================================
           8.5 BOTÓN FLOTANTE DE CONTACTO WHATSAPP OFICIAL ONPROTEC (0412-2318398)
@@ -1730,7 +1925,9 @@ export default function HomePage() {
         )}
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-20 lg:bottom-6 right-5 z-40 inline-flex items-center gap-2 bg-[#25d366] hover:bg-[#1ebe5d] text-white font-black text-xs px-4 py-3 rounded-full shadow-2xl shadow-emerald-600/40 transition-all hover:-translate-y-0.5 keep-white"
+        className={`fixed ${
+          !isFormVisible && !showConfirmationModal ? "bottom-20" : "bottom-5"
+        } lg:bottom-6 right-5 z-40 inline-flex items-center gap-2 bg-[#25d366] hover:bg-[#1ebe5d] text-white font-black text-xs px-4 py-3 rounded-full shadow-2xl shadow-emerald-600/40 transition-all hover:-translate-y-0.5 keep-white`}
         title={`Escribir al WhatsApp oficial de OnProtec (${ONPROTEC_WHATSAPP_DISPLAY})`}
       >
         <Phone className="w-4 h-4" />
@@ -1741,8 +1938,24 @@ export default function HomePage() {
           9. MODAL EJECUTIVO DE CONFIRMACIÓN POST-ENVÍO (PAGAS VS. GRATUITAS)
       ===================================================================== */}
       {showConfirmationModal && submissionResult?.success && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="bg-white dark:bg-[#13182b] border-2 border-slate-300 dark:border-slate-700 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirmation-modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowConfirmationModal(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+        >
+          <div className="bg-white dark:bg-[#13182b] border-2 border-slate-300 dark:border-slate-700 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => setShowConfirmationModal(false)}
+              aria-label="Cerrar confirmación"
+              className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
             {/* Header del Modal según si es cobrada o gratuita */}
             {isPaidCourse ? (
               <div className="text-center space-y-3">
@@ -1754,7 +1967,7 @@ export default function HomePage() {
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40">
                       ✓ FORMALMENTE INSCRITO • PAGO VERIFICADO EN PABILO
                     </span>
-                    <h3 className="text-2xl font-black text-[#2a285c] dark:text-white">
+                    <h3 id="confirmation-modal-title" className="text-2xl font-black text-[#2a285c] dark:text-white">
                       ¡Inscripción Formalmente Confirmada!
                     </h3>
                     <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
@@ -1774,7 +1987,7 @@ export default function HomePage() {
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-100 text-amber-950 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40">
                       ✓ SOLICITUD REGISTRADA • REVISIÓN DE COMPROBANTE
                     </span>
-                    <h3 className="text-2xl font-black text-[#2a285c] dark:text-white">
+                    <h3 id="confirmation-modal-title" className="text-2xl font-black text-[#2a285c] dark:text-white">
                       ¡Registro y Comprobante Recibidos!
                     </h3>
                     <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
@@ -1803,7 +2016,7 @@ export default function HomePage() {
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300">
                   🟠 REGISTRADO EN LISTA DE ESPERA
                 </span>
-                <h3 className="text-2xl font-black text-[#2a285c] dark:text-white">
+                <h3 id="confirmation-modal-title" className="text-2xl font-black text-[#2a285c] dark:text-white">
                   Convocatoria al Límite
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
@@ -1823,7 +2036,7 @@ export default function HomePage() {
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-orange-100 text-orange-900 border border-orange-300 dark:bg-orange-500/20 dark:text-orange-300 dark:border-orange-500/40">
                   📋 PRE-INSCRIPCIÓN REGISTRADA • EN PRESELECCIÓN
                 </span>
-                <h3 className="text-2xl font-black text-[#2a285c] dark:text-white">
+                <h3 id="confirmation-modal-title" className="text-2xl font-black text-[#2a285c] dark:text-white">
                   ¡Pre-inscripción Recibida con Éxito!
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">

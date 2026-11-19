@@ -108,9 +108,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (checkingAuth) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
-        <div className="w-12 h-12 border-4 border-[#e07b29] border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-sm font-bold text-slate-300 tracking-wide">
+      <div className="min-h-screen bg-[#f8f9fc] dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 border-4 border-[#f4730a] border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-sm font-bold text-slate-700 dark:text-slate-300 tracking-wide">
           Verificando autorización corporativa OnProtec...
         </p>
       </div>
@@ -119,20 +119,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!authUser) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between relative overflow-hidden">
+      <div className="min-h-screen bg-[#f8f9fc] dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col justify-between relative overflow-hidden">
         {/* Barra Superior Corporativa */}
-        <div className="h-2 bg-gradient-to-r from-[#1a1b4b] via-[#e07b29] to-brand-500 w-full" />
+        <div className="h-2 bg-gradient-to-r from-[#2a285c] via-[#f4730a] to-brand-500 w-full" />
 
-        <header className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <OnprotecBrand subtitle="Portal de Gestión Administrativa · www.onprotec.com" href="/" variant="dark" />
+        <header className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-3">
+          <OnprotecBrand subtitle="Portal de Gestión Administrativa · www.onprotec.com" href="/" variant="auto" />
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <Link
               href="/"
-              className="text-xs bg-slate-900 hover:bg-slate-800 text-slate-300 px-3.5 py-2 rounded-xl border border-slate-800 flex items-center gap-1.5 transition"
+              className="text-xs font-bold bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-[#2a285c] dark:text-slate-200 px-3.5 py-2 rounded-full border border-slate-300 dark:border-slate-700 flex items-center gap-1.5 shadow-sm transition"
             >
               <span>Volver a Portada Pública</span>
-              <ExternalLink className="w-3.5 h-3.5" />
+              <ExternalLink className="w-3.5 h-3.5 text-[#f4730a]" />
             </Link>
           </div>
         </header>
@@ -141,43 +141,46 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="max-w-5xl w-full mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* Panel Izquierdo: Identidad Corporativa OnProtec & Políticas de Seguridad */}
           <div className="lg:col-span-6 space-y-5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#e07b29]/15 border border-[#e07b29]/40 text-[#e07b29] text-xs font-bold">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#f4730a]/15 border border-[#f4730a]/40 text-[#f4730a] text-xs font-bold">
               <Shield className="w-3.5 h-3.5" />
               <span>Acceso Administrativo Seguro · OnProtec C.A.</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#2a285c] dark:text-white tracking-tight leading-tight">
               Control Integral de la{" "}
-              <span className="text-[#e07b29]">Sala de Capacitaciones</span>
+              <span className="text-[#f4730a]">Sala de Capacitaciones</span>
             </h1>
 
-            <p className="text-sm text-slate-400 leading-relaxed">
+            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
               Plataforma corporativa de <strong>OnProtec («La Tienda del Instalador»)</strong> para
               la administración de cursos, workshops, control de aforo (18 participantes + 1
               instructor), validación de pagos, encuestas QR y fidelización comercial con Odoo ERP.
             </p>
 
             {/* Tarjeta de Seguridad y Políticas de Acceso Corporativo */}
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4">
-              <div className="flex items-center gap-2 text-xs font-bold text-white border-b border-slate-800 pb-2">
-                <Lock className="w-4 h-4 text-[#e07b29]" />
+            <div className="bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#2a285c] dark:text-white border-b border-slate-200 dark:border-slate-800 pb-2">
+                <Lock className="w-4 h-4 text-[#f4730a]" />
                 <span>Políticas de Seguridad & Acceso Restringido</span>
               </div>
-              <ul className="space-y-2.5 text-xs text-slate-300">
+              <ul className="space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                   <span>
                     Acceso exclusivo para Gerencia, Operaciones y Coordinación técnica autorizada.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                   <span>
-                    <strong>Usuario Master Principal:</strong> <code className="text-cyan-300 bg-slate-950 px-1.5 py-0.5 rounded">juan@onprotec.com</code>
+                    <strong>Usuario Master Principal:</strong>{" "}
+                    <code className="text-[#0e5cd7] dark:text-cyan-300 bg-slate-100 dark:bg-slate-950 px-1.5 py-0.5 rounded font-bold">
+                      juan@onprotec.com
+                    </code>
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                   <span>
                     Sesión cifrada con almacenamiento persistente y tokens de seguridad (7 días de vigencia).
                   </span>
@@ -188,11 +191,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
           {/* Panel Derecho: Formulario de Autenticación */}
           <div className="lg:col-span-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-              <div className="h-1.5 bg-gradient-to-r from-[#1a1b4b] via-[#e07b29] to-brand-500 absolute top-0 left-0 right-0" />
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+              <div className="h-1.5 bg-gradient-to-r from-[#2a285c] via-[#f4730a] to-brand-500 absolute top-0 left-0 right-0" />
 
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800">
-                <div className="w-12 h-12 rounded-2xl bg-[#1a1b4b] border border-[#e07b29]/50 flex items-center justify-center p-2 shadow-md">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200 dark:border-slate-800">
+                <div className="w-12 h-12 rounded-2xl bg-[#2a285c] border border-[#f4730a]/50 flex items-center justify-center p-2 shadow-md">
                   <img
                     src="/brand/onprotec-icon.png"
                     alt="OnProtec"
@@ -200,52 +203,74 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   />
                 </div>
                 <div>
-                  <h2 className="text-lg font-extrabold text-white">Iniciar Sesión Administrativa</h2>
-                  <p className="text-xs text-slate-400">
+                  <h2 className="text-lg font-extrabold text-[#2a285c] dark:text-white">
+                    Iniciar Sesión Administrativa
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Ingrese su usuario o correo corporativo y su contraseña
                   </p>
                 </div>
               </div>
 
               {loginError && (
-                <div className="mb-4 p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                  <span>{loginError}</span>
+                <div
+                  role="alert"
+                  className="mb-4 p-3.5 rounded-xl bg-rose-50 dark:bg-red-500/10 border border-rose-300 dark:border-red-500/30 text-rose-800 dark:text-red-300 text-xs flex items-start gap-2.5"
+                >
+                  <AlertCircle className="w-4 h-4 text-rose-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                  <span className="font-semibold">{loginError}</span>
                 </div>
               )}
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label
+                    htmlFor="admin-identifier"
+                    className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5"
+                  >
                     Usuario o Correo Corporativo *
                   </label>
                   <input
+                    id="admin-identifier"
+                    name="identifier"
                     type="text"
                     required
+                    autoComplete="username"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
                     placeholder="juan@onprotec.com o usuario corporativo"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#e07b29]"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#f4730a]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label
+                    htmlFor="admin-password"
+                    className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5"
+                  >
                     Contraseña de Acceso *
                   </label>
                   <div className="relative">
                     <input
+                      id="admin-password"
+                      name="password"
                       type={showPassword ? "text" : "password"}
                       required
+                      autoComplete="current-password"
                       placeholder="••••••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 pr-10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#e07b29]"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 pr-11 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#f4730a]"
                     />
                     <button
                       type="button"
+                      aria-pressed={showPassword}
+                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-2.5 text-slate-400 hover:text-white"
+                      className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white p-0.5 cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -255,16 +280,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <button
                   type="submit"
                   disabled={loggingIn}
-                  className="onprotec-btn-primary w-full bg-gradient-to-r from-[#1a1b4b] via-brand-700 to-[#e07b29] hover:opacity-95 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                  className="onprotec-btn-primary w-full bg-gradient-to-r from-[#2a285c] to-[#f4730a] hover:opacity-95 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer keep-white"
                 >
                   <Lock className="w-4 h-4" />
                   <span>{loggingIn ? "Verificando credenciales..." : "Ingresar al Panel de Control"}</span>
                 </button>
               </form>
 
-              <div className="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                 <span className="flex items-center gap-1">
-                  <Globe className="w-3.5 h-3.5 text-[#e07b29]" />
+                  <Globe className="w-3.5 h-3.5 text-[#f4730a]" />
                   www.onprotec.com
                 </span>
                 <span>Caracas, Venezuela (UTC-4)</span>
@@ -273,7 +298,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
 
-        <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-900">
+        <footer className="py-4 text-center text-xs text-slate-500 border-t border-slate-200 dark:border-slate-900">
           © 2026 OnProtec C.A. («La Tienda del Instalador») · Seguridad Electrónica, Redes y Telecomunicaciones.
         </footer>
       </div>
@@ -283,23 +308,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-[#f8f9fc] dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col">
       {/* Franja Corporativa OnProtec Navy + Naranja */}
-      <div className="h-1 bg-gradient-to-r from-[#1a1b4b] via-[#e07b29] to-brand-500 w-full" />
+      <div className="h-1 bg-gradient-to-r from-[#2a285c] via-[#f4730a] to-brand-500 w-full" />
 
       {/* Cintillo de Navegación Fijo Superior (Sticky Widescreen Navbar) */}
-      <nav className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-300 dark:border-slate-800 px-4 sm:px-6 lg:px-8 shadow-sm">
+      <nav
+        aria-label="Navegación administrativa"
+        className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-300 dark:border-slate-800 px-4 sm:px-6 lg:px-8 shadow-sm"
+      >
         <div className="h-16 flex items-center justify-between gap-3">
           {/* Logo Oficial OnProtec Adaptable */}
           <OnprotecBrand subtitle="Gestión Sala (Aforo 18 + 1)" href="/admin" compact variant="auto" />
 
           {/* Menú de Navegación Horizontal Widescreen */}
-          <div className="hidden xl:flex items-center gap-1 overflow-x-auto">
+          <div className="hidden lg:flex items-center gap-1 overflow-x-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive =
+                item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-current={isActive ? "page" : undefined}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
                     isActive
                       ? "bg-[#2a285c] text-white shadow-sm keep-white"
@@ -348,6 +378,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 onClick={handleLogout}
                 className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 rounded-xl border border-red-300 dark:border-red-500/30 transition cursor-pointer"
                 title="Cerrar Sesión Administrativa"
+                aria-label="Cerrar Sesión Administrativa"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -356,18 +387,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Barra de navegación secundaria para pantallas medianas / móviles */}
-        <div className="xl:hidden flex items-center gap-1 overflow-x-auto py-2 border-t border-slate-200 dark:border-slate-800">
+        <div className="lg:hidden flex items-center gap-1 overflow-x-auto py-2 border-t border-slate-200 dark:border-slate-800">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+            const isActive =
+              item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs whitespace-nowrap ${
+                aria-current={isActive ? "page" : undefined}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition ${
                   isActive
-                    ? "bg-brand-500/20 text-brand-300 font-bold border border-brand-500/30"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-[#2a285c] text-white shadow-sm keep-white"
+                    : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />

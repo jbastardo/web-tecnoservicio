@@ -219,10 +219,12 @@ const ddlStatements = [
 ];
 
 let migrationDone = false;
+let migrationAttempted = false;
+let migrationPromise: Promise<boolean> | null = null;
 
 export async function runAutoMigrate(force = false): Promise<boolean> {
-  if (migrationDone && !force) {
-    return true;
+  if ((migrationDone || migrationAttempted) && !force) {
+    return migrationDone;
   }
 
   // Si estamos en fase de compilación estática (next build) sin base de datos activa, omitir
@@ -230,34 +232,46 @@ export async function runAutoMigrate(force = false): Promise<boolean> {
     return true;
   }
 
+  if (migrationPromise && !force) {
+    return migrationPromise;
+  }
+
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
+    migrationAttempted = true;
     console.warn("[autoMigrate] No DATABASE_URL configured. Running in in-memory/mock fallback mode.");
     return false;
   }
 
-  const pool = new Pool({
-    connectionString,
-    connectionTimeoutMillis: 5000,
-  });
+  migrationPromise = (async () => {
+    const pool = new Pool({
+      connectionString,
+      connectionTimeoutMillis: 5000,
+    });
 
-  try {
-    const client = await pool.connect();
     try {
-      console.log("[autoMigrate] Verificando y aplicando DDL idempotente en PostgreSQL...");
-      for (const sql of ddlStatements) {
-        await client.query(sql);
+      const client = await pool.connect();
+      try {
+        console.log("[autoMigrate] Verificando y aplicando DDL idempotente en PostgreSQL...");
+        for (const sql of ddlStatements) {
+          await client.query(sql);
+        }
+        migrationDone = true;
+        migrationAttempted = true;
+        console.log("[autoMigrate] Esquema de base de datos verificado con éxito.");
+        return true;
+      } finally {
+        client.release();
       }
-      migrationDone = true;
-      console.log("[autoMigrate] Esquema de base de datos verificado con éxito.");
-      return true;
+    } catch (error: any) {
+      migrationAttempted = true;
+      console.error("[autoMigrate] Error ejecutando auto-migración:", error?.message || error);
+      return false;
     } finally {
-      client.release();
+      migrationPromise = null;
+      await pool.end();
     }
-  } catch (error: any) {
-    console.error("[autoMigrate] Error ejecutando auto-migración:", error?.message || error);
-    return false;
-  } finally {
-    await pool.end();
-  }
+  })();
+
+  return migrationPromise;
 }

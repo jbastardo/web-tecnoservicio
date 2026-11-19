@@ -11,17 +11,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Verificación proactiva de migraciones DDL idempotentes
-  try {
-    await runAutoMigrate();
-  } catch (err) {
+  // Verificación proactiva no bloqueante de migraciones DDL idempotentes
+  void runAutoMigrate().catch((err) => {
     console.warn("Auto-migrate inicial no bloqueante:", err);
-  }
+  });
 
   return (
     <html lang="es" data-theme="light" suppressHydrationWarning>

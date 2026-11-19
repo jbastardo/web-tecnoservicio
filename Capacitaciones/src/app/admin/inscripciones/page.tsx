@@ -176,8 +176,47 @@ export default function InscripcionesAdminPage() {
   };
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tid = params.get("trainingId");
+      if (tid) {
+        setTrainingFilter(tid);
+      }
+    }
     fetchRegistrations();
   }, []);
+
+  useEffect(() => {
+    if (
+      !deletingReg &&
+      !editingReg &&
+      !modalReg &&
+      !historyParticipant &&
+      !viewingDetailsReg &&
+      !showReportModal
+    ) {
+      return;
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (deletingReg && !isDeletingReg) setDeletingReg(null);
+      else if (editingReg) setEditingReg(null);
+      else if (modalReg) setModalReg(null);
+      else if (historyParticipant) setHistoryParticipant(null);
+      else if (viewingDetailsReg) setViewingDetailsReg(null);
+      else if (showReportModal) setShowReportModal(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [
+    deletingReg,
+    isDeletingReg,
+    editingReg,
+    modalReg,
+    historyParticipant,
+    viewingDetailsReg,
+    showReportModal,
+  ]);
 
   // Función genérica persistente para actualizar inscripción
   const patchRegistration = async (id: number, fields: any) => {
@@ -995,23 +1034,23 @@ export default function InscripcionesAdminPage() {
                       <td className="py-3.5 px-4">
                         {r.amount > 0 ? (
                           r.pabiloStatus === "manual" ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-950/70 border border-emerald-800/70 px-2 py-0.5 rounded-full">
-                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 dark:text-emerald-300 dark:bg-emerald-950/70 dark:border-emerald-800/70 px-2 py-0.5 rounded-full">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
                               Validado Manual
                             </span>
                           ) : r.pabiloStatus === "approved" ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-300 bg-cyan-950/70 border border-cyan-800/70 px-2 py-0.5 rounded-full">
-                              <CheckCircle className="w-3.5 h-3.5 text-cyan-400" />
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-sky-100 text-sky-900 border border-sky-300 dark:text-cyan-300 dark:bg-cyan-950/70 dark:border-cyan-800/70 px-2 py-0.5 rounded-full">
+                              <CheckCircle className="w-3.5 h-3.5 text-sky-700 dark:text-cyan-400" />
                               Pabilo Auto
                             </span>
                           ) : r.pabiloStatus === "rejected" ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-400 bg-red-950/70 border border-red-800/70 px-2 py-0.5 rounded-full">
-                              <X className="w-3.5 h-3.5 text-red-400" />
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-rose-100 text-rose-900 border border-rose-300 dark:text-red-400 dark:bg-red-950/70 dark:border-red-800/70 px-2 py-0.5 rounded-full">
+                              <X className="w-3.5 h-3.5 text-rose-700 dark:text-red-400" />
                               Rechazado
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300 bg-amber-950/70 border border-amber-800/70 px-2 py-0.5 rounded-full">
-                              <Clock className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 dark:text-amber-300 dark:bg-amber-950/70 dark:border-amber-800/70 px-2 py-0.5 rounded-full">
+                              <Clock className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
                               Sin Validar
                             </span>
                           )
@@ -1019,7 +1058,7 @@ export default function InscripcionesAdminPage() {
                           <span className="text-[11px] text-slate-500">No aplica (Gratis)</span>
                         )}
                         {r.paymentNotes && (
-                          <span className="block text-[10px] text-slate-400 italic mt-0.5 truncate max-w-[170px]" title={r.paymentNotes}>
+                          <span className="block text-[10px] text-slate-500 dark:text-slate-400 italic mt-0.5 truncate max-w-[170px]" title={r.paymentNotes}>
                             {r.paymentNotes}
                           </span>
                         )}
@@ -1033,14 +1072,14 @@ export default function InscripcionesAdminPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             download={r.paymentProofUrl.startsWith("data:") ? `comprobante-${r.code}.png` : undefined}
-                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded hover:underline"
+                            className="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 dark:text-emerald-300 dark:bg-emerald-950/60 dark:border-emerald-800/60 px-2 py-0.5 rounded hover:underline"
                           >
                             📎 Ver Comprobante
                           </a>
                         ) : r.paymentReference ? (
-                          <span className="font-mono text-[11px] text-slate-400">{r.paymentReference}</span>
+                          <span className="font-mono text-[11px] text-slate-700 dark:text-slate-400">{r.paymentReference}</span>
                         ) : (
-                          <span className="text-[11px] text-slate-600">S/C</span>
+                          <span className="text-[11px] text-slate-500">S/C</span>
                         )}
                       </td>
 
@@ -1153,7 +1192,14 @@ export default function InscripcionesAdminPage() {
 
       {/* Modal de Historial de Participación del Inscrito */}
       {historyParticipant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setHistoryParticipant(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        >
           <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative">
             <button
               onClick={() => setHistoryParticipant(null)}
@@ -1191,12 +1237,12 @@ export default function InscripcionesAdminPage() {
                   <span
                     className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${
                       part.status === "Asistió"
-                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                        ? "bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40"
                         : part.status === "Confirmado"
-                        ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                        ? "bg-sky-100 text-sky-900 border-sky-300 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-500/40"
                         : part.status === "Lista de Espera"
-                        ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                        : "bg-slate-800 text-slate-300 border-slate-700"
+                        ? "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40"
+                        : "bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
                     }`}
                   >
                     {part.status}
@@ -1210,7 +1256,14 @@ export default function InscripcionesAdminPage() {
 
       {/* Modal Ficha Completa: Datos del Inscrito & Respuestas del Formulario */}
       {viewingDetailsReg && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setViewingDetailsReg(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn"
+        >
           <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-4xl p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setViewingDetailsReg(null)}
@@ -1224,21 +1277,21 @@ export default function InscripcionesAdminPage() {
             <div className="flex flex-wrap items-start justify-between gap-4 pb-5 mb-6 border-b border-slate-800">
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#e07b29] text-white">
+                  <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#e07b29] text-white keep-white">
                     FICHA DETALLADA DEL INSCRITO
                   </span>
-                  <span className="text-xs font-mono font-bold text-cyan-300 bg-slate-950 px-2.5 py-0.5 rounded-lg border border-slate-800">
+                  <span className="text-xs font-mono font-bold text-[#0e5cd7] dark:text-cyan-300 bg-slate-100 dark:bg-slate-950 px-2.5 py-0.5 rounded-lg border border-slate-300 dark:border-slate-800">
                     ID: #{viewingDetailsReg.id}
                   </span>
                   <span
                     className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
                       viewingDetailsReg.status === "Asistió"
-                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                        ? "bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40"
                         : viewingDetailsReg.status === "Confirmado"
-                        ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                        ? "bg-sky-100 text-sky-900 border-sky-300 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-500/40"
                         : viewingDetailsReg.status === "Lista de Espera"
-                        ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                        : "bg-slate-800 text-slate-300 border-slate-700"
+                        ? "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40"
+                        : "bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
                     }`}
                   >
                     {viewingDetailsReg.status}
@@ -1447,8 +1500,8 @@ export default function InscripcionesAdminPage() {
                   )}
 
                   {viewingDetailsReg.specialNotes && (
-                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200">
-                      <span className="text-[10px] font-black uppercase tracking-wider block text-amber-400 mb-0.5">
+                    <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 text-xs text-amber-900 dark:text-amber-200">
+                      <span className="text-[10px] font-black uppercase tracking-wider block text-amber-700 dark:text-amber-400 mb-0.5">
                         Nota Especial / Expectativas
                       </span>
                       {viewingDetailsReg.specialNotes}
@@ -1550,13 +1603,13 @@ export default function InscripcionesAdminPage() {
             </div>
 
             {/* Pie de la Ficha con Acciones Rápidas */}
-            <div className="mt-6 pt-5 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div className="mt-6 pt-5 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
               <button
                 type="button"
                 onClick={() => {
                   setHistoryParticipant(viewingDetailsReg.participant);
                 }}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 text-xs font-bold dark:text-white transition cursor-pointer"
               >
                 <span>
                   📚 Ver Historial de otros cursos (
@@ -1609,7 +1662,14 @@ export default function InscripcionesAdminPage() {
 
       {/* Modal de Validación Manual de Pagos */}
       {modalReg && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalReg(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn"
+        >
           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
             <button
               onClick={() => setModalReg(null)}
@@ -1805,7 +1865,14 @@ export default function InscripcionesAdminPage() {
 
       {/* Modal de Edición Completa del Formulario Registrado */}
       {editingReg && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingReg(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn"
+        >
           <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-3xl p-6 sm:p-7 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setEditingReg(null)}
@@ -2189,7 +2256,14 @@ export default function InscripcionesAdminPage() {
 
       {/* Modal Confirmación de Eliminación de Formulario Registrado */}
       {deletingReg && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeletingReg) setDeletingReg(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn"
+        >
           <div className="bg-slate-900 border-2 border-red-500/40 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl bg-red-500/15 text-red-400 flex items-center justify-center flex-shrink-0">
@@ -2246,7 +2320,14 @@ export default function InscripcionesAdminPage() {
 
       {/* Modal Widescreen: Centro de Reportes y Exportación de Inscripciones */}
       {showReportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowReportModal(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+        >
           <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
             {/* Cabecera del Modal */}
             <div className="p-5 sm:p-6 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-950/70">
