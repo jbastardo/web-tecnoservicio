@@ -90,6 +90,7 @@ export default function HomePage() {
   } | null>(null);
   const [pabiloError, setPabiloError] = useState<string | null>(null);
   const [copiedBinanceId, setCopiedBinanceId] = useState(false);
+  const [copiedZelleEmail, setCopiedZelleEmail] = useState(false);
 
   const [customAnswers, setCustomAnswers] = useState<Record<string, any>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -211,14 +212,17 @@ export default function HomePage() {
     selectedTraining &&
     (selectedTraining.status === "Planificado" || selectedTraining.status === "En Publicidad");
 
-  const handleCopyBinanceId = () => {
+  const copyTextWithFeedback = (text: string, setFlag: (val: boolean) => void) => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText("1076181690").then(() => {
-        setCopiedBinanceId(true);
-        setTimeout(() => setCopiedBinanceId(false), 2500);
+      navigator.clipboard.writeText(text).then(() => {
+        setFlag(true);
+        setTimeout(() => setFlag(false), 2500);
       });
     }
   };
+
+  const handleCopyBinanceId = () => copyTextWithFeedback("1076181690", setCopiedBinanceId);
+  const handleCopyZelleEmail = () => copyTextWithFeedback("zelle@onprotec.com", setCopiedZelleEmail);
 
   const handleVerifyPabiloPayment = async () => {
     if (!selectedTraining) return;
@@ -1717,8 +1721,8 @@ export default function HomePage() {
                             {/* BLOQUE CONDICIONAL B: ZELLE USD / TRANSFERENCIA / OTROS CON COMPROBANTE OBLIGATORIO */}
                             {isZelleOrProofSelected && (
                               <div className="space-y-3">
-                                <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 text-xs space-y-1">
-                                  <div className="flex items-center justify-between">
+                                <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 text-xs space-y-2">
+                                  <div className="flex items-center justify-between gap-2">
                                     <span className="font-bold text-slate-600 dark:text-slate-300">
                                       Pago seleccionado:
                                     </span>
@@ -1726,7 +1730,27 @@ export default function HomePage() {
                                       {form.paymentMethod}
                                     </span>
                                   </div>
-                                  <div className="flex items-center justify-between">
+                                  {/zelle/i.test(form.paymentMethod) && (
+                                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+                                      <span className="font-bold text-slate-600 dark:text-slate-300">
+                                        Correo Oficial Zelle:
+                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <code className="font-mono font-black text-xs sm:text-sm text-[#6D1ED4] dark:text-purple-300 bg-purple-50 dark:bg-purple-500/15 px-2.5 py-0.5 rounded-lg border border-[#6D1ED4]/30">
+                                          zelle@onprotec.com
+                                        </code>
+                                        <button
+                                          type="button"
+                                          onClick={handleCopyZelleEmail}
+                                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-[11px] transition cursor-pointer"
+                                        >
+                                          <Copy className="w-3 h-3" />
+                                          <span>{copiedZelleEmail ? "¡Copiado!" : "Copiar Correo"}</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
                                     <span className="font-bold text-slate-600 dark:text-slate-300">
                                       Monto Exacto a Transferir:
                                     </span>
