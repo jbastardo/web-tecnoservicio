@@ -177,9 +177,9 @@ export default function CapacitacionesAdminPage() {
       formQuestionsTitle: "Preguntas Específicas del Curso",
       formQuestionsDescription: "",
       paymentMethods: [
-        "Pago Móvil (Pabilo)",
+        "Binance (Pabilo)",
         "Zelle USD",
-        "Binance Pay (USDT)",
+        "Pago Móvil (Pabilo)",
         "Transferencia Bancaria Bs",
         "Efectivo en Tienda OnProtec",
       ],
@@ -228,11 +228,17 @@ export default function CapacitacionesAdminPage() {
       formQuestionsDescription: t.formQuestionsDescription || "",
       paymentMethods:
         Array.isArray(t.paymentMethods) && t.paymentMethods.length > 0
-          ? t.paymentMethods
+          ? Array.from(
+              new Set(
+                t.paymentMethods.map((m: string) =>
+                  /binance/i.test(m) ? "Binance (Pabilo)" : m
+                )
+              )
+            )
           : [
-              "Pago Móvil (Pabilo)",
+              "Binance (Pabilo)",
               "Zelle USD",
-              "Binance Pay (USDT)",
+              "Pago Móvil (Pabilo)",
               "Transferencia Bancaria Bs",
               "Efectivo en Tienda OnProtec",
             ],
@@ -740,7 +746,7 @@ export default function CapacitacionesAdminPage() {
                             type="button"
                             onClick={() => openEditModal(t, "general")}
                             className="px-2.5 py-1.5 bg-brand-600/20 hover:bg-brand-600/30 text-brand-300 border border-brand-500/40 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer"
-                            title="Editar Capacitación, Preguntas, Portada y Notas"
+                            title="Editar Capacitación, Costos y Configuración General"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                             <span>Editar</span>
@@ -748,9 +754,19 @@ export default function CapacitacionesAdminPage() {
 
                           <button
                             type="button"
+                            onClick={() => openEditModal(t, "formulario")}
+                            className="px-2.5 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/35 text-cyan-300 border border-cyan-500/40 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer"
+                            title="Editar preguntas, métodos de pago y campos del formulario público"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>📝 Editar Formulario</span>
+                          </button>
+
+                          <button
+                            type="button"
                             onClick={() => openEditModal(t, "portada")}
                             className="px-2.5 py-1.5 bg-[#f4730a]/15 hover:bg-[#f4730a]/30 text-[#f4730a] border border-[#f4730a]/40 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer"
-                            title="Subir o cambiar la foto llamativa del banner principal"
+                            title="Subir o cambiar la foto llamativa del banner principal (1080x550)"
                           >
                             <ImageIcon className="w-3.5 h-3.5" />
                             <span>🖼️ Foto Banner</span>
@@ -1145,7 +1161,10 @@ export default function CapacitacionesAdminPage() {
                   {/* Foto Llamativa del Banner Principal */}
                   <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-24 h-16 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 flex-shrink-0 flex items-center justify-center">
+                      <div
+                        className="w-36 aspect-[1080/550] rounded-xl overflow-hidden bg-slate-900 border border-slate-700 flex-shrink-0 flex items-center justify-center"
+                        style={{ aspectRatio: "1080 / 550" }}
+                      >
                         {formData.coverImageUrl || formData.coverPhotos[0] ? (
                           <img
                             src={formData.coverImageUrl || formData.coverPhotos[0]}
@@ -1159,6 +1178,9 @@ export default function CapacitacionesAdminPage() {
                       <div className="min-w-0">
                         <span className="text-xs font-black text-white block">
                           🖼️ Foto Llamativa del Banner Principal
+                        </span>
+                        <span className="text-[11px] font-bold text-[#f4730a] block mt-0.5">
+                          📐 Medida oficial del banner: 1080px × 550px
                         </span>
                         <span className="text-[11px] text-slate-400 block leading-snug">
                           Imagen destacada a todo color que aparece en el banner de inicio para atraer instaladores.
@@ -1338,9 +1360,9 @@ export default function CapacitacionesAdminPage() {
                         </label>
                         <div className="flex flex-wrap gap-2">
                           {[
-                            "Pago Móvil (Pabilo)",
+                            "Binance (Pabilo)",
                             "Zelle USD",
-                            "Binance Pay (USDT)",
+                            "Pago Móvil (Pabilo)",
                             "Transferencia Bancaria Bs",
                             "Efectivo en Tienda OnProtec",
                           ].map((method) => {
@@ -1446,7 +1468,10 @@ export default function CapacitacionesAdminPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
                         <span className="font-bold text-white block">
-                          Fotos para la Portada del Curso
+                          Fotos para la Portada / Banner del Curso
+                        </span>
+                        <span className="text-[11px] font-bold text-[#f4730a] block">
+                          📐 Medida oficial del banner: 1080px × 550px (proporción horizontal)
                         </span>
                         <span className="text-[11px] text-slate-400">
                           Sube imágenes desde tu equipo o inserta el enlace de una foto promocional.
@@ -1498,7 +1523,8 @@ export default function CapacitacionesAdminPage() {
                               <img
                                 src={photo}
                                 alt={`Portada ${index + 1}`}
-                                className="w-full h-28 object-cover"
+                                className="w-full aspect-[1080/550] object-cover"
+                                style={{ aspectRatio: "1080 / 550" }}
                               />
                               <div className="p-1.5 bg-slate-900/95 flex items-center justify-between gap-1">
                                 <button
@@ -1608,6 +1634,52 @@ export default function CapacitacionesAdminPage() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Métodos de Pago Habilitados en este Formulario */}
+                  {!formData.isFree && (
+                    <div className="p-4 bg-slate-900 border border-amber-500/40 rounded-2xl space-y-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <label className="block text-xs font-black text-amber-300">
+                          💳 Métodos de Pago Habilitados en este Formulario (Activar / Desactivar)
+                        </label>
+                        <span className="text-[10px] text-slate-400 font-semibold">
+                          Binance valida en línea vía Pabilo • Zelle/Transf. solicitan comprobante obligatorio
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          "Binance (Pabilo)",
+                          "Zelle USD",
+                          "Pago Móvil (Pabilo)",
+                          "Transferencia Bancaria Bs",
+                          "Efectivo en Tienda OnProtec",
+                        ].map((method) => {
+                          const isSelected = (formData.paymentMethods || []).includes(method);
+                          return (
+                            <button
+                              key={method}
+                              type="button"
+                              onClick={() => {
+                                const currentMethods = formData.paymentMethods || [];
+                                const next = isSelected
+                                  ? currentMethods.filter((m) => m !== method)
+                                  : [...currentMethods, method];
+                                setFormData({ ...formData, paymentMethods: next });
+                              }}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                                isSelected
+                                  ? "bg-amber-500 text-amber-950 border-amber-400 shadow-sm"
+                                  : "bg-slate-950 border-slate-700 text-slate-400 hover:text-white"
+                              }`}
+                            >
+                              {isSelected ? "✓ " : "+ "}
+                              {method}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                     {formData.formQuestions.map((q, idx) => (

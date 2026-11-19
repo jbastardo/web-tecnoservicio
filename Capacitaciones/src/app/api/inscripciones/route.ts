@@ -161,102 +161,158 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Bloqueo Estricto y Validación Real de Pago con Binance + Pabilo para Eventos Cobrados
+    // 3. Validación de Pago para Eventos Cobrados (Binance via Pabilo, Zelle/Transferencia con Comprobante, o Efectivo 48h)
     let isPaid = false;
     let pabiloStatus: "pending" | "approved" | "rejected" | "manual" = "pending";
     let verifiedPaymentId: string | null = null;
     const cleanRef = String(paymentReference || "").trim();
+    const chosenMethod = String(paymentMethod || "Binance (Pabilo)").trim();
+    const isBinanceMethod =
+      /binance|pabilo/i.test(chosenMethod) &&
+      !/zelle|efectivo|transferencia/i.test(chosenMethod);
+    const isCashMethod = /efectivo/i.test(chosenMethod);
+    let resolvedPaymentMethod = isPaidEvent ? chosenMethod : "Gratuito";
+    let resolvedPaymentReference: string | null = isPaidEvent ? cleanRef || null : null;
+    const cleanProofUrl = String(paymentProofUrl || "").trim();
 
     if (isPaidEvent) {
-      if (cleanRef.length < 4) {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              "Es obligatorio validar un pago real de Binance mediante Pabilo para inscribirse en esta capacitación.",
-          },
-          { status: 400 }
-        );
-      }
+      if (isBinanceMethod) {
+        if (cleanRef.length < 4) {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                "Es obligatorio validar un pago real de Binance mediante Pabilo para inscribirse con este método.",
+            },
+            { status: 400 }
+          );
+        }
 
-      // Control Anti-Replay por referencia de pago
-      const refAlreadyConsumed = initialRegistrations.some(
-        (r) =>
-          r.status !== "Cancelado" &&
-          r.isPaid &&
-          String(r.paymentReference || "").trim().toLowerCase() === cleanRef.toLowerCase()
-      );
-      if (refAlreadyConsumed) {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              "Este pago de Binance ya fue utilizado anteriormente para registrar otra inscripción.",
-          },
-          { status: 409 }
+        // Control Anti-Replay por referencia de pago
+        const refAlreadyConsumed = initialRegistrations.some(
+          (r) =>
+            r.status !== "Cancelado" &&
+            r.isPaid &&
+            String(r.paymentReference || "").trim().toLowerCase() === cleanRef.toLowerCase()
         );
-      }
+        if (refAlreadyConsumed) {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                "Este pago de Binance ya fue utilizado anteriormente para registrar otra inscripción.",
+            },
+            { status: 409 }
+          );
+        }
 
-      const expectedAmount = Math.round((Number(training.price) || 0) * 100) / 100;
-      let pabiloErrorMessage = "";
+        const expectedAmount = Math.round((Number(training.price) || 0) * 100) / 100;
+        let pabiloErrorMessage = "";
 
-      if (
-        pabiloPaymentId &&
-        pabiloVerificationToken &&
-        pabiloService.verifyVerificationToken(
-          String(pabiloVerificationToken),
-          String(pabiloPaymentId),
-          cleanRef,
-          expectedAmount,
-          Number(training.id)
-        )
-      ) {
-        isPaid = true;
-        pabiloStatus = "approved";
-        verifiedPaymentId = String(pabiloPaymentId).trim();
-      } else {
-        const pabiloCheck = await pabiloService.verifyPayment(
-          cleanRef,
-          expectedAmount,
-          paymentDate
-        );
-        if (pabiloCheck.isValid && pabiloCheck.verified && pabiloCheck.paymentId) {
+        if (
+          pabiloPaymentId &&
+          pabiloVerificationToken &&
+          pabiloService.verifyVerificationToken(
+            String(pabiloVerificationToken),
+            String(pabiloPaymentId),
+            cleanRef,
+            expectedAmount,
+            Number(training.id)
+          )
+        ) {
           isPaid = true;
           pabiloStatus = "approved";
-          verifiedPaymentId = pabiloCheck.paymentId;
+          verifiedPaymentId = String(pabiloPaymentId).trim();
         } else {
-          pabiloErrorMessage = pabiloCheck.message;
+          const pabiloCheck = await pabiloService.verifyPayment(
+            cleanRef,
+            expectedAmount,
+            paymentDate
+          );
+          if (pabiloCheck.isValid && pabiloCheck.verified && pabiloCheck.paymentId) {
+            isPaid = true;
+            pabiloStatus = "approved";
+            verifiedPaymentId = pabiloCheck.paymentId;
+          } else {
+            pabiloErrorMessage = pabiloCheck.message;
+          }
         }
-      }
 
-      if (!isPaid || !verifiedPaymentId) {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              pabiloErrorMessage ||
-              "No se ha establecido un pago real en Binance. Por favor verifica tu referencia y monto con Pabilo antes de continuar.",
-          },
-          { status: 402 }
-        );
-      }
+        if (!isPaid || !verifiedPaymentId) {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                pabiloErrorMessage ||
+                "No se ha establecido un pago real en Binance. Por favor verifica tu referencia y monto con Pabilo antes de continuar.",
+            },
+            { status: 402 }
+          );
+        }
 
-      // Control Anti-Replay por ID de transacción único en Pabilo
-      const paymentIdAlreadyConsumed = initialRegistrations.some(
-        (r) =>
-          r.status !== "Cancelado" &&
-          r.pabiloTransactionId &&
-          String(r.pabiloTransactionId).trim() === verifiedPaymentId
-      );
-      if (paymentIdAlreadyConsumed) {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              "Este pago de Binance ya fue utilizado para registrar otra inscripción.",
-          },
-          { status: 409 }
+        // Control Anti-Replay por ID de transacción único en Pabilo
+        const paymentIdAlreadyConsumed = initialRegistrations.some(
+          (r) =>
+            r.status !== "Cancelado" &&
+            r.pabiloTransactionId &&
+            String(r.pabiloTransactionId).trim() === verifiedPaymentId
         );
+        if (paymentIdAlreadyConsumed) {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                "Este pago de Binance ya fue utilizado para registrar otra inscripción.",
+            },
+            { status: 409 }
+          );
+        }
+
+        resolvedPaymentMethod = "Binance (Pabilo)";
+        resolvedPaymentReference = cleanRef;
+      } else if (isCashMethod) {
+        resolvedPaymentMethod = chosenMethod;
+        resolvedPaymentReference = cleanRef || "Pago en tienda (48h)";
+      } else {
+        // Rama 2: Zelle USD / Transferencia / Otros métodos con comprobante obligatorio
+        if (cleanRef.length < 4) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Debes ingresar el número de referencia o confirmación de tu pago por ${chosenMethod}.`,
+            },
+            { status: 400 }
+          );
+        }
+
+        if (!cleanProofUrl) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Es obligatorio adjuntar la imagen o PDF del comprobante de pago (${chosenMethod}) para completar tu inscripción.`,
+            },
+            { status: 400 }
+          );
+        }
+
+        const refAlreadyConsumed = initialRegistrations.some(
+          (r) =>
+            r.status !== "Cancelado" &&
+            r.isPaid &&
+            String(r.paymentReference || "").trim().toLowerCase() === cleanRef.toLowerCase()
+        );
+        if (refAlreadyConsumed) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `La referencia ${cleanRef} ya fue utilizada en un pago confirmado anteriormente.`,
+            },
+            { status: 409 }
+          );
+        }
+
+        resolvedPaymentMethod = chosenMethod;
+        resolvedPaymentReference = cleanRef;
       }
     }
 
@@ -310,20 +366,20 @@ export async function POST(request: Request) {
       participantId: participant.id,
       status: isWaitlist
         ? ("Lista de Espera" as const)
-        : isPaidEvent
+        : isPaid
         ? ("Confirmado" as const)
         : ("Inscrito" as const),
-      confirmationDate: !isWaitlist && isPaidEvent ? nowIso : null,
+      confirmationDate: !isWaitlist && isPaid ? nowIso : null,
       amount: training.price,
       currency: training.currency,
       isPaid,
       paymentDate: isPaid ? nowIso : null,
-      paymentMethod: isPaidEvent ? "Binance (Pabilo)" : "Gratuito",
-      paymentReference: isPaidEvent ? cleanRef : null,
+      paymentMethod: resolvedPaymentMethod,
+      paymentReference: resolvedPaymentReference,
       pabiloTransactionId: verifiedPaymentId,
       pabiloStatus,
       invoiceNumber: null,
-      paymentProofUrl: paymentProofUrl || null,
+      paymentProofUrl: cleanProofUrl || null,
       specialNotes:
         specialNotes ||
         customAnswers?.specialExpectations ||

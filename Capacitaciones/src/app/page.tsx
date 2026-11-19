@@ -16,6 +16,9 @@ import {
   ExternalLink,
   Lock,
   ChevronDown,
+  UploadCloud,
+  FileCheck,
+  Trash2,
   CheckCircle2,
   Building2,
   Phone,
@@ -70,6 +73,7 @@ export default function HomePage() {
     city: "Caracas",
     paymentMethod: "Binance (Pabilo)",
     paymentReference: "",
+    paymentProofUrl: "",
     specialNotes: "",
   });
 
@@ -155,6 +159,8 @@ export default function HomePage() {
     setForm((prev) => ({
       ...prev,
       paymentMethod: "Binance (Pabilo)",
+      paymentReference: "",
+      paymentProofUrl: "",
     }));
   }, [selectedTraining?.id]);
 
@@ -248,10 +254,21 @@ export default function HomePage() {
       return;
     }
 
-    if (isPaidCourse && !pabiloVerification?.verified) {
+    if (isPaidCourse && isBinanceSelected && !pabiloVerification?.verified) {
       const msg =
         "Debes validar tu pago real de Binance con Pabilo antes de continuar con la inscripción.";
       setPabiloError(msg);
+      setSubmissionResult({ success: false, error: msg });
+      scrollToSection("pago-binance-pabilo");
+      return;
+    }
+
+    if (
+      isPaidCourse &&
+      isZelleOrProofSelected &&
+      (form.paymentReference.trim().length < 4 || !form.paymentProofUrl)
+    ) {
+      const msg = `Para pagos vía ${form.paymentMethod}, debes ingresar el número de referencia y adjuntar la imagen o PDF del comprobante para continuar.`;
       setSubmissionResult({ success: false, error: msg });
       scrollToSection("pago-binance-pabilo");
       return;
@@ -267,10 +284,12 @@ export default function HomePage() {
         body: JSON.stringify({
           trainingId: selectedTraining.id,
           ...form,
-          paymentMethod: isPaidCourse ? "Binance (Pabilo)" : "Gratuito",
+          paymentMethod: isPaidCourse ? form.paymentMethod || "Binance (Pabilo)" : "Gratuito",
           paymentDate,
-          pabiloPaymentId: pabiloVerification?.paymentId || null,
-          pabiloVerificationToken: pabiloVerification?.verificationToken || null,
+          pabiloPaymentId: isBinanceSelected ? pabiloVerification?.paymentId || null : null,
+          pabiloVerificationToken: isBinanceSelected
+            ? pabiloVerification?.verificationToken || null
+            : null,
           customAnswers,
         }),
       });
@@ -323,12 +342,57 @@ export default function HomePage() {
     ? selectedTraining.formQuestions
     : [];
 
-  // Preguntas dinámicas para la sección 2 (omitiendo preguntas de pago o comprobantes de archivo, ya que Pabilo valida en línea)
+  // Preguntas dinámicas editables por Diana para la sección 2 (omite únicamente si se titula literalmente "Método de pago")
   const displayFormQuestions = activeFormQuestions.filter(
-    (q) =>
-      q.type !== "file" &&
-      !/método de pago|metodo de pago|forma de pago|comprobante/i.test(q.label)
+    (q) => !/^método de pago$|^metodo de pago$|^forma de pago$/i.test((q.label || "").trim())
   );
+
+  // Métodos de pago habilitados en el curso (siempre incluye Binance y Zelle USD en eventos pagos)
+  const rawMethods: string[] =
+    Array.isArray(selectedTraining?.paymentMethods) && selectedTraining.paymentMethods.length > 0
+      ? selectedTraining.paymentMethods
+      : ["Binance (Pabilo)", "Zelle USD", "Efectivo en Tienda OnProtec"];
+
+  const allowedPaymentMethods = React.useMemo(
+    () =>
+      Array.from(
+        new Set([
+          "Binance (Pabilo)",
+          "Zelle USD",
+          ...rawMethods.map((m) => (/binance/i.test(m) ? "Binance (Pabilo)" : m)),
+        ])
+      ),
+    [selectedTraining?.id, rawMethods.join("|")]
+  );
+
+  const hoursUntilEvent = React.useMemo(() => {
+    if (!selectedTraining) return 999;
+    const targetDate = selectedTraining.eventDate || selectedTraining.startDate;
+    if (!targetDate) return 999;
+    const eventTime = new Date(targetDate).getTime();
+    if (isNaN(eventTime)) return 999;
+    return (eventTime - Date.now()) / (1000 * 60 * 60);
+  }, [selectedTraining?.eventDate, selectedTraining?.startDate]);
+
+  const isCashDisabledByDeadline = hoursUntilEvent <= 48;
+
+  const isBinanceSelected = /binance/i.test(form.paymentMethod);
+  const isCashSelected = /efectivo/i.test(form.paymentMethod);
+  const isZelleOrProofSelected = isPaidCourse && !isBinanceSelected && !isCashSelected;
+
+  const canSubmitPaidCourse = !isPaidCourse
+    ? true
+    : isBinanceSelected
+    ? Boolean(pabiloVerification?.verified)
+    : isZelleOrProofSelected
+    ? form.paymentReference.trim().length >= 4 && Boolean(form.paymentProofUrl)
+    : !isCashDisabledByDeadline;
+
+  useEffect(() => {
+    if (isCashSelected && isCashDisabledByDeadline) {
+      setForm((prev) => ({ ...prev, paymentMethod: "Binance (Pabilo)" }));
+    }
+  }, [isCashSelected, isCashDisabledByDeadline]);
 
   const openTrainings = React.useMemo(() => {
     const list = trainings.filter(
@@ -557,11 +621,16 @@ export default function HomePage() {
                           : "border-slate-700/80 hover:border-[#f4730a] opacity-95 hover:opacity-100 hover:scale-[1.005]"
                       }`}
                     >
-                      {/* Bloque Superior: Imagen Llamativa Protagonista a Todo Color */}
-                      <div className="relative h-48 sm:h-52 w-full overflow-hidden bg-[#06080e]">
+                      {/* Bloque Superior: Imagen Llamativa Protagonista a Todo Color (Medida Oficial 1080x550) */}
+                      <div
+                        className="relative w-full aspect-[1080/550] overflow-hidden bg-[#06080e]"
+                        style={{ aspectRatio: "1080 / 550" }}
+                      >
                         <img
                           src={photo}
                           alt={t.name}
+                          width={1080}
+                          height={550}
                           className="w-full h-full object-cover object-center opacity-100 group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/75 via-black/35 to-transparent" />
@@ -662,14 +731,19 @@ export default function HomePage() {
               {/* Ficha Ejecutiva del Evento Seleccionado */}
               {selectedTraining ? (
                 <div className="bg-white dark:bg-[#13182b] rounded-3xl border-2 border-slate-200/90 dark:border-slate-800 shadow-md overflow-hidden">
-                  {/* Foto Llamativa de la Capacitación Seleccionada */}
+                  {/* Foto Llamativa de la Capacitación Seleccionada (1080x550) */}
                   {(selectedTraining.coverImageUrl ||
                     (Array.isArray(selectedTraining.coverPhotos) && selectedTraining.coverPhotos[0])) && (
-                    <div className="w-full max-h-[340px] overflow-hidden bg-[#070a14] border-b border-slate-200 dark:border-slate-800">
+                    <div
+                      className="w-full aspect-[1080/550] overflow-hidden bg-[#070a14] border-b border-slate-200 dark:border-slate-800"
+                      style={{ aspectRatio: "1080 / 550" }}
+                    >
                       <img
                         src={selectedTraining.coverImageUrl || selectedTraining.coverPhotos[0]}
                         alt={selectedTraining.name || selectedTraining.title}
-                        className="w-full max-h-[340px] object-cover object-center"
+                        width={1080}
+                        height={550}
+                        className="w-full h-full object-cover object-center"
                       />
                     </div>
                   )}
@@ -1010,6 +1084,112 @@ export default function HomePage() {
                                         </option>
                                       ))}
                                     </select>
+                                  ) : q.type === "textarea" ? (
+                                    <textarea
+                                      rows={2}
+                                      required={q.required}
+                                      placeholder={q.placeholder || "Escribe tu comentario..."}
+                                      value={customAnswers[q.id] || ""}
+                                      onChange={(e) =>
+                                        setCustomAnswers({ ...customAnswers, [q.id]: e.target.value })
+                                      }
+                                      className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-white outline-none resize-none"
+                                    />
+                                  ) : q.type === "radio" && Array.isArray(q.options) ? (
+                                    <div className="flex flex-wrap gap-2">
+                                      {q.options.map((opt, i) => {
+                                        const checked = customAnswers[q.id] === opt;
+                                        return (
+                                          <label
+                                            key={i}
+                                            className={`px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer transition ${
+                                              checked
+                                                ? "bg-[#f4730a] text-white border-[#f4730a]"
+                                                : "bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                                            }`}
+                                          >
+                                            <input
+                                              type="radio"
+                                              name={`radio-${q.id}`}
+                                              value={opt}
+                                              required={q.required}
+                                              checked={checked}
+                                              onChange={(e) =>
+                                                setCustomAnswers({
+                                                  ...customAnswers,
+                                                  [q.id]: e.target.value,
+                                                })
+                                              }
+                                              className="hidden"
+                                            />
+                                            <span>{opt}</span>
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : q.type === "checkbox" ? (
+                                    <label className="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 cursor-pointer text-xs font-bold text-slate-800 dark:text-white">
+                                      <input
+                                        type="checkbox"
+                                        required={q.required}
+                                        checked={Boolean(customAnswers[q.id])}
+                                        onChange={(e) =>
+                                          setCustomAnswers({
+                                            ...customAnswers,
+                                            [q.id]: e.target.checked ? "Sí" : "",
+                                          })
+                                        }
+                                        className="w-4 h-4 accent-[#f4730a]"
+                                      />
+                                      <span>{q.placeholder || "Sí, confirmo"}</span>
+                                    </label>
+                                  ) : q.type === "file" ? (
+                                    <div className="space-y-2">
+                                      {customAnswers[q.id] ? (
+                                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-emerald-500">
+                                          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 truncate">
+                                            <FileCheck className="w-4 h-4 flex-shrink-0" />
+                                            Archivo cargado exitosamente
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const next = { ...customAnswers };
+                                              delete next[q.id];
+                                              setCustomAnswers(next);
+                                            }}
+                                            className="text-rose-500 hover:text-rose-700 p-1"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <label className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl cursor-pointer hover:border-[#f4730a] text-xs font-bold text-slate-600 dark:text-slate-400">
+                                          <UploadCloud className="w-4 h-4 text-[#f4730a]" />
+                                          <span>Clic para adjuntar archivo o comprobante (Máx 8MB)</span>
+                                          <input
+                                            type="file"
+                                            accept="image/*,application/pdf"
+                                            required={q.required}
+                                            className="hidden"
+                                            onChange={(e) => {
+                                              const f = e.target.files?.[0];
+                                              if (!f) return;
+                                              const reader = new FileReader();
+                                              reader.onload = (ev) => {
+                                                const b64 = ev.target?.result as string;
+                                                setCustomAnswers((prev) => ({ ...prev, [q.id]: b64 }));
+                                                setForm((prev) => ({
+                                                  ...prev,
+                                                  paymentProofUrl: prev.paymentProofUrl || b64,
+                                                }));
+                                              };
+                                              reader.readAsDataURL(f);
+                                            }}
+                                          />
+                                        </label>
+                                      )}
+                                    </div>
                                   ) : (
                                     <input
                                       type="text"
@@ -1028,7 +1208,7 @@ export default function HomePage() {
                           </div>
                         )}
 
-                        {/* GRUPO 3: VALIDACIÓN OBLIGATORIA DE PAGO BINANCE + PABILO */}
+                        {/* GRUPO 3: PAGO Y VALIDACIÓN (BINANCE VIA PABILO, ZELLE USD + COMPROBANTE, O EFECTIVO 48H) */}
                         {isPaidCourse && (
                           <div
                             id="pago-binance-pabilo"
@@ -1037,172 +1217,353 @@ export default function HomePage() {
                             <div className="flex items-center justify-between gap-2">
                               <span className="text-xs font-black text-amber-950 dark:text-amber-200 flex items-center gap-1.5">
                                 <CreditCard className="w-4 h-4 text-[#f4730a]" />
-                                3. Pago Obligatorio Binance (Pabilo)
+                                3. Reporte y Validación de Pago
                               </span>
                               <span className="text-base font-black text-amber-950 dark:text-amber-200">
-                                {formatCurrency(selectedTraining.price)} USDT
+                                {formatCurrency(selectedTraining.price)} USD
                               </span>
                             </div>
 
-                            {/* Datos Oficiales de Onprotec Binance */}
-                            <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 space-y-2 text-xs">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">
-                                  Cuenta Oficial:
-                                </span>
-                                <span className="font-black text-[#2a285c] dark:text-white">
-                                  Onprotec Binance
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">
-                                  Binance ID:
-                                </span>
-                                <div className="flex items-center gap-2">
-                                  <code className="font-mono font-black text-sm text-[#f4730a] bg-orange-50 dark:bg-orange-500/15 px-2.5 py-0.5 rounded-lg border border-[#f4730a]/30">
-                                    1076181690
-                                  </code>
-                                  <button
-                                    type="button"
-                                    onClick={handleCopyBinanceId}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-[11px] transition cursor-pointer"
-                                  >
-                                    <Copy className="w-3 h-3" />
-                                    <span>{copiedBinanceId ? "¡Copiado!" : "Copiar ID"}</span>
-                                  </button>
+                            {/* Selector de Método de Pago */}
+                            <div>
+                              <label className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1">
+                                Método de Pago *
+                              </label>
+                              <select
+                                value={form.paymentMethod}
+                                onChange={(e) => {
+                                  const nextMethod = e.target.value;
+                                  setForm((prev) => ({ ...prev, paymentMethod: nextMethod }));
+                                  setPabiloError(null);
+                                  setSubmissionResult(null);
+                                }}
+                                className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3 py-2.5 text-xs font-black text-slate-900 dark:text-white outline-none"
+                              >
+                                {allowedPaymentMethods.map((m) => {
+                                  const isCashOpt = /efectivo/i.test(m);
+                                  const disabled = isCashOpt && isCashDisabledByDeadline;
+                                  return (
+                                    <option key={m} value={m} disabled={disabled}>
+                                      {m}
+                                      {disabled ? " (No disponible a menos de 48h del evento)" : ""}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            </div>
+
+                            {/* Alerta si el efectivo está bloqueado por faltar <= 48 horas */}
+                            {isCashDisabledByDeadline &&
+                              allowedPaymentMethods.some((m) => /efectivo/i.test(m)) && (
+                                <div className="p-2.5 rounded-xl bg-rose-500/15 border border-rose-400 text-rose-900 dark:text-rose-200 text-[11px] flex items-start gap-2">
+                                  <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                                  <p className="leading-snug">
+                                    <strong>Restricción 48h antes del evento:</strong> Ya no se aceptan pagos en efectivo en tienda. Selecciona Binance o Zelle USD.
+                                  </p>
                                 </div>
-                              </div>
-                              <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-                                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">
-                                  Monto Exacto Requerido:
-                                </span>
-                                <span className="font-black text-emerald-700 dark:text-emerald-400">
-                                  {formatCurrency(selectedTraining.price)} USDT / USD
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">
-                                Transfiere el monto exacto por Binance y valida abajo con los últimos dígitos de la referencia o el Order ID.
-                              </p>
-                            </div>
-
-                            {/* Inputs de Referencia / Order ID + Fecha de Pago */}
-                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-                              <div className="sm:col-span-7">
-                                <label className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1">
-                                  Nro. Referencia / Order ID Binance *
-                                </label>
-                                <input
-                                  type="text"
-                                  required={isPaidCourse}
-                                  placeholder="Ej. últimos 6-8 dígitos o Order ID"
-                                  value={form.paymentReference}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    setForm((prev) => ({ ...prev, paymentReference: val }));
-                                    setPabiloVerification(null);
-                                    setPabiloError(null);
-                                  }}
-                                  className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none"
-                                />
-                              </div>
-
-                              <div className="sm:col-span-5">
-                                <label className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1">
-                                  Fecha del Pago *
-                                </label>
-                                <input
-                                  type="date"
-                                  required={isPaidCourse}
-                                  value={paymentDate}
-                                  onChange={(e) => {
-                                    setPaymentDate(e.target.value);
-                                    setPabiloVerification(null);
-                                    setPabiloError(null);
-                                  }}
-                                  className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Botón Interactivo de Verificación Real en Tiempo Real */}
-                            <button
-                              type="button"
-                              onClick={handleVerifyPabiloPayment}
-                              disabled={verifyingPayment || form.paymentReference.trim().length < 4}
-                              className="w-full py-2.5 px-4 rounded-xl bg-[#2a285c] hover:bg-[#3a377c] disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider shadow-md transition flex items-center justify-center gap-2 cursor-pointer keep-white"
-                            >
-                              {verifyingPayment ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                  <span>Consultando Binance en Pabilo...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Zap className="w-4 h-4 text-[#fdff00]" />
-                                  <span>⚡ Validar Pago en Binance con Pabilo</span>
-                                </>
                               )}
-                            </button>
 
-                            {/* Estado de Validación */}
-                            {pabiloError && (
-                              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/15 border border-rose-400 text-rose-900 dark:text-rose-200 text-xs flex items-start gap-2">
-                                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                                <div className="space-y-0.5">
-                                  <p className="font-extrabold">Pago no validado en Pabilo</p>
-                                  <p className="text-[11px] leading-snug">{pabiloError}</p>
+                            {/* BLOQUE CONDICIONAL A: BINANCE CON VALIDACIÓN PABILO */}
+                            {isBinanceSelected && (
+                              <>
+                                <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 space-y-2 text-xs">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">
+                                      Cuenta Oficial:
+                                    </span>
+                                    <span className="font-black text-[#2a285c] dark:text-white">
+                                      Onprotec Binance
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">
+                                      Binance ID:
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <code className="font-mono font-black text-sm text-[#f4730a] bg-orange-50 dark:bg-orange-500/15 px-2.5 py-0.5 rounded-lg border border-[#f4730a]/30">
+                                        1076181690
+                                      </code>
+                                      <button
+                                        type="button"
+                                        onClick={handleCopyBinanceId}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-[11px] transition cursor-pointer"
+                                      >
+                                        <Copy className="w-3 h-3" />
+                                        <span>{copiedBinanceId ? "¡Copiado!" : "Copiar ID"}</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold">
+                                      Monto Exacto Requerido:
+                                    </span>
+                                    <span className="font-black text-emerald-700 dark:text-emerald-400">
+                                      {formatCurrency(selectedTraining.price)} USDT / USD
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-snug">
+                                    Transfiere el monto exacto por Binance y valida abajo con los últimos dígitos de la referencia o el Order ID.
+                                  </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                                  <div className="sm:col-span-7">
+                                    <label className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1">
+                                      Nro. Referencia / Order ID Binance *
+                                    </label>
+                                    <input
+                                      type="text"
+                                      required
+                                      placeholder="Ej. últimos 6-8 dígitos o Order ID"
+                                      value={form.paymentReference}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setForm((prev) => ({ ...prev, paymentReference: val }));
+                                        setPabiloVerification(null);
+                                        setPabiloError(null);
+                                      }}
+                                      className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                                    />
+                                  </div>
+
+                                  <div className="sm:col-span-5">
+                                    <label className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1">
+                                      Fecha del Pago *
+                                    </label>
+                                    <input
+                                      type="date"
+                                      required
+                                      value={paymentDate}
+                                      onChange={(e) => {
+                                        setPaymentDate(e.target.value);
+                                        setPabiloVerification(null);
+                                        setPabiloError(null);
+                                      }}
+                                      className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                                    />
+                                  </div>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={handleVerifyPabiloPayment}
+                                  disabled={verifyingPayment || form.paymentReference.trim().length < 4}
+                                  className="w-full py-2.5 px-4 rounded-xl bg-[#2a285c] hover:bg-[#3a377c] disabled:opacity-50 text-white font-black text-xs uppercase tracking-wider shadow-md transition flex items-center justify-center gap-2 cursor-pointer keep-white"
+                                >
+                                  {verifyingPayment ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                      <span>Consultando Binance en Pabilo...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Zap className="w-4 h-4 text-[#fdff00]" />
+                                      <span>⚡ Validar Pago en Binance con Pabilo</span>
+                                    </>
+                                  )}
+                                </button>
+
+                                {pabiloError && (
+                                  <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-500/15 border border-rose-400 text-rose-900 dark:text-rose-200 text-xs flex items-start gap-2">
+                                    <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                                    <div className="space-y-0.5">
+                                      <p className="font-extrabold">Pago no validado en Pabilo</p>
+                                      <p className="text-[11px] leading-snug">{pabiloError}</p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {!pabiloError && !pabiloVerification?.verified && (
+                                  <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-400 text-amber-950 dark:text-amber-200 text-[11px] flex items-start gap-2">
+                                    <Lock className="w-4 h-4 text-[#f4730a] shrink-0 mt-0.5" />
+                                    <p className="leading-snug font-semibold">
+                                      <strong>Validación obligatoria:</strong> Debes validar tu pago real en Binance mediante Pabilo para desbloquear el envío (o cambiar a Zelle USD).
+                                    </p>
+                                  </div>
+                                )}
+
+                                {pabiloVerification?.verified && (
+                                  <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border-2 border-emerald-500 text-emerald-950 dark:text-emerald-200 text-xs space-y-1 shadow-sm">
+                                    <div className="flex items-center gap-2 font-black text-emerald-800 dark:text-emerald-300">
+                                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                      <span>✅ PAGO REAL VERIFICADO EN BINANCE VÍA PABILO</span>
+                                    </div>
+                                    <div className="text-[11px] font-mono flex flex-wrap items-center gap-x-4 gap-y-1 text-emerald-900 dark:text-emerald-200">
+                                      <span>ID Pabilo: #{pabiloVerification.paymentId}</span>
+                                      <span>Ref: {pabiloVerification.reference}</span>
+                                      <span>Monto: ${pabiloVerification.amount.toFixed(2)} USD</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            )}
+
+                            {/* BLOQUE CONDICIONAL B: ZELLE USD / TRANSFERENCIA / OTROS CON COMPROBANTE OBLIGATORIO */}
+                            {isZelleOrProofSelected && (
+                              <div className="space-y-3">
+                                <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 text-xs space-y-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-slate-600 dark:text-slate-300">
+                                      Pago seleccionado:
+                                    </span>
+                                    <span className="font-black text-[#2a285c] dark:text-white">
+                                      {form.paymentMethod}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-slate-600 dark:text-slate-300">
+                                      Monto Exacto a Transferir:
+                                    </span>
+                                    <span className="font-black text-emerald-700 dark:text-emerald-400">
+                                      {formatCurrency(selectedTraining.price)} USD
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
+                                    Ingresa el número de confirmación / referencia y adjunta obligatoriamente la captura o PDF del comprobante para que OnProtec valide tu cupo.
+                                  </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                                  <div className="sm:col-span-7">
+                                    <label className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1">
+                                      Nro. Referencia / Confirmación {form.paymentMethod} *
+                                    </label>
+                                    <input
+                                      type="text"
+                                      required
+                                      placeholder="Ej. código de confirmación"
+                                      value={form.paymentReference}
+                                      onChange={(e) =>
+                                        setForm((prev) => ({
+                                          ...prev,
+                                          paymentReference: e.target.value,
+                                        }))
+                                      }
+                                      className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                                    />
+                                  </div>
+
+                                  <div className="sm:col-span-5">
+                                    <label className="block text-[10px] font-black uppercase tracking-wider text-amber-950 dark:text-amber-300 mb-1">
+                                      Fecha del Pago *
+                                    </label>
+                                    <input
+                                      type="date"
+                                      required
+                                      value={paymentDate}
+                                      onChange={(e) => setPaymentDate(e.target.value)}
+                                      className="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 focus:border-[#f4730a] rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none"
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             )}
 
-                            {!pabiloError && !pabiloVerification?.verified && (
-                              <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-400 text-amber-950 dark:text-amber-200 text-[11px] flex items-start gap-2">
-                                <Lock className="w-4 h-4 text-[#f4730a] shrink-0 mt-0.5" />
-                                <p className="leading-snug font-semibold">
-                                  <strong>Validación obligatoria:</strong> Debes validar tu pago real en Binance mediante Pabilo para desbloquear el envío de tu inscripción.
+                            {/* BLOQUE CONDICIONAL C: EFECTIVO EN TIENDA (48H) */}
+                            {isCashSelected && (
+                              <div className="p-3.5 rounded-2xl bg-amber-500/20 border-2 border-amber-500 text-amber-950 dark:text-amber-200 text-xs space-y-1.5 shadow-sm">
+                                <div className="flex items-center gap-2 font-black text-xs uppercase tracking-wide text-amber-900 dark:text-amber-300">
+                                  <AlertTriangle className="w-4 h-4 text-[#f4730a] shrink-0" />
+                                  <span>Condición Obligatoria de Pago en Efectivo</span>
+                                </div>
+                                <p className="text-[11px] leading-relaxed">
+                                  Dispones de un <strong>lapso máximo de 48 horas continuas</strong> tras enviar este formulario para acudir a nuestra tienda OnProtec (Sede Corporativa) y formalizar tu pago en caja. De lo contrario, tu solicitud será <strong>automáticamente anulada</strong> y el cupo se liberará.
                                 </p>
                               </div>
                             )}
 
-                            {pabiloVerification?.verified && (
-                              <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 border-2 border-emerald-500 text-emerald-950 dark:text-emerald-200 text-xs space-y-1 shadow-sm">
-                                <div className="flex items-center gap-2 font-black text-emerald-800 dark:text-emerald-300">
-                                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                  <span>✅ PAGO REAL VERIFICADO EN BINANCE VÍA PABILO</span>
+                            {/* Carga de Comprobante de Pago (Obligatorio para Zelle/Transferencia, Opcional para Binance/Efectivo) */}
+                            <div className="pt-2 border-t border-amber-200 dark:border-amber-500/20">
+                              <label className="block text-[11px] font-extrabold text-amber-900 dark:text-amber-200 mb-1.5 flex items-center gap-1.5">
+                                <UploadCloud className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                {isZelleOrProofSelected ? (
+                                  <span>
+                                    Adjuntar Comprobante de Pago {form.paymentMethod}{" "}
+                                    <strong className="text-rose-600 dark:text-rose-400">* Obligatorio</strong>
+                                  </span>
+                                ) : isBinanceSelected ? (
+                                  <span>Adjuntar Captura de Binance (Opcional — Pabilo ya valida en línea)</span>
+                                ) : (
+                                  <span>Comprobante (Opcional — Formalizarás en caja en tienda)</span>
+                                )}
+                              </label>
+
+                              {form.paymentProofUrl ? (
+                                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-400 dark:border-emerald-600 shadow-sm">
+                                  <div className="flex items-center gap-2 truncate">
+                                    {form.paymentProofUrl.startsWith("data:image/") ? (
+                                      <img
+                                        src={form.paymentProofUrl}
+                                        alt="Comprobante"
+                                        className="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700 flex-shrink-0"
+                                      />
+                                    ) : (
+                                      <FileCheck className="w-8 h-8 text-emerald-600 flex-shrink-0" />
+                                    )}
+                                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 truncate">
+                                      Comprobante adjuntado listo
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setForm({ ...form, paymentProofUrl: "" })}
+                                    className="p-1.5 text-rose-500 hover:text-rose-700 cursor-pointer"
+                                    title="Eliminar comprobante"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
                                 </div>
-                                <div className="text-[11px] font-mono flex flex-wrap items-center gap-x-4 gap-y-1 text-emerald-900 dark:text-emerald-200">
-                                  <span>ID Pabilo: #{pabiloVerification.paymentId}</span>
-                                  <span>Ref: {pabiloVerification.reference}</span>
-                                  <span>Monto: ${pabiloVerification.amount.toFixed(2)} USD</span>
-                                </div>
-                              </div>
-                            )}
+                              ) : (
+                                <label className="flex flex-col items-center justify-center p-2.5 border-2 border-dashed border-amber-300 dark:border-amber-500/40 hover:border-amber-500 rounded-xl bg-white/70 dark:bg-slate-900/60 cursor-pointer transition text-center">
+                                  <UploadCloud className="w-4 h-4 text-amber-600 mb-0.5" />
+                                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                                    Clic o arrastra para subir comprobante (JPG, PNG o PDF - Máx 8MB)
+                                  </span>
+                                  <input
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    required={isZelleOrProofSelected}
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      const reader = new FileReader();
+                                      reader.onload = (ev) => {
+                                        setForm((prev) => ({
+                                          ...prev,
+                                          paymentProofUrl: ev.target?.result as string,
+                                        }));
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }}
+                                  />
+                                </label>
+                              )}
+                            </div>
                           </div>
                         )}
 
                         {/* Botón de Confirmación Principal */}
                         <button
                           type="submit"
-                          disabled={
-                            submitting ||
-                            !selectedTraining ||
-                            (isPaidCourse && !pabiloVerification?.verified)
-                          }
+                          disabled={submitting || !selectedTraining || !canSubmitPaidCourse}
                           className={`w-full py-4 px-6 rounded-2xl text-white font-black text-xs sm:text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 mt-2 ${
-                            isPaidCourse && !pabiloVerification?.verified
+                            !canSubmitPaidCourse
                               ? "bg-slate-400 dark:bg-slate-700 cursor-not-allowed opacity-75"
                               : "bg-[#f4730a] hover:bg-[#ef7922] disabled:opacity-50 shadow-[0_12px_28px_rgba(244,115,10,0.35)] hover:shadow-[0_16px_32px_rgba(244,115,10,0.50)] cursor-pointer"
                           }`}
                         >
                           {submitting ? (
                             <span>Procesando Registro...</span>
-                          ) : isPaidCourse && !pabiloVerification?.verified ? (
+                          ) : isPaidCourse && isBinanceSelected && !pabiloVerification?.verified ? (
                             <span>🔒 Valida tu Pago Real de Binance (Pabilo) para Continuar</span>
+                          ) : isPaidCourse && isZelleOrProofSelected && !canSubmitPaidCourse ? (
+                            <span>🔒 Ingresa Referencia y Sube Comprobante de {form.paymentMethod} para Continuar</span>
                           ) : isPaidCourse ? (
                             availableSeats === 0 ? (
-                              <span>✅ Pago Verificado • Ingresar a Lista de Espera</span>
+                              <span>Ingresar a Lista de Espera</span>
                             ) : (
-                              <span>✅ Pago Verificado • Confirmar y Finalizar Inscripción</span>
+                              <span>Confirmar Reserva y Enviar Inscripción</span>
                             )
                           ) : availableSeats === 0 ? (
                             <span>Ingresar a Lista de Espera</span>
@@ -1388,23 +1749,51 @@ export default function HomePage() {
                 <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center shadow-inner">
                   <CheckCircle2 className="w-10 h-10" />
                 </div>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40">
-                  ✓ FORMALMENTE INSCRITO • CUPO VIP GARANTIZADO
-                </span>
-                <h3 className="text-2xl font-black text-[#2a285c] dark:text-white">
-                  ¡Inscripción Formalmente Confirmada!
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                  Hemos recibido tus datos y validado tu pago en Binance en tiempo real mediante Pabilo. Tu cupo en la Sala VIP (aforo de 18 puestos) ha quedado confirmado y garantizado.
-                </p>
-                <div className="p-3.5 bg-emerald-50/80 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl text-left text-xs space-y-1">
-                  <p className="font-extrabold text-emerald-900 dark:text-emerald-200">
-                    ¿Qué sigue a continuación?
-                  </p>
-                  <p className="text-emerald-800 dark:text-emerald-300 text-[11px] leading-snug">
-                    Tu pago en Binance ya fue conciliado automáticamente. El equipo de OnProtec se comunicará contigo vía WhatsApp en breve para enviarte las instrucciones privadas de acceso a la sala.
-                  </p>
-                </div>
+                {submissionResult.data?.isPaid ? (
+                  <>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40">
+                      ✓ FORMALMENTE INSCRITO • PAGO VERIFICADO EN PABILO
+                    </span>
+                    <h3 className="text-2xl font-black text-[#2a285c] dark:text-white">
+                      ¡Inscripción Formalmente Confirmada!
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                      Hemos recibido tus datos y validado tu pago en Binance en tiempo real mediante Pabilo. Tu cupo en la Sala VIP (aforo de 18 puestos) ha quedado confirmado y garantizado.
+                    </p>
+                    <div className="p-3.5 bg-emerald-50/80 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 rounded-2xl text-left text-xs space-y-1">
+                      <p className="font-extrabold text-emerald-900 dark:text-emerald-200">
+                        ¿Qué sigue a continuación?
+                      </p>
+                      <p className="text-emerald-800 dark:text-emerald-300 text-[11px] leading-snug">
+                        Tu pago en Binance ya fue conciliado automáticamente. El equipo de OnProtec se comunicará contigo vía WhatsApp en breve para enviarte las instrucciones privadas de acceso a la sala.
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-100 text-amber-950 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40">
+                      ✓ SOLICITUD REGISTRADA • REVISIÓN DE COMPROBANTE
+                    </span>
+                    <h3 className="text-2xl font-black text-[#2a285c] dark:text-white">
+                      ¡Registro y Comprobante Recibidos!
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                      Hemos recibido tus datos y tu comprobante de pago vía <strong>{form.paymentMethod}</strong>. Nuestro equipo administrativo validará tu transacción para formalizar tu cupo en Sala VIP (aforo de 18 puestos).
+                    </p>
+                    <div className="p-3.5 bg-amber-50/90 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-2xl text-left text-xs space-y-1">
+                      <p className="font-extrabold text-amber-950 dark:text-amber-200">
+                        {isCashSelected
+                          ? "Plazo máximo de 48h para pago en tienda"
+                          : "Validación administrativa de tu comprobante"}
+                      </p>
+                      <p className="text-amber-900 dark:text-amber-300 text-[11px] leading-snug">
+                        {isCashSelected
+                          ? "Dispones de 48 horas continuas para acudir a nuestra tienda OnProtec y formalizar el pago en caja; de lo contrario tu reserva será anulada."
+                          : "Una vez conciliado el comprobante, el equipo de OnProtec te confirmará por WhatsApp con las instrucciones privadas de acceso."}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             ) : submissionResult.isWaitlist ? (
               <div className="text-center space-y-3">
@@ -1484,7 +1873,9 @@ export default function HomePage() {
                   <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 text-[11px] pt-1 border-t border-slate-200 dark:border-slate-800">
                     <span>Método de Pago:</span>
                     <strong className="text-emerald-700 dark:text-emerald-400">
-                      Binance (Verificado Pabilo)
+                      {submissionResult.data?.isPaid
+                        ? "Binance (Verificado Pabilo)"
+                        : `${form.paymentMethod} (En revisión)`}
                     </strong>
                   </div>
                   {(submissionResult.data?.pabiloTransactionId || pabiloVerification?.paymentId) && (
@@ -1507,7 +1898,9 @@ export default function HomePage() {
                     isPaidCourse ? "inscripción" : "pre-inscripción"
                   } para la capacitación ${selectedTraining?.code} - ${selectedTraining?.name}. Mi nombre es ${form.name} (CI: ${form.docType}-${form.docNumber}).${
                     isPaidCourse
-                      ? ` Método de pago: Binance (Verificado Pabilo • Ref: ${form.paymentReference}).`
+                      ? ` Método de pago: ${form.paymentMethod}${
+                          form.paymentReference ? ` • Ref: ${form.paymentReference}` : ""
+                        }.`
                       : ""
                   }`
                 )}
