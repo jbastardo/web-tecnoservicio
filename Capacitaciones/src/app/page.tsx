@@ -91,6 +91,9 @@ export default function HomePage() {
   const [pabiloError, setPabiloError] = useState<string | null>(null);
   const [copiedBinanceId, setCopiedBinanceId] = useState(false);
   const [copiedZelleEmail, setCopiedZelleEmail] = useState(false);
+  const [copiedPagoMovilPhone, setCopiedPagoMovilPhone] = useState(false);
+  const [copiedPagoMovilDoc, setCopiedPagoMovilDoc] = useState(false);
+  const [copiedPagoMovilAll, setCopiedPagoMovilAll] = useState(false);
 
   const [customAnswers, setCustomAnswers] = useState<Record<string, any>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -223,6 +226,10 @@ export default function HomePage() {
 
   const handleCopyBinanceId = () => copyTextWithFeedback("1076181690", setCopiedBinanceId);
   const handleCopyZelleEmail = () => copyTextWithFeedback("zelle@onprotec.com", setCopiedZelleEmail);
+  const handleCopyPagoMovilPhone = () => copyTextWithFeedback("04126087854", setCopiedPagoMovilPhone);
+  const handleCopyPagoMovilDoc = () => copyTextWithFeedback("V15871667", setCopiedPagoMovilDoc);
+  const handleCopyPagoMovilAll = () =>
+    copyTextWithFeedback("Banesco\nV15871667\n04126087854", setCopiedPagoMovilAll);
 
   const handleVerifyPabiloPayment = async () => {
     if (!selectedTraining) return;
@@ -376,11 +383,11 @@ export default function HomePage() {
     (q) => !/^método de pago$|^metodo de pago$|^forma de pago$/i.test((q.label || "").trim())
   );
 
-  // Métodos de pago habilitados en el curso (siempre incluye Binance y Zelle USD en eventos pagos)
+  // Métodos de pago habilitados en el curso (siempre incluye Binance, Zelle USD y Pago Móvil en eventos pagos)
   const rawMethods: string[] =
     Array.isArray(selectedTraining?.paymentMethods) && selectedTraining.paymentMethods.length > 0
       ? selectedTraining.paymentMethods
-      : ["Binance (Pabilo)", "Zelle USD", "Efectivo en Tienda OnProtec"];
+      : ["Binance (Pabilo)", "Zelle USD", "Pago Móvil", "Efectivo en Tienda OnProtec"];
 
   const allowedPaymentMethods = React.useMemo(
     () =>
@@ -388,7 +395,14 @@ export default function HomePage() {
         new Set([
           "Binance (Pabilo)",
           "Zelle USD",
-          ...rawMethods.map((m) => (/binance/i.test(m) ? "Binance (Pabilo)" : m)),
+          "Pago Móvil",
+          ...rawMethods.map((m) =>
+            /binance/i.test(m)
+              ? "Binance (Pabilo)"
+              : /pago\s*m[oó]vil/i.test(m)
+              ? "Pago Móvil"
+              : m
+          ),
         ])
       ),
     [selectedTraining?.id, rawMethods.join("|")]
@@ -406,6 +420,8 @@ export default function HomePage() {
   const isCashDisabledByDeadline = hoursUntilEvent <= 48;
 
   const isBinanceSelected = /binance/i.test(form.paymentMethod);
+  const isZelleSelected = /zelle/i.test(form.paymentMethod);
+  const isPagoMovilSelected = /pago\s*m[oó]vil/i.test(form.paymentMethod);
   const isCashSelected = /efectivo/i.test(form.paymentMethod);
   const isZelleOrProofSelected = isPaidCourse && !isBinanceSelected && !isCashSelected;
 
@@ -1428,7 +1444,7 @@ export default function HomePage() {
                                     : isCashOpt
                                     ? "Sede OnProtec (>48h)"
                                     : isPagoMovilOpt
-                                    ? "Transferencia móvil"
+                                    ? "Tasa BCV del día"
                                     : "Subir comprobante";
 
                                   return (
@@ -1718,7 +1734,7 @@ export default function HomePage() {
                               </>
                             )}
 
-                            {/* BLOQUE CONDICIONAL B: ZELLE USD / TRANSFERENCIA / OTROS CON COMPROBANTE OBLIGATORIO */}
+                            {/* BLOQUE CONDICIONAL B: ZELLE USD / PAGO MÓVIL / TRANSFERENCIA CON COMPROBANTE OBLIGATORIO */}
                             {isZelleOrProofSelected && (
                               <div className="space-y-3">
                                 <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-slate-700 text-xs space-y-2">
@@ -1730,7 +1746,7 @@ export default function HomePage() {
                                       {form.paymentMethod}
                                     </span>
                                   </div>
-                                  {/zelle/i.test(form.paymentMethod) && (
+                                  {isZelleSelected && (
                                     <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-100 dark:border-slate-800">
                                       <span className="font-bold text-slate-600 dark:text-slate-300">
                                         Correo Oficial Zelle:
@@ -1750,16 +1766,83 @@ export default function HomePage() {
                                       </div>
                                     </div>
                                   )}
-                                  <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                                  {isPagoMovilSelected && (
+                                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                                      <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <span className="font-black text-sky-700 dark:text-sky-300 uppercase tracking-wide text-[11px]">
+                                          Datos Oficiales Pago Móvil
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={handleCopyPagoMovilAll}
+                                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 dark:bg-sky-500/15 dark:hover:bg-sky-500/25 text-sky-800 dark:text-sky-200 border border-sky-200 dark:border-sky-500/30 font-bold text-[11px] transition cursor-pointer"
+                                        >
+                                          <Copy className="w-3 h-3" />
+                                          <span>{copiedPagoMovilAll ? "¡Datos Copiados!" : "Copiar Todo"}</span>
+                                        </button>
+                                      </div>
+                                      <div className="grid grid-cols-1 gap-1.5 bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-500/30 rounded-xl p-2.5">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="font-bold text-slate-600 dark:text-slate-300">
+                                            Banco:
+                                          </span>
+                                          <span className="font-black text-[#2a285c] dark:text-white">
+                                            Banesco
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="font-bold text-slate-600 dark:text-slate-300">
+                                            Cédula:
+                                          </span>
+                                          <div className="flex items-center gap-1.5">
+                                            <code className="font-mono font-black text-xs text-sky-900 dark:text-sky-200 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-700">
+                                              V15871667
+                                            </code>
+                                            <button
+                                              type="button"
+                                              onClick={handleCopyPagoMovilDoc}
+                                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-[10px] transition cursor-pointer"
+                                            >
+                                              <Copy className="w-2.5 h-2.5" />
+                                              <span>{copiedPagoMovilDoc ? "¡Copiado!" : "Copiar"}</span>
+                                            </button>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2">
+                                          <span className="font-bold text-slate-600 dark:text-slate-300">
+                                            Teléfono:
+                                          </span>
+                                          <div className="flex items-center gap-1.5">
+                                            <code className="font-mono font-black text-xs text-sky-900 dark:text-sky-200 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-700">
+                                              04126087854
+                                            </code>
+                                            <button
+                                              type="button"
+                                              onClick={handleCopyPagoMovilPhone}
+                                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-[10px] transition cursor-pointer"
+                                            >
+                                              <Copy className="w-2.5 h-2.5" />
+                                              <span>{copiedPagoMovilPhone ? "¡Copiado!" : "Copiar"}</span>
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
                                     <span className="font-bold text-slate-600 dark:text-slate-300">
                                       Monto Exacto a Transferir:
                                     </span>
-                                    <span className="font-black text-emerald-700 dark:text-emerald-400">
-                                      {formatCurrency(selectedTraining.price)} USD
+                                    <span className="font-black text-emerald-700 dark:text-emerald-400 text-right">
+                                      {isPagoMovilSelected
+                                        ? `${formatCurrency(Number(selectedTraining.price) > 0 ? selectedTraining.price : 25)} USD (tasa BCV del día del pago)`
+                                        : `${formatCurrency(selectedTraining.price)} USD`}
                                     </span>
                                   </div>
                                   <p className="text-[10px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
-                                    Ingresa el número de confirmación / referencia y adjunta obligatoriamente la captura o PDF del comprobante para que OnProtec valide tu cupo.
+                                    {isPagoMovilSelected
+                                      ? `Calcula el equivalente en Bs de ${formatCurrency(Number(selectedTraining.price) > 0 ? selectedTraining.price : 25)} USD a la tasa oficial BCV vigente el día del pago, realiza el Pago Móvil a Banesco e ingresa los últimos dígitos de referencia junto con la captura obligatoria del comprobante.`
+                                      : "Ingresa el número de confirmación / referencia y adjunta obligatoriamente la captura o PDF del comprobante para que OnProtec valide tu cupo."}
                                   </p>
                                 </div>
 

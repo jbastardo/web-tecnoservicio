@@ -96,9 +96,9 @@ export default function CapacitacionesAdminPage() {
     formQuestionsTitle: "Preguntas Específicas del Curso",
     formQuestionsDescription: "",
     paymentMethods: [
-      "Pago Móvil (Pabilo)",
+      "Pago Móvil",
       "Zelle USD",
-      "Binance Pay (USDT)",
+      "Binance (Pabilo)",
       "Transferencia Bancaria Bs",
       "Efectivo en Tienda OnProtec",
     ] as string[],
@@ -197,7 +197,7 @@ export default function CapacitacionesAdminPage() {
       paymentMethods: [
         "Binance (Pabilo)",
         "Zelle USD",
-        "Pago Móvil (Pabilo)",
+        "Pago Móvil",
         "Transferencia Bancaria Bs",
         "Efectivo en Tienda OnProtec",
       ],
@@ -249,14 +249,18 @@ export default function CapacitacionesAdminPage() {
           ? Array.from(
               new Set(
                 t.paymentMethods.map((m: string) =>
-                  /binance/i.test(m) ? "Binance (Pabilo)" : m
+                  /binance/i.test(m)
+                    ? "Binance (Pabilo)"
+                    : /pago\s*m[oó]vil/i.test(m)
+                    ? "Pago Móvil"
+                    : m
                 )
               )
             )
           : [
               "Binance (Pabilo)",
               "Zelle USD",
-              "Pago Móvil (Pabilo)",
+              "Pago Móvil",
               "Transferencia Bancaria Bs",
               "Efectivo en Tienda OnProtec",
             ],
@@ -1409,7 +1413,7 @@ export default function CapacitacionesAdminPage() {
                           {[
                             "Binance (Pabilo)",
                             "Zelle USD",
-                            "Pago Móvil (Pabilo)",
+                            "Pago Móvil",
                             "Transferencia Bancaria Bs",
                             "Efectivo en Tienda OnProtec",
                           ].map((method) => {
@@ -1690,14 +1694,14 @@ export default function CapacitacionesAdminPage() {
                           💳 Métodos de Pago Habilitados en este Formulario (Activar / Desactivar)
                         </label>
                         <span className="text-[10px] text-slate-400 font-semibold">
-                          Binance valida en línea vía Pabilo • Zelle/Transf. solicitan comprobante obligatorio
+                          Binance valida en línea vía Pabilo • Zelle/Pago Móvil/Transf. solicitan comprobante obligatorio
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {[
                           "Binance (Pabilo)",
                           "Zelle USD",
-                          "Pago Móvil (Pabilo)",
+                          "Pago Móvil",
                           "Transferencia Bancaria Bs",
                           "Efectivo en Tienda OnProtec",
                         ].map((method) => {
