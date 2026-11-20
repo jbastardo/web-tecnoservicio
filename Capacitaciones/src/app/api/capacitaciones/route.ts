@@ -89,6 +89,14 @@ export async function GET(request: Request) {
     const trainingsWithStats = initialTrainings.map(enrichTraining);
 
     trainingsWithStats.sort((a, b) => {
+      const hasOrderA = typeof a.displayOrder === "number" && Number.isFinite(a.displayOrder);
+      const hasOrderB = typeof b.displayOrder === "number" && Number.isFinite(b.displayOrder);
+      if (hasOrderA && hasOrderB && a.displayOrder !== b.displayOrder) {
+        return a.displayOrder - b.displayOrder;
+      }
+      if (hasOrderA && !hasOrderB) return -1;
+      if (!hasOrderA && hasOrderB) return 1;
+
       const timeA = new Date(a.eventDate || 0).getTime();
       const timeB = new Date(b.eventDate || 0).getTime();
       return order === "asc" ? timeA - timeB : timeB - timeA;
@@ -129,6 +137,7 @@ export async function POST(request: Request) {
       formQuestionsTitle,
       formQuestionsDescription,
       paymentMethods,
+      displayOrder,
     } = body;
 
     if (!name || !instructor || !eventDate) {
@@ -193,6 +202,9 @@ export async function POST(request: Request) {
       formQuestionsTitle: formQuestionsTitle || "Preguntas Específicas del Curso",
       formQuestionsDescription: formQuestionsDescription || null,
       paymentMethods: Array.isArray(paymentMethods) ? paymentMethods : [],
+      ...(typeof displayOrder === "number" && Number.isFinite(displayOrder)
+        ? { displayOrder }
+        : {}),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -212,6 +224,38 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
+
+    // Acción especial: Reordenamiento Drag-and-Drop de Capacitaciones/Banners
+    if (body?.action === "reorder" && Array.isArray(body.orderedIds)) {
+      const orderMap = new Map<number, number>();
+      body.orderedIds.forEach((rawId: any, index: number) => {
+        const numericId = Number(rawId);
+        if (Number.isFinite(numericId)) {
+          orderMap.set(numericId, index + 1);
+        }
+      });
+
+      const nowIso = new Date().toISOString();
+      let nextExtraOrder = orderMap.size + 1;
+      initialTrainings.forEach((t) => {
+        const mapped = orderMap.get(Number(t.id));
+        if (mapped !== undefined) {
+          t.displayOrder = mapped;
+          t.updatedAt = nowIso;
+        } else if (typeof t.displayOrder !== "number") {
+          t.displayOrder = nextExtraOrder++;
+        }
+      });
+
+      initialTrainings.sort((a, b) => (a.displayOrder ?? 9999) - (b.displayOrder ?? 9999));
+      await persistDataset();
+
+      return NextResponse.json({
+        success: true,
+        data: initialTrainings.map(enrichTraining),
+      });
+    }
+
     const { id } = body;
 
     if (!id) {
@@ -277,6 +321,10 @@ export async function PUT(request: Request) {
       ...(body.formQuestionsTitle !== undefined && { formQuestionsTitle: body.formQuestionsTitle }),
       ...(body.formQuestionsDescription !== undefined && { formQuestionsDescription: body.formQuestionsDescription }),
       ...(body.paymentMethods !== undefined && { paymentMethods: body.paymentMethods }),
+      ...(body.displayOrder !== undefined && {
+        displayOrder:
+          body.displayOrder === null ? null : Number(body.displayOrder) || current.displayOrder,
+      }),
       ...(body.formQuestions !== undefined && { formQuestions: body.formQuestions }),
       ...(body.surveyQuestions !== undefined && {
         surveyQuestions: body.surveyQuestions,

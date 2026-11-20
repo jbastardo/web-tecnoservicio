@@ -47,6 +47,7 @@ export const trainings = pgTable(
     formQuestionsTitle: text("form_questions_title").default("Preguntas Específicas del Curso"), // Título de la sección de preguntas del formulario
     formQuestionsDescription: text("form_questions_description"), // Instrucción editable de la sección
     paymentMethods: jsonb("payment_methods").$type<string[]>().default([]).notNull(), // Métodos de pago expresados para el curso
+    displayOrder: integer("display_order"), // Orden manual de visualización para los banners
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },

@@ -28,6 +28,9 @@ import {
   MessageSquare,
   Download,
   AlertTriangle,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { FormQuestion, SurveyQuestion } from "@/types";
 import { fmtLocalDate, fmtLocalHour, formatCurrency } from "@/utils/formatUtils";
@@ -67,6 +70,11 @@ export default function CapacitacionesAdminPage() {
     "general"
   );
   const [saving, setSaving] = useState(false);
+
+  // Drag-and-Drop Ordenamiento de Banners en Portada
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [dragOverId, setDragOverId] = useState<number | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
 
   // Modal Confirmación de Eliminación (Permiso Diana / Coordinación)
   const [deletingTraining, setDeletingTraining] = useState<any | null>(null);
@@ -496,22 +504,87 @@ export default function CapacitacionesAdminPage() {
       .finally(() => setLoadingSurveys(false));
   };
 
-  // Filtrado y ordenamiento cronológico
-  const filteredTrainings = trainings
-    .filter((t) => {
-      const q = search.toLowerCase();
-      return (
-        t.name?.toLowerCase().includes(q) ||
-        t.code?.toLowerCase().includes(q) ||
-        t.instructor?.toLowerCase().includes(q) ||
-        t.brand?.toLowerCase().includes(q)
-      );
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.eventDate || 0).getTime();
-      const dateB = new Date(b.eventDate || 0).getTime();
-      return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
-    });
+  // Ordenamiento respetando primero displayOrder manual (drag & drop) y luego cronológico
+  const orderedTrainings = [...trainings].sort((a, b) => {
+    const hasOrderA = typeof a.displayOrder === "number" && Number.isFinite(a.displayOrder);
+    const hasOrderB = typeof b.displayOrder === "number" && Number.isFinite(b.displayOrder);
+    if (hasOrderA && hasOrderB && a.displayOrder !== b.displayOrder) {
+      return a.displayOrder - b.displayOrder;
+    }
+    if (hasOrderA && !hasOrderB) return -1;
+    if (!hasOrderA && hasOrderB) return 1;
+    const dateA = new Date(a.eventDate || 0).getTime();
+    const dateB = new Date(b.eventDate || 0).getTime();
+    return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+  });
+
+  const filteredTrainings = orderedTrainings.filter((t) => {
+    const q = search.toLowerCase();
+    return (
+      t.name?.toLowerCase().includes(q) ||
+      t.code?.toLowerCase().includes(q) ||
+      t.instructor?.toLowerCase().includes(q) ||
+      t.brand?.toLowerCase().includes(q)
+    );
+  });
+
+  const persistTrainingOrder = async (nextOrdered: any[]) => {
+    const normalized = nextOrdered.map((item, idx) => ({
+      ...item,
+      displayOrder: idx + 1,
+    }));
+    setTrainings(normalized);
+    setSavingOrder(true);
+    try {
+      const res = await fetch("/api/capacitaciones", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reorder",
+          orderedIds: normalized.map((item) => item.id),
+        }),
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setTrainings(data.data);
+        notify("✅ Orden de banners actualizado en la portada.");
+      } else {
+        notify("⚠️ No se pudo guardar el orden.");
+      }
+    } catch {
+      notify("⚠️ Error de red al guardar el orden de banners.");
+    } finally {
+      setSavingOrder(false);
+    }
+  };
+
+  const handleDropRow = (targetId: number) => {
+    if (draggingId === null || draggingId === targetId) {
+      setDraggingId(null);
+      setDragOverId(null);
+      return;
+    }
+    const currentList = [...orderedTrainings];
+    const fromIdx = currentList.findIndex((item) => Number(item.id) === Number(draggingId));
+    const toIdx = currentList.findIndex((item) => Number(item.id) === Number(targetId));
+    setDraggingId(null);
+    setDragOverId(null);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const [moved] = currentList.splice(fromIdx, 1);
+    currentList.splice(toIdx, 0, moved);
+    persistTrainingOrder(currentList);
+  };
+
+  const handleMoveRow = (trainingId: number, direction: "up" | "down") => {
+    const currentList = [...orderedTrainings];
+    const idx = currentList.findIndex((item) => Number(item.id) === Number(trainingId));
+    if (idx === -1) return;
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= currentList.length) return;
+    const [moved] = currentList.splice(idx, 1);
+    currentList.splice(targetIdx, 0, moved);
+    persistTrainingOrder(currentList);
+  };
 
   return (
     <div className="space-y-6">
@@ -530,7 +603,10 @@ export default function CapacitacionesAdminPage() {
             <span>Gestión de Capacitaciones, Formularios, Portadas & Encuestas</span>
           </h1>
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium">
-            {filteredTrainings.length} eventos registrados · Edita preguntas de inscripción, fotos de portada, notas de presentación y encuestas finales.
+            {filteredTrainings.length} eventos registrados · Arrastra las filas para cambiar el orden de los banners en portada · Edita preguntas, portadas y encuestas.
+            {savingOrder && (
+              <span className="ml-2 text-[#f4730a] font-bold">Guardando nuevo orden...</span>
+            )}
           </p>
         </div>
 
@@ -591,6 +667,9 @@ export default function CapacitacionesAdminPage() {
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-semibold">
               <tr>
+                <th className="py-3.5 px-3 text-center whitespace-nowrap" title="Arrastra una fila para definir el orden de los banners en la portada">
+                  Orden Banner
+                </th>
                 <th className="py-3.5 px-4">Portada / Evento</th>
                 <th className="py-3.5 px-4">Marca & Instructor</th>
                 <th
@@ -612,13 +691,13 @@ export default function CapacitacionesAdminPage() {
             <tbody className="divide-y divide-slate-800/80 font-normal">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-500">
+                  <td colSpan={9} className="py-8 text-center text-slate-500">
                     Cargando capacitaciones...
                   </td>
                 </tr>
               ) : filteredTrainings.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-500">
+                  <td colSpan={9} className="py-8 text-center text-slate-500">
                     No se encontraron capacitaciones coincidentes.
                   </td>
                 </tr>
@@ -634,9 +713,85 @@ export default function CapacitacionesAdminPage() {
                   const isFull = stats.totalOccupied >= maxCap;
                   const qCount = Array.isArray(t.formQuestions) ? t.formQuestions.length : 4;
                   const sqCount = Array.isArray(t.surveyQuestions) ? t.surveyQuestions.length : 7;
+                  const globalOrderIdx = orderedTrainings.findIndex(
+                    (o) => Number(o.id) === Number(t.id)
+                  );
+                  const isBeingDragged = draggingId === Number(t.id);
+                  const isDragTarget = dragOverId === Number(t.id) && draggingId !== Number(t.id);
 
                   return (
-                    <tr key={`${t.id}-${t.code}`} className="hover:bg-slate-800/40 transition">
+                    <tr
+                      key={`${t.id}-${t.code}`}
+                      draggable={!search.trim() && !savingOrder}
+                      onDragStart={(e) => {
+                        if (search.trim()) return;
+                        setDraggingId(Number(t.id));
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragOver={(e) => {
+                        if (search.trim()) return;
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        if (dragOverId !== Number(t.id)) setDragOverId(Number(t.id));
+                      }}
+                      onDragLeave={() => {
+                        if (dragOverId === Number(t.id)) setDragOverId(null);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (!search.trim()) handleDropRow(Number(t.id));
+                      }}
+                      onDragEnd={() => {
+                        setDraggingId(null);
+                        setDragOverId(null);
+                      }}
+                      className={`transition ${
+                        isDragTarget
+                          ? "bg-[#f4730a]/15 ring-2 ring-inset ring-[#f4730a]"
+                          : "hover:bg-slate-800/40"
+                      } ${isBeingDragged ? "opacity-45" : ""}`}
+                    >
+                      <td className="py-3.5 px-3 text-center whitespace-nowrap">
+                        <div className="inline-flex items-center gap-1.5">
+                          <span
+                            className={`p-1 rounded border ${
+                              search.trim()
+                                ? "text-slate-600 border-slate-800 cursor-not-allowed"
+                                : "text-slate-400 hover:text-[#f4730a] border-slate-700 bg-slate-950 cursor-grab active:cursor-grabbing"
+                            }`}
+                            title={
+                              search.trim()
+                                ? "Limpia la búsqueda para arrastrar filas"
+                                : "Arrastra esta fila arriba o abajo para cambiar el orden del banner en portada"
+                            }
+                          >
+                            <GripVertical className="w-3.5 h-3.5" />
+                          </span>
+                          <span className="font-mono text-[11px] font-black text-[#f4730a] min-w-[24px]">
+                            #{globalOrderIdx + 1}
+                          </span>
+                          <div className="flex flex-col gap-0.5">
+                            <button
+                              type="button"
+                              disabled={globalOrderIdx <= 0 || savingOrder}
+                              onClick={() => handleMoveRow(Number(t.id), "up")}
+                              className="p-0.5 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-slate-300 cursor-pointer disabled:cursor-not-allowed"
+                              title="Subir una posición en portada"
+                            >
+                              <ArrowUp className="w-2.5 h-2.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={globalOrderIdx >= orderedTrainings.length - 1 || savingOrder}
+                              onClick={() => handleMoveRow(Number(t.id), "down")}
+                              className="p-0.5 rounded bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-slate-300 cursor-pointer disabled:cursor-not-allowed"
+                              title="Bajar una posición en portada"
+                            >
+                              <ArrowDown className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </td>
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           {t.coverImageUrl ? (

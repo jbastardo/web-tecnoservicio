@@ -59,6 +59,7 @@ const ddlStatements = [
   `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "form_questions_title" TEXT DEFAULT 'Preguntas Específicas del Curso';`,
   `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "form_questions_description" TEXT;`,
   `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "payment_methods" JSONB DEFAULT '[]'::jsonb;`,
+  `ALTER TABLE "trainings" ADD COLUMN IF NOT EXISTS "display_order" INTEGER;`,
 
   // 2. Tabla: Participants (Participantes)
   `CREATE TABLE IF NOT EXISTS "participants" (

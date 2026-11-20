@@ -28,6 +28,7 @@ import {
   Copy,
   Loader2,
   X,
+  RefreshCw,
 } from "lucide-react";
 import { FormQuestion } from "@/types";
 import {
@@ -39,6 +40,46 @@ import {
 } from "@/utils/formatUtils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { OnprotecBrand } from "@/components/OnprotecBrand";
+
+function normalizePaymentMethodName(m: string): string {
+  if (/binance/i.test(m)) return "Binance (Pabilo)";
+  if (/pago\s*m[oó]vil/i.test(m)) return "Pago Móvil";
+  return m;
+}
+
+function sortOpenTrainingsList(list: any[]): any[] {
+  const anyHasDisplayOrder = list.some(
+    (t) => typeof t.displayOrder === "number" && Number.isFinite(t.displayOrder)
+  );
+  return [...list].sort((a, b) => {
+    if (anyHasDisplayOrder) {
+      const orderA =
+        typeof a.displayOrder === "number" && Number.isFinite(a.displayOrder)
+          ? a.displayOrder
+          : Number.MAX_SAFE_INTEGER;
+      const orderB =
+        typeof b.displayOrder === "number" && Number.isFinite(b.displayOrder)
+          ? b.displayOrder
+          : Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) return orderA - orderB;
+    }
+
+    const aIsEzviz =
+      (a.brand || "").toLowerCase().includes("ezviz") ||
+      (a.name || "").toLowerCase().includes("ezviz") ||
+      a.code === "CAP-2026-039";
+    const bIsEzviz =
+      (b.brand || "").toLowerCase().includes("ezviz") ||
+      (b.name || "").toLowerCase().includes("ezviz") ||
+      b.code === "CAP-2026-039";
+    if (aIsEzviz && !bIsEzviz) return -1;
+    if (!aIsEzviz && bIsEzviz) return 1;
+    const dateA = new Date(a.eventDate || a.startDate).getTime();
+    const dateB = new Date(b.eventDate || b.startDate).getTime();
+    if (!isNaN(dateA) && !isNaN(dateB)) return dateA - dateB;
+    return 0;
+  });
+}
 
 const PARTNER_BRANDS = [
   { name: "Dahua Technology", logo: "https://onprotec.tiendasellibri.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTk1Mzk0NiwicHVyIjoiYmxvYl9pZCJ9fQ==--c4bf3b2f8a846cbfbc52fa86d1a10408ca422f25/dahua-logo.png" },
@@ -94,6 +135,11 @@ export default function HomePage() {
   const [copiedPagoMovilPhone, setCopiedPagoMovilPhone] = useState(false);
   const [copiedPagoMovilDoc, setCopiedPagoMovilDoc] = useState(false);
   const [copiedPagoMovilAll, setCopiedPagoMovilAll] = useState(false);
+  const [copiedPagoMovilAmountBs, setCopiedPagoMovilAmountBs] = useState(false);
+
+  const [bcvRate, setBcvRate] = useState<number | null>(null);
+  const [bcvUpdatedAt, setBcvUpdatedAt] = useState<string | null>(null);
+  const [loadingBcvRate, setLoadingBcvRate] = useState(false);
 
   const [customAnswers, setCustomAnswers] = useState<Record<string, any>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -125,7 +171,38 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, [loading]);
 
+  const fetchBcvRate = async () => {
+    setLoadingBcvRate(true);
+    try {
+      const res = await fetch("/api/bcv", { cache: "no-store" });
+      const data = await res.json();
+      if (data?.success && Number(data.rate) > 0) {
+        setBcvRate(Number(data.rate));
+        setBcvUpdatedAt(data.updatedAt || null);
+        return;
+      }
+    } catch {
+      // Fallback directo desde navegador si /api/bcv falla
+    }
+    try {
+      const fallbackRes = await fetch("https://ve.dolarapi.com/v1/dolares/oficial", {
+        cache: "no-store",
+      });
+      const fallbackData = await fallbackRes.json();
+      const rate = Number(fallbackData?.promedio ?? fallbackData?.venta);
+      if (Number.isFinite(rate) && rate > 0) {
+        setBcvRate(rate);
+        setBcvUpdatedAt(fallbackData?.fechaActualizacion || null);
+      }
+    } catch (err) {
+      console.error("No se pudo obtener tasa BCV:", err);
+    } finally {
+      setLoadingBcvRate(false);
+    }
+  };
+
   useEffect(() => {
+    fetchBcvRate();
     fetch("/api/capacitaciones?order=desc")
       .then((res) => res.json())
       .then((data) => {
@@ -158,20 +235,8 @@ export default function HomePage() {
             }
           }
 
-          if (!targetTraining) {
-            // Priorizar EZVIZ por defecto por solicitud del usuario
-            targetTraining = activeTrainings.find(
-              (t: any) =>
-                (t.brand || "").toLowerCase().includes("ezviz") ||
-                (t.name || "").toLowerCase().includes("ezviz") ||
-                t.code === "CAP-2026-039"
-            );
-          }
-
-          const planned =
-            targetTraining ||
-            activeTrainings[0] ||
-            data.data[0];
+          const sortedActive = sortOpenTrainingsList(activeTrainings);
+          const planned = targetTraining || sortedActive[0] || data.data[0];
           setSelectedTraining(planned);
         }
       })
@@ -185,9 +250,19 @@ export default function HomePage() {
     setShowConfirmationModal(false);
     setPabiloVerification(null);
     setPabiloError(null);
+    const courseMethods: string[] =
+      Array.isArray(selectedTraining?.paymentMethods) && selectedTraining.paymentMethods.length > 0
+        ? Array.from(
+            new Set<string>(
+              (selectedTraining.paymentMethods as any[]).map((m) =>
+                normalizePaymentMethodName(String(m))
+              )
+            )
+          )
+        : ["Binance (Pabilo)", "Zelle USD", "Efectivo en Tienda OnProtec"];
     setForm((prev) => ({
       ...prev,
-      paymentMethod: "Binance (Pabilo)",
+      paymentMethod: courseMethods[0] || "Binance (Pabilo)",
       paymentReference: "",
       paymentProofUrl: "",
     }));
@@ -383,28 +458,14 @@ export default function HomePage() {
     (q) => !/^método de pago$|^metodo de pago$|^forma de pago$/i.test((q.label || "").trim())
   );
 
-  // Métodos de pago habilitados en el curso (siempre incluye Binance, Zelle USD y Pago Móvil en eventos pagos)
+  // Métodos de pago habilitados estrictamente en el curso seleccionado
   const rawMethods: string[] =
     Array.isArray(selectedTraining?.paymentMethods) && selectedTraining.paymentMethods.length > 0
       ? selectedTraining.paymentMethods
-      : ["Binance (Pabilo)", "Zelle USD", "Pago Móvil", "Efectivo en Tienda OnProtec"];
+      : ["Binance (Pabilo)", "Zelle USD", "Efectivo en Tienda OnProtec"];
 
   const allowedPaymentMethods = React.useMemo(
-    () =>
-      Array.from(
-        new Set([
-          "Binance (Pabilo)",
-          "Zelle USD",
-          "Pago Móvil",
-          ...rawMethods.map((m) =>
-            /binance/i.test(m)
-              ? "Binance (Pabilo)"
-              : /pago\s*m[oó]vil/i.test(m)
-              ? "Pago Móvil"
-              : m
-          ),
-        ])
-      ),
+    () => Array.from(new Set(rawMethods.map(normalizePaymentMethodName))),
     [selectedTraining?.id, rawMethods.join("|")]
   );
 
@@ -422,8 +483,22 @@ export default function HomePage() {
   const isBinanceSelected = /binance/i.test(form.paymentMethod);
   const isZelleSelected = /zelle/i.test(form.paymentMethod);
   const isPagoMovilSelected = /pago\s*m[oó]vil/i.test(form.paymentMethod);
+  const isTransferBsSelected = /transferencia/i.test(form.paymentMethod);
   const isCashSelected = /efectivo/i.test(form.paymentMethod);
   const isZelleOrProofSelected = isPaidCourse && !isBinanceSelected && !isCashSelected;
+  const requiresBcvBsConversion = isPagoMovilSelected || isTransferBsSelected;
+
+  const courseUsdPrice =
+    Number(selectedTraining?.price) > 0 ? Number(selectedTraining.price) : 25;
+  const calculatedBsAmount = bcvRate
+    ? Number((courseUsdPrice * bcvRate).toFixed(2))
+    : null;
+  const formattedBsAmount = calculatedBsAmount
+    ? calculatedBsAmount.toLocaleString("es-VE", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    : null;
 
   const canSubmitPaidCourse = !isPaidCourse
     ? true
@@ -434,31 +509,28 @@ export default function HomePage() {
     : !isCashDisabledByDeadline;
 
   useEffect(() => {
-    if (isCashSelected && isCashDisabledByDeadline) {
-      setForm((prev) => ({ ...prev, paymentMethod: "Binance (Pabilo)" }));
+    const isCurrentAllowed = allowedPaymentMethods.includes(form.paymentMethod);
+    const mustSwitchFromCash = isCashSelected && isCashDisabledByDeadline;
+    if (!isCurrentAllowed || mustSwitchFromCash) {
+      const firstValidMethod =
+        allowedPaymentMethods.find((m) => !(/efectivo/i.test(m) && isCashDisabledByDeadline)) ||
+        allowedPaymentMethods[0] ||
+        "Binance (Pabilo)";
+      setForm((prev) => ({ ...prev, paymentMethod: firstValidMethod }));
     }
-  }, [isCashSelected, isCashDisabledByDeadline]);
+  }, [
+    selectedTraining?.id,
+    allowedPaymentMethods.join("|"),
+    form.paymentMethod,
+    isCashSelected,
+    isCashDisabledByDeadline,
+  ]);
 
   const openTrainings = React.useMemo(() => {
     const list = trainings.filter(
       (t) => t.status === "Planificado" || t.status === "En Publicidad"
     );
-    return [...list].sort((a, b) => {
-      const aIsEzviz =
-        (a.brand || "").toLowerCase().includes("ezviz") ||
-        (a.name || "").toLowerCase().includes("ezviz") ||
-        a.code === "CAP-2026-039";
-      const bIsEzviz =
-        (b.brand || "").toLowerCase().includes("ezviz") ||
-        (b.name || "").toLowerCase().includes("ezviz") ||
-        b.code === "CAP-2026-039";
-      if (aIsEzviz && !bIsEzviz) return -1;
-      if (!aIsEzviz && bIsEzviz) return 1;
-      const dateA = new Date(a.eventDate || a.startDate).getTime();
-      const dateB = new Date(b.eventDate || b.startDate).getTime();
-      if (!isNaN(dateA) && !isNaN(dateB)) return dateA - dateB;
-      return 0;
-    });
+    return sortOpenTrainingsList(list);
   }, [trainings]);
 
   return (
@@ -1414,7 +1486,10 @@ export default function HomePage() {
                               <div
                                 role="radiogroup"
                                 aria-labelledby="payment-method-group-label"
-                                className="grid grid-cols-2 sm:grid-cols-3 gap-2.5"
+                                className="grid grid-flow-col auto-cols-fr gap-1.5 sm:gap-2 w-full items-stretch"
+                                style={{
+                                  gridTemplateColumns: `repeat(${Math.max(allowedPaymentMethods.length, 1)}, minmax(0, 1fr))`,
+                                }}
                               >
                                 {allowedPaymentMethods.map((m) => {
                                   const isBinanceOpt = /binance/i.test(m);
@@ -1464,7 +1539,7 @@ export default function HomePage() {
                                         setPabiloError(null);
                                         setSubmissionResult(null);
                                       }}
-                                      className={`relative flex flex-col items-center justify-center text-center gap-1.5 p-2.5 rounded-xl border-2 transition-all ${
+                                      className={`relative min-w-0 flex flex-col items-center justify-center text-center gap-1 px-1.5 py-2 sm:px-2 sm:py-2.5 rounded-xl border-2 transition-all ${
                                         disabled
                                           ? "opacity-45 grayscale cursor-not-allowed bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                                           : isSelected
@@ -1475,25 +1550,25 @@ export default function HomePage() {
                                       {isSelected && (
                                         <span
                                           aria-hidden="true"
-                                          className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#f4730a] text-white flex items-center justify-center text-[9px] font-black shadow-sm"
+                                          className="absolute top-1 right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-[#f4730a] text-white flex items-center justify-center text-[8px] sm:text-[9px] font-black shadow-sm"
                                         >
                                           ✓
                                         </span>
                                       )}
 
                                       {isBinanceOpt ? (
-                                        <span className="w-9 h-9 rounded-xl bg-[#1E2026] text-[#F3BA2F] border border-[#F3BA2F]/40 flex items-center justify-center shadow-sm">
+                                        <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#1E2026] text-[#F3BA2F] border border-[#F3BA2F]/40 flex items-center justify-center shadow-sm flex-shrink-0">
                                           <svg
                                             viewBox="0 0 24 24"
                                             fill="currentColor"
-                                            className="w-5 h-5"
+                                            className="w-4 h-4 sm:w-5 sm:h-5"
                                             aria-hidden="true"
                                           >
                                             <path d="M12 2L6.8 7.2l1.95 1.95L12 5.9l3.25 3.25 1.95-1.95L12 2zm-7.2 7.2L2.85 11.15 4.8 13.1l1.95-1.95-1.95-1.95zm14.4 0l-1.95 1.95 1.95 1.95 1.95-1.95L19.2 9.2zM12 9.05L9.05 12 12 14.95 14.95 12 12 9.05zM6.8 16.8L12 22l5.2-5.2-1.95-1.95L12 18.1l-3.25-3.25-1.95 1.95z" />
                                           </svg>
                                         </span>
                                       ) : isZelleOpt ? (
-                                        <span className="w-9 h-9 rounded-xl bg-[#6D1ED4] text-white flex items-center justify-center shadow-sm">
+                                        <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#6D1ED4] text-white flex items-center justify-center shadow-sm flex-shrink-0">
                                           <svg
                                             viewBox="0 0 24 24"
                                             fill="none"
@@ -1501,7 +1576,7 @@ export default function HomePage() {
                                             strokeWidth="2.4"
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
-                                            className="w-5 h-5"
+                                            className="w-4 h-4 sm:w-5 sm:h-5"
                                             aria-hidden="true"
                                           >
                                             <path d="M12 3v2.5M12 18.5V21" />
@@ -1509,7 +1584,7 @@ export default function HomePage() {
                                           </svg>
                                         </span>
                                       ) : isCashOpt ? (
-                                        <span className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+                                        <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-sm flex-shrink-0">
                                           <svg
                                             viewBox="0 0 24 24"
                                             fill="none"
@@ -1517,7 +1592,7 @@ export default function HomePage() {
                                             strokeWidth="2"
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
-                                            className="w-5 h-5"
+                                            className="w-4 h-4 sm:w-5 sm:h-5"
                                             aria-hidden="true"
                                           >
                                             <rect x="2" y="6" width="20" height="12" rx="2.5" />
@@ -1526,7 +1601,7 @@ export default function HomePage() {
                                           </svg>
                                         </span>
                                       ) : isPagoMovilOpt ? (
-                                        <span className="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-sm">
+                                        <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-sky-600 text-white flex items-center justify-center shadow-sm flex-shrink-0">
                                           <svg
                                             viewBox="0 0 24 24"
                                             fill="none"
@@ -1534,7 +1609,7 @@ export default function HomePage() {
                                             strokeWidth="2"
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
-                                            className="w-5 h-5"
+                                            className="w-4 h-4 sm:w-5 sm:h-5"
                                             aria-hidden="true"
                                           >
                                             <rect x="7" y="2.5" width="10" height="19" rx="2.2" />
@@ -1543,7 +1618,7 @@ export default function HomePage() {
                                           </svg>
                                         </span>
                                       ) : (
-                                        <span className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
+                                        <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-sm flex-shrink-0">
                                           <svg
                                             viewBox="0 0 24 24"
                                             fill="none"
@@ -1551,7 +1626,7 @@ export default function HomePage() {
                                             strokeWidth="2"
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
-                                            className="w-5 h-5"
+                                            className="w-4 h-4 sm:w-5 sm:h-5"
                                             aria-hidden="true"
                                           >
                                             <path d="M3 9.5L12 4l9 5.5H3z" />
@@ -1560,10 +1635,10 @@ export default function HomePage() {
                                         </span>
                                       )}
 
-                                      <span className="text-[11px] font-black text-slate-900 dark:text-white leading-tight">
+                                      <span className="w-full truncate text-[10px] sm:text-[11px] font-black text-slate-900 dark:text-white leading-tight">
                                         {shortTitle}
                                       </span>
-                                      <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 leading-none">
+                                      <span className="w-full truncate text-[8px] sm:text-[9px] font-bold text-slate-500 dark:text-slate-400 leading-none">
                                         {subtitle}
                                       </span>
                                     </button>
@@ -1829,21 +1904,92 @@ export default function HomePage() {
                                       </div>
                                     </div>
                                   )}
-                                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-                                    <span className="font-bold text-slate-600 dark:text-slate-300">
-                                      Monto Exacto a Transferir:
-                                    </span>
-                                    <span className="font-black text-emerald-700 dark:text-emerald-400 text-right">
-                                      {isPagoMovilSelected
-                                        ? `${formatCurrency(Number(selectedTraining.price) > 0 ? selectedTraining.price : 25)} USD (tasa BCV del día del pago)`
-                                        : `${formatCurrency(selectedTraining.price)} USD`}
-                                    </span>
-                                  </div>
-                                  <p className="text-[10px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
-                                    {isPagoMovilSelected
-                                      ? `Calcula el equivalente en Bs de ${formatCurrency(Number(selectedTraining.price) > 0 ? selectedTraining.price : 25)} USD a la tasa oficial BCV vigente el día del pago, realiza el Pago Móvil a Banesco e ingresa los últimos dígitos de referencia junto con la captura obligatoria del comprobante.`
-                                      : "Ingresa el número de confirmación / referencia y adjunta obligatoriamente la captura o PDF del comprobante para que OnProtec valide tu cupo."}
-                                  </p>
+                                  {requiresBcvBsConversion ? (
+                                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                                      <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <span className="font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                                          <span>Tasa Oficial BCV del Día:</span>
+                                          <button
+                                            type="button"
+                                            onClick={fetchBcvRate}
+                                            disabled={loadingBcvRate}
+                                            title="Actualizar tasa oficial BCV"
+                                            className="inline-flex items-center justify-center p-1 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer disabled:opacity-50"
+                                          >
+                                            <RefreshCw className={`w-3 h-3 ${loadingBcvRate ? "animate-spin" : ""}`} />
+                                          </button>
+                                        </span>
+                                        <span className="font-mono font-black text-slate-800 dark:text-slate-100">
+                                          {bcvRate
+                                            ? `Bs. ${bcvRate.toLocaleString("es-VE", {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 4,
+                                              })} / USD`
+                                            : loadingBcvRate
+                                            ? "Consultando BCV..."
+                                            : "Tasa no disponible (recargar)"}
+                                        </span>
+                                      </div>
+
+                                      <div className="p-2.5 rounded-xl bg-emerald-50/90 dark:bg-emerald-950/35 border border-emerald-300 dark:border-emerald-500/40 flex flex-wrap items-center justify-between gap-2">
+                                        <div>
+                                          <span className="block text-[10px] font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
+                                            Monto Calculado en Bs. ({formatCurrency(courseUsdPrice)} USD × BCV)
+                                          </span>
+                                          <span className="text-base sm:text-lg font-black font-mono text-emerald-700 dark:text-emerald-300">
+                                            {formattedBsAmount ? `Bs. ${formattedBsAmount}` : `${formatCurrency(courseUsdPrice)} USD`}
+                                          </span>
+                                        </div>
+                                        {calculatedBsAmount && (
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              copyTextWithFeedback(
+                                                calculatedBsAmount.toFixed(2),
+                                                setCopiedPagoMovilAmountBs
+                                              )
+                                            }
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] shadow-sm transition cursor-pointer"
+                                          >
+                                            <Copy className="w-3 h-3" />
+                                            <span>
+                                              {copiedPagoMovilAmountBs ? "¡Monto Copiado!" : "Copiar Monto Bs"}
+                                            </span>
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {bcvUpdatedAt && (
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                          Referencia oficial BCV (
+                                          {!isNaN(new Date(bcvUpdatedAt).getTime())
+                                            ? new Intl.DateTimeFormat("es-VE", {
+                                                timeZone: "America/Caracas",
+                                                dateStyle: "short",
+                                              }).format(new Date(bcvUpdatedAt))
+                                            : bcvUpdatedAt}
+                                          ).{" "}
+                                          {isPagoMovilSelected
+                                            ? "Realiza el Pago Móvil a Banesco por el monto exacto en Bs. e ingresa tu referencia y comprobante."
+                                            : "Realiza la transferencia bancaria por el monto exacto en Bs. e ingresa tu referencia y comprobante."}
+                                        </p>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                                        <span className="font-bold text-slate-600 dark:text-slate-300">
+                                          Monto Exacto a Transferir:
+                                        </span>
+                                        <span className="font-black text-emerald-700 dark:text-emerald-400 text-right">
+                                          {formatCurrency(selectedTraining.price)} USD
+                                        </span>
+                                      </div>
+                                      <p className="text-[10px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
+                                        Ingresa el número de confirmación / referencia y adjunta obligatoriamente la captura o PDF del comprobante para que OnProtec valide tu cupo.
+                                      </p>
+                                    </>
+                                  )}
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">

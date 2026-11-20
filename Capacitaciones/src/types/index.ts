@@ -93,6 +93,7 @@ export interface Training {
   formQuestionsTitle?: string | null; // Título personalizado de la sección de preguntas técnicas/específicas
   formQuestionsDescription?: string | null; // Descripción o instrucción editable de la sección de preguntas
   paymentMethods?: string[] | null; // Lista de métodos de pago habilitados expresados en el formulario
+  displayOrder?: number | null; // Orden de visualización configurable para banners
   createdAt?: string;
   updatedAt?: string;
 }
