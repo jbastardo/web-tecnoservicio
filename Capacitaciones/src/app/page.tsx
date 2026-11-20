@@ -47,6 +47,14 @@ function normalizePaymentMethodName(m: string): string {
   return m;
 }
 
+function isTrainingOpenForRegistration(t: any): boolean {
+  return Boolean(
+    t &&
+      t.registrationOpen !== false &&
+      (t.status === "Planificado" || t.status === "En Publicidad")
+  );
+}
+
 function sortOpenTrainingsList(list: any[]): any[] {
   const anyHasDisplayOrder = list.some(
     (t) => typeof t.displayOrder === "number" && Number.isFinite(t.displayOrder)
@@ -208,9 +216,7 @@ export default function HomePage() {
       .then((data) => {
         if (data.success && data.data.length > 0) {
           setTrainings(data.data);
-          const activeTrainings = data.data.filter(
-            (t: any) => t.status === "Planificado" || t.status === "En Publicidad"
-          );
+          const activeTrainings = data.data.filter(isTrainingOpenForRegistration);
 
           // Soporte para campañas de marketing vía URL (?curso=ezviz / ?curso=dahua / ?id=39 / ?id=40)
           let targetTraining: any = null;
@@ -286,9 +292,7 @@ export default function HomePage() {
     }, 350);
   };
 
-  const isSelectedTrainingOpen =
-    selectedTraining &&
-    (selectedTraining.status === "Planificado" || selectedTraining.status === "En Publicidad");
+  const isSelectedTrainingOpen = isTrainingOpenForRegistration(selectedTraining);
 
   const copyTextWithFeedback = (text: string, setFlag: (val: boolean) => void) => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -527,9 +531,7 @@ export default function HomePage() {
   ]);
 
   const openTrainings = React.useMemo(() => {
-    const list = trainings.filter(
-      (t) => t.status === "Planificado" || t.status === "En Publicidad"
-    );
+    const list = trainings.filter(isTrainingOpenForRegistration);
     return sortOpenTrainingsList(list);
   }, [trainings]);
 

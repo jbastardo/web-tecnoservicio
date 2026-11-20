@@ -51,6 +51,7 @@ function enrichTraining(t: any) {
     formQuestionsTitle: t.formQuestionsTitle || "Preguntas Específicas del Curso",
     formQuestionsDescription: t.formQuestionsDescription || null,
     paymentMethods: Array.isArray(t.paymentMethods) ? t.paymentMethods : [],
+    registrationOpen: t.registrationOpen !== false,
     stats: {
       confirmedCount,
       registeredCount,
@@ -138,6 +139,7 @@ export async function POST(request: Request) {
       formQuestionsDescription,
       paymentMethods,
       displayOrder,
+      registrationOpen,
     } = body;
 
     if (!name || !instructor || !eventDate) {
@@ -202,6 +204,7 @@ export async function POST(request: Request) {
       formQuestionsTitle: formQuestionsTitle || "Preguntas Específicas del Curso",
       formQuestionsDescription: formQuestionsDescription || null,
       paymentMethods: Array.isArray(paymentMethods) ? paymentMethods : [],
+      registrationOpen: registrationOpen !== undefined ? Boolean(registrationOpen) : true,
       ...(typeof displayOrder === "number" && Number.isFinite(displayOrder)
         ? { displayOrder }
         : {}),
@@ -321,6 +324,9 @@ export async function PUT(request: Request) {
       ...(body.formQuestionsTitle !== undefined && { formQuestionsTitle: body.formQuestionsTitle }),
       ...(body.formQuestionsDescription !== undefined && { formQuestionsDescription: body.formQuestionsDescription }),
       ...(body.paymentMethods !== undefined && { paymentMethods: body.paymentMethods }),
+      ...(body.registrationOpen !== undefined && {
+        registrationOpen: Boolean(body.registrationOpen),
+      }),
       ...(body.displayOrder !== undefined && {
         displayOrder:
           body.displayOrder === null ? null : Number(body.displayOrder) || current.displayOrder,

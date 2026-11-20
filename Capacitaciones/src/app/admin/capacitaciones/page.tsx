@@ -31,6 +31,8 @@ import {
   GripVertical,
   ArrowUp,
   ArrowDown,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { FormQuestion, SurveyQuestion } from "@/types";
 import { fmtLocalDate, fmtLocalHour, formatCurrency } from "@/utils/formatUtils";
@@ -71,10 +73,11 @@ export default function CapacitacionesAdminPage() {
   );
   const [saving, setSaving] = useState(false);
 
-  // Drag-and-Drop Ordenamiento de Banners en Portada
+  // Drag-and-Drop Ordenamiento de Banners en Portada y Visibilidad de Inscripciones
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
   const [savingOrder, setSavingOrder] = useState(false);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
 
   // Modal Confirmación de Eliminación (Permiso Diana / Coordinación)
   const [deletingTraining, setDeletingTraining] = useState<any | null>(null);
@@ -95,6 +98,7 @@ export default function CapacitacionesAdminPage() {
     price: "0",
     currency: "USD",
     status: "Planificado",
+    registrationOpen: true,
     location: "Torre América, Piso 14, Urb. El Recreo, Caracas",
     selectedSkus: [] as string[],
     description: "",
@@ -193,6 +197,7 @@ export default function CapacitacionesAdminPage() {
       price: "0",
       currency: "USD",
       status: "Planificado",
+      registrationOpen: true,
       location: "Torre América, Piso 14, Urb. El Recreo, Caracas",
       selectedSkus: [],
       description: "",
@@ -244,6 +249,7 @@ export default function CapacitacionesAdminPage() {
       price: String(t.price ?? 0),
       currency: t.currency || "USD",
       status: t.status || "Planificado",
+      registrationOpen: t.registrationOpen !== false,
       location: t.location || "Torre América, Piso 14, Urb. El Recreo, Caracas",
       selectedSkus: Array.isArray(t.relatedSkus) ? t.relatedSkus : [],
       description: t.description || "",
@@ -284,6 +290,45 @@ export default function CapacitacionesAdminPage() {
     setShowModal(true);
   };
 
+  const handleToggleRegistrationOpen = async (t: any) => {
+    const isCurrentlyOpen =
+      t.registrationOpen !== false &&
+      (t.status === "Planificado" || t.status === "En Publicidad");
+    const nextOpen = !isCurrentlyOpen;
+    setTogglingId(Number(t.id));
+    try {
+      const payload: any = {
+        id: t.id,
+        registrationOpen: nextOpen,
+      };
+      if (nextOpen && t.status !== "Planificado" && t.status !== "En Publicidad") {
+        payload.status = "En Publicidad";
+      }
+      const res = await fetch("/api/capacitaciones", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTrainings((prev) =>
+          prev.map((item) => (Number(item.id) === Number(t.id) ? data.data : item))
+        );
+        notify(
+          nextOpen
+            ? `🔓 Inscripciones habilitadas y banner visible en portada para ${t.code}.`
+            : `🔒 Inscripciones cerradas y banner oculto en portada para ${t.code}.`
+        );
+      } else {
+        notify(`⚠️ ${data.error || "No se pudo cambiar la visibilidad."}`);
+      }
+    } catch {
+      notify("⚠️ Error de red al actualizar la inscripción de la capacitación.");
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -304,6 +349,7 @@ export default function CapacitacionesAdminPage() {
         price: formData.isFree ? 0 : formData.price,
         currency: formData.currency,
         status: formData.status,
+        registrationOpen: formData.registrationOpen,
         location: formData.location,
         relatedSkus: formData.selectedSkus,
         description: formData.description,
@@ -912,19 +958,62 @@ export default function CapacitacionesAdminPage() {
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                            t.status === "Planificado" || t.status === "En Publicidad"
-                              ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                              : "bg-slate-800 text-slate-300 border-slate-700"
-                          }`}
-                        >
-                          {t.status}
-                        </span>
+                        <div className="flex flex-col items-start gap-1">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+                              t.status === "Planificado" || t.status === "En Publicidad"
+                                ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                : "bg-slate-800 text-slate-300 border-slate-700"
+                            }`}
+                          >
+                            {t.status}
+                          </span>
+                          {t.registrationOpen === false && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/40 whitespace-nowrap">
+                              🚫 Inscripción Cerrada (Oculta)
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          {(() => {
+                            const isOpenForReg =
+                              t.registrationOpen !== false &&
+                              (t.status === "Planificado" || t.status === "En Publicidad");
+                            const isToggling = togglingId === Number(t.id);
+                            return (
+                              <button
+                                type="button"
+                                disabled={isToggling}
+                                onClick={() => handleToggleRegistrationOpen(t)}
+                                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border flex items-center gap-1 transition cursor-pointer disabled:opacity-50 ${
+                                  isOpenForReg
+                                    ? "bg-amber-50 hover:bg-amber-500 text-amber-800 hover:text-white border-amber-300 dark:bg-amber-500/15 dark:hover:bg-amber-600 dark:text-amber-300 dark:border-amber-500/40"
+                                    : "bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border-emerald-300 dark:bg-emerald-500/15 dark:hover:bg-emerald-600 dark:text-emerald-300 dark:border-emerald-500/40"
+                                }`}
+                                title={
+                                  isOpenForReg
+                                    ? `Ocultar de portada y cerrar inscripciones para ${t.code}`
+                                    : `Volver a mostrar banner y habilitar inscripciones para ${t.code}`
+                                }
+                              >
+                                {isOpenForReg ? (
+                                  <>
+                                    <EyeOff className="w-3.5 h-3.5" />
+                                    <span>Ocultar / Cerrar Inscripción</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Eye className="w-3.5 h-3.5" />
+                                    <span>Habilitar Inscripción</span>
+                                  </>
+                                )}
+                              </button>
+                            );
+                          })()}
+
                           <Link
                             href={`/admin/checkin?trainingId=${t.id}`}
                             className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-300 dark:bg-emerald-500/15 dark:hover:bg-emerald-600 dark:text-emerald-300 dark:border-emerald-500/40 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer"
@@ -1339,6 +1428,38 @@ export default function CapacitacionesAdminPage() {
                         onChange={(e) => setFormData({ ...formData, adStartDate: e.target.value })}
                         className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white"
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">
+                        Visibilidad e Inscripciones Públicas
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            registrationOpen: !prev.registrationOpen,
+                          }))
+                        }
+                        className={`w-full px-3 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+                          formData.registrationOpen
+                            ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/25"
+                            : "bg-rose-500/15 border-rose-500/50 text-rose-300 hover:bg-rose-500/25"
+                        }`}
+                      >
+                        {formData.registrationOpen ? (
+                          <>
+                            <Eye className="w-4 h-4" />
+                            <span>Visible • Inscripción Abierta</span>
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="w-4 h-4" />
+                            <span>Oculta • Inscripción Cerrada</span>
+                          </>
+                        )}
+                      </button>
                     </div>
 
                   </div>

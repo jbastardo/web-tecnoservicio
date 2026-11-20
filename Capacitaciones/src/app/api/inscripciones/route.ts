@@ -106,7 +106,9 @@ export async function POST(request: Request) {
     }
 
     // Validación crítica: No permitir inscripciones en capacitaciones finalizadas o cerradas
+    // 0. Bloqueo estricto de eventos finalizados, cancelados o con inscripciones ocultas/cerradas
     const isClosedOrPast =
+      training.registrationOpen === false ||
       training.status === "Finalizado" ||
       training.status === "Cancelado" ||
       (training.status !== "Planificado" && training.status !== "En Publicidad");
@@ -115,7 +117,7 @@ export async function POST(request: Request) {
         {
           success: false,
           error:
-            "Esta capacitación ya finalizó o las inscripciones se encuentran cerradas. Por favor selecciona una capacitación activa o comunícate con OnProtec.",
+            "Las inscripciones para esta capacitación se encuentran cerradas u ocultas por el administrador, o el evento ya finalizó.",
         },
         { status: 400 }
       );

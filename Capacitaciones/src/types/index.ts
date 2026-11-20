@@ -94,6 +94,7 @@ export interface Training {
   formQuestionsDescription?: string | null; // Descripción o instrucción editable de la sección de preguntas
   paymentMethods?: string[] | null; // Lista de métodos de pago habilitados expresados en el formulario
   displayOrder?: number | null; // Orden de visualización configurable para banners
+  registrationOpen?: boolean; // Si es false, oculta el banner y bloquea nuevas inscripciones
   createdAt?: string;
   updatedAt?: string;
 }

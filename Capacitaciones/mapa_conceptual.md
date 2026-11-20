@@ -288,9 +288,10 @@ Se reconstruyó desde cero la página principal de **"OnProtec® | Sala de Capac
 
 Atendiendo los requerimientos operativos de Coordinación de Sala (Diana Barrero):
 
-1. **Bloqueo Estricto de Inscripciones en Eventos Finalizados / Pasados:**
-   * Tanto en la API (`POST /api/inscripciones`) como en la Landing Page (`src/app/page.tsx`), las capacitaciones con estado `Finalizado`, `Cancelado` o fuera de convocatoria activa bloquean el formulario.
-   * En la interfaz pública se introdujo el selector de pestañas: **Convocatorias Abiertas (Inscripción Activa)** vs. **Histórico de Talleres (Archivo)**. Si un usuario inspecciona un taller pasado, se presenta una tarjeta informativa de cierre con botón para saltar al evento abierto vigente.
+1. **Bloqueo Estricto y Ocultamiento de Inscripciones (`registrationOpen` / `Finalizado`):**
+   * Desde `/admin/capacitaciones` (botón rápido por fila **`🔒 Ocultar / Cerrar Inscripción`** / **`🔓 Habilitar Inscripción`** e interruptor dentro del modal de edición), el administrador puede ocultar una capacitación de los banners activos de portada y pausar/cerrar inmediatamente nuevos registros (`registrationOpen = false`) sin perder su estado ni su historial de inscritos.
+   * Tanto en la API (`POST /api/inscripciones`) como en la Landing Page (`src/app/page.tsx`), las capacitaciones con `registrationOpen = false`, estado `Finalizado`, `Cancelado` o fuera de convocatoria activa desaparecen de los banners activos de inscripción y bloquean el formulario.
+   * En la interfaz pública se presenta el filtro de vista hacia el histórico; si un usuario accede por URL directa (`/?id=...`) a un taller cerrado u oculto, visualiza una tarjeta informativa de cierre con botón para saltar a las convocatorias abiertas.
 
 2. **Inspección Integral de Datos del Inscrito (`viewingDetailsReg`):**
    * En la matriz `/admin/inscripciones` y en `/admin/participantes`, se añadió el botón **"👁️ Ver Datos"** y enlace en el nombre del participante.
