@@ -3,18 +3,21 @@ import { initialTrainings, initialParticipants, initialRegistrations, emptyDashb
 
 export async function GET() {
   try {
+    const activeRegistrations = initialRegistrations.filter((r) => !r.deletedAt);
+    const activeParticipants = initialParticipants.filter((p) => !p.deletedAt);
+
     // 1. Tasa de Asistencia vs. Inscripción
-    const totalRegistered = initialRegistrations.length;
-    const totalConfirmed = initialRegistrations.filter((r) => ["Confirmado", "Asistió"].includes(r.status)).length;
-    const totalAttended = initialRegistrations.filter((r) => r.status === "Asistió").length;
-    const totalNoShow = initialRegistrations.filter((r) => r.status === "No Asistió").length;
+    const totalRegistered = activeRegistrations.length;
+    const totalConfirmed = activeRegistrations.filter((r) => ["Confirmado", "Asistió"].includes(r.status)).length;
+    const totalAttended = activeRegistrations.filter((r) => r.status === "Asistió").length;
+    const totalNoShow = activeRegistrations.filter((r) => r.status === "No Asistió").length;
 
     const noShowBase = totalAttended + totalNoShow;
     const noShowRatePercent = noShowBase > 0 ? (totalNoShow / noShowBase) * 100 : 0;
     const attendanceRatePercent = noShowBase > 0 ? (totalAttended / noShowBase) * 100 : 0;
 
     // 2. ROI de Capacitación
-    const totalRevenue = initialRegistrations
+    const totalRevenue = activeRegistrations
       .filter((r) => r.isPaid)
       .reduce((acc, r) => acc + (r.amount || 0), 0);
 
@@ -25,14 +28,14 @@ export async function GET() {
     const roiPercent = totalCosts > 0 ? (netProfit / totalCosts) * 100 : 0;
 
     // 3. Mapa de Fidelización
-    const totalParticipants = initialParticipants.length;
-    const storeClientsCount = initialParticipants.filter((p) => p.hasStorePurchases).length;
+    const totalParticipants = activeParticipants.length;
+    const storeClientsCount = activeParticipants.filter((p) => p.hasStorePurchases).length;
     const prospectsCount = totalParticipants - storeClientsCount;
     const prospectConversionOpportunityPercent =
       totalParticipants > 0 ? (prospectsCount / totalParticipants) * 100 : 0;
 
     const participantRegistrationCounts = new Map<number, number>();
-    initialRegistrations.forEach((r) => {
+    activeRegistrations.forEach((r) => {
       participantRegistrationCounts.set(
         r.participantId,
         (participantRegistrationCounts.get(r.participantId) || 0) + 1
@@ -41,7 +44,7 @@ export async function GET() {
 
     let recurringCount = 0;
     let recurringWithoutPurchases = 0;
-    initialParticipants.forEach((p) => {
+    activeParticipants.forEach((p) => {
       const count = participantRegistrationCounts.get(p.id) || 0;
       if (count > 1) {
         recurringCount++;
@@ -55,19 +58,19 @@ export async function GET() {
       recurringCount > 0 ? (recurringWithoutPurchases / recurringCount) * 100 : 0;
 
     // 4. Estado de Pagos
-    const totalBilledExpected = initialRegistrations.reduce((acc, r) => acc + (r.amount || 0), 0);
-    const totalCollectedPabilo = initialRegistrations
+    const totalBilledExpected = activeRegistrations.reduce((acc, r) => acc + (r.amount || 0), 0);
+    const totalCollectedPabilo = activeRegistrations
       .filter((r) => r.isPaid && r.pabiloStatus === "approved")
       .reduce((acc, r) => acc + (r.amount || 0), 0);
-    const totalCollectedManual = initialRegistrations
+    const totalCollectedManual = activeRegistrations
       .filter((r) => r.isPaid && r.pabiloStatus !== "approved")
       .reduce((acc, r) => acc + (r.amount || 0), 0);
-    const totalPending = initialRegistrations
+    const totalPending = activeRegistrations
       .filter((r) => !r.isPaid)
       .reduce((acc, r) => acc + (r.amount || 0), 0);
 
-    const pabiloApprovedCount = initialRegistrations.filter((r) => r.pabiloStatus === "approved").length;
-    const pendingCount = initialRegistrations.filter((r) => !r.isPaid).length;
+    const pabiloApprovedCount = activeRegistrations.filter((r) => r.pabiloStatus === "approved").length;
+    const pendingCount = activeRegistrations.filter((r) => !r.isPaid).length;
 
     const metrics = {
       attendanceRate: {

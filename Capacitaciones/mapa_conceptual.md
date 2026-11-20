@@ -383,3 +383,24 @@ Para erradicar por completo la pérdida de capacitaciones, preguntas personaliza
      * `/admin/capacitaciones`: Contador de aforo enlazado a `/admin/inscripciones?trainingId={id}` y acción directa a `/admin/checkin?trainingId={id}`.
      * `/admin/inscripciones` y `/admin/checkin`: Lectura automática de `?trainingId=` en URL para prefiltrar el evento seleccionado.
    * **Formulario Público Completo (`src/app/page.tsx`):** Soporte para los 5 tipos de pregunta del constructor (`text`, `textarea`, `select`, `radio`, `checkbox`), atributos `autocomplete` / `inputMode` para autofill nativo, botón flotante móvil inteligente (`IntersectionObserver` sobre `#formulario-oficial`) y cierre de todos los modales públicos y privados con tecla `Escape` o clic fuera del diálogo.
+
+---
+
+## 13. Blindaje Anti-Pérdida de Datos: Papelera (Soft-Delete), Auditoría & Backups Inteligentes (Noviembre 2026)
+
+1. **Eliminación Segura (Soft-Delete + Papelera de Reciclaje en 1 clic):**
+   * **`DELETE /api/inscripciones`, `DELETE /api/participantes` y `DELETE /api/capacitaciones`:** Ninguna inscripción ni participante se elimina físicamente con `splice()` por defecto. Ahora se marcan con `deletedAt`, `deletedBy` y `deletedReason`, quedando ocultos en las listas activas, métricas, aforo y controles anti-duplicado, pero 100% recuperables.
+   * **Restauración y Purga Controlada (`/admin/inscripciones`):** Botón **Papelera** en la cabecera de la matriz de inscripciones con modal dedicado que lista registros eliminados (quién y cuándo en hora `America/Caracas`), botón **Restaurar** (`PATCH /api/inscripciones` con `action: "restore"`) y opción **Purgar** (`?permanent=true`) restringida exclusivamente a **Super Admin** y únicamente sobre registros ya enviados a Papelera.
+
+2. **Bitácora de Auditoría (`auditLogs` & `GET /api/admin/audit`):**
+   * Registro persistente de hasta 1.000 eventos administrativos (`REGISTRATION_SOFT_DELETE`, `REGISTRATION_RESTORE`, `REGISTRATION_PERMANENT_DELETE`, `REGISTRATION_UPDATE`, `PARTICIPANT_SOFT_DELETE`, `TRAINING_DELETE`, `BACKUP_RESTORE`) con actor, rol, resumen y marca de tiempo mostrada en `America/Caracas` (UTC-4).
+   * Modal **Auditoría** en `/admin/inscripciones` que muestra el historial reciente y el conteo en tiempo real de respaldos diarios, pre-eliminación y rotativos.
+
+3. **Estrategia de Respaldos Multi-Nivel (`src/lib/serverStorage.ts`):**
+   * **Respaldos Diarios (`backups/daily/`):** 1 snapshot automático por día (fecha Caracas), con retención de **30 días**.
+   * **Respaldos Pre-Eliminación / Pre-Restauración (`backups/pre-delete/`):** Copia automática del archivo previo en disco *antes* de escribir cualquier operación destructiva o restauración, reteniendo hasta **50 copias** dedicadas que nunca son rotadas por clics rutinarios de WhatsApp o cambios de estado.
+   * **Respaldos Rotativos con Debounce (`backups/`):** Máximo 1 copia cada 10 minutos, reteniendo las últimas **25 versiones**.
+
+4. **Seguridad de Endpoints Administrativos (`src/lib/adminAuth.ts`):**
+   * Validación obligatoria de la cookie de sesión `onprotec_admin_session` mediante `requireAdmin()` en `PATCH`/`DELETE /api/inscripciones`, `GET /api/inscripciones?onlyDeleted=true`, `PATCH`/`DELETE /api/participantes`, `DELETE /api/capacitaciones`, `GET /api/admin/audit` y `GET`/`POST /api/admin/backup`.
+   * Restauración de respaldo completo (`POST /api/admin/backup`) y purga definitiva (`DELETE /api/inscripciones?permanent=true`) restringidas a **Super Admin** (`isSuperAdmin()`).

@@ -4,14 +4,20 @@ import {
   initialParticipants,
   initialRegistrations,
   persistDataset,
+  appendAuditLog,
 } from "@/lib/serverStorage";
+import { requireAdmin, isSuperAdmin } from "@/lib/adminAuth";
 import { pabiloService } from "@/services/pabiloService";
 import { whatsappService } from "@/services/whatsappService";
 import { fmtLocalTime, ONPROTEC_WHATSAPP_DISPLAY } from "@/utils/formatUtils";
 
+function isActiveReg(r: any): boolean {
+  return !r?.deletedAt;
+}
+
 function buildParticipantParticipations(participantId: number) {
   return initialRegistrations
-    .filter((r) => Number(r.participantId) === Number(participantId))
+    .filter((r) => isActiveReg(r) && Number(r.participantId) === Number(participantId))
     .map((r) => {
       const tr = initialTrainings.find((t) => Number(t.id) === Number(r.trainingId));
       return {
@@ -36,8 +42,20 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const trainingIdParam = searchParams.get("trainingId");
     const participantIdParam = searchParams.get("participantId");
+    const onlyDeleted = searchParams.get("onlyDeleted") === "true";
+    const includeDeleted = searchParams.get("includeDeleted") === "true";
 
-    let results = initialRegistrations;
+    if (onlyDeleted || includeDeleted) {
+      const auth = await requireAdmin();
+      if (auth.errorResponse) return auth.errorResponse;
+    }
+
+    let results = onlyDeleted
+      ? initialRegistrations.filter((r) => Boolean(r.deletedAt))
+      : includeDeleted
+      ? initialRegistrations
+      : initialRegistrations.filter(isActiveReg);
+
     if (trainingIdParam) {
       const trainingId = parseInt(trainingIdParam);
       results = results.filter((r) => Number(r.trainingId) === trainingId);
@@ -54,12 +72,13 @@ export async function GET(request: Request) {
       const participations = p ? buildParticipantParticipations(p.id) : [];
       return {
         ...r,
-        training: initialTrainings.find((t) => Number(t.id) === Number(r.trainingId)),
-        participant: p ? { ...p, participations } : undefined,
+        training: initialTrainings.find((t) => Number(t.id) === Number(r.trainingId)) || r.training,
+        participant: p ? { ...p, participations } : r.participant,
       };
     });
 
-    return NextResponse.json({ success: true, data: populated });
+    const deletedCount = initialRegistrations.filter((r) => Boolean(r.deletedAt)).length;
+    return NextResponse.json({ success: true, data: populated, deletedCount });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -131,6 +150,7 @@ export async function POST(request: Request) {
     const effectiveCapacity = isPaidEvent ? 18 : Math.max(Number(training.maxCapacity) || 40, 40);
     const activeRegs = initialRegistrations.filter(
       (r) =>
+        isActiveReg(r) &&
         Number(r.trainingId) === Number(training.id) &&
         ["Inscrito", "Confirmado", "Asistió"].includes(r.status)
     );
@@ -141,6 +161,7 @@ export async function POST(request: Request) {
     const cleanEmail = email ? String(email).trim().toLowerCase() : "";
 
     const alreadyRegistered = initialRegistrations.some((r) => {
+      if (!isActiveReg(r)) return false;
       if (Number(r.trainingId) !== Number(training.id)) return false;
       if (r.status === "Cancelado") return false;
       const part = initialParticipants.find((p) => Number(p.id) === Number(r.participantId));
@@ -436,10 +457,14 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.errorResponse) return auth.errorResponse;
+
   try {
     const body = await request.json();
     const {
       id,
+      action,
       trainingId,
       status,
       isPaid,
@@ -485,6 +510,76 @@ export async function PATCH(request: Request) {
 
     const current = initialRegistrations[regIndex];
     const nowIso = new Date().toISOString();
+
+    // Acción especial: Restaurar formulario desde Papelera de Reciclaje
+    if (action === "restore") {
+      if (!current.deletedAt) {
+        return NextResponse.json(
+          { success: false, error: "Esta inscripción ya se encuentra activa." },
+          { status: 400 }
+        );
+      }
+
+      const restored = {
+        ...current,
+        deletedAt: null,
+        deletedBy: null,
+        deletedReason: null,
+        updatedAt: nowIso,
+      };
+      initialRegistrations[regIndex] = restored;
+
+      // Si el participante también estaba en papelera, restaurarlo automáticamente
+      const pIdx = initialParticipants.findIndex(
+        (p) => Number(p.id) === Number(current.participantId)
+      );
+      if (pIdx !== -1 && initialParticipants[pIdx].deletedAt) {
+        initialParticipants[pIdx] = {
+          ...initialParticipants[pIdx],
+          deletedAt: null,
+          deletedBy: null,
+          updatedAt: nowIso,
+        };
+      }
+
+      const tr = initialTrainings.find((t) => Number(t.id) === Number(restored.trainingId));
+      const pName =
+        (pIdx !== -1 ? initialParticipants[pIdx].name : restored.participant?.name) ||
+        `Participante #${restored.participantId}`;
+
+      appendAuditLog({
+        action: "REGISTRATION_RESTORE",
+        entityType: "registration",
+        entityId: restored.id,
+        actorName: auth.user.name,
+        actorEmail: auth.user.email,
+        actorRole: auth.user.role,
+        summary: `Restauró inscripción #${restored.id} de ${pName} en ${tr?.code || `curso #${restored.trainingId}`}`,
+        details: {
+          registrationId: restored.id,
+          trainingId: restored.trainingId,
+          participantId: restored.participantId,
+          participantName: pName,
+        },
+      });
+
+      await persistDataset();
+
+      return NextResponse.json({
+        success: true,
+        message: `Inscripción #${restored.id} de ${pName} restaurada con éxito.`,
+        data: {
+          ...restored,
+          training: tr || restored.training,
+          participant: pIdx !== -1
+            ? {
+                ...initialParticipants[pIdx],
+                participations: buildParticipantParticipations(initialParticipants[pIdx].id),
+              }
+            : restored.participant,
+        },
+      });
+    }
 
     // Resolver capacitación si fue reasignada
     let resolvedTraining =
@@ -570,6 +665,35 @@ export async function PATCH(request: Request) {
     };
 
     initialRegistrations[regIndex] = updated;
+
+    // Registrar en bitácora si hubo cambios relevantes
+    const changedFields: string[] = [];
+    if (status !== undefined && status !== current.status) {
+      changedFields.push(`estado: ${current.status} → ${status}`);
+    }
+    if (isPaid !== undefined && Boolean(isPaid) !== Boolean(current.isPaid)) {
+      changedFields.push(`pago: ${current.isPaid ? "Sí" : "No"} → ${isPaid ? "Sí" : "No"}`);
+    }
+    if (resolvedTrainingId !== current.trainingId) {
+      changedFields.push(`curso: #${current.trainingId} → #${resolvedTrainingId}`);
+    }
+    if (changedFields.length > 0) {
+      appendAuditLog({
+        action: "REGISTRATION_UPDATE",
+        entityType: "registration",
+        entityId: updated.id,
+        actorName: auth.user.name,
+        actorEmail: auth.user.email,
+        actorRole: auth.user.role,
+        summary: `Actualizó inscripción #${updated.id} (${updatedParticipant?.name || "Participante"}): ${changedFields.join(", ")}`,
+        details: {
+          registrationId: updated.id,
+          trainingId: resolvedTrainingId,
+          changes: changedFields,
+        },
+      });
+    }
+
     await persistDataset();
 
     return NextResponse.json({
@@ -594,15 +718,23 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.errorResponse) return auth.errorResponse;
+
   try {
     const { searchParams } = new URL(request.url);
     let idParam = searchParams.get("id");
+    const permanent = searchParams.get("permanent") === "true";
+    let reason = searchParams.get("reason") || "";
 
     if (!idParam) {
       try {
         const body = await request.json();
         if (body?.id !== undefined && body?.id !== null) {
           idParam = String(body.id);
+        }
+        if (body?.reason) {
+          reason = String(body.reason);
         }
       } catch {
         // Sin body JSON
@@ -624,27 +756,107 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const [deleted] = initialRegistrations.splice(regIndex, 1);
-
-    // Si el participante quedó sin otras inscripciones activas/registradas, limpiar registro huérfano
-    const stillHasRegistrations = initialRegistrations.some(
-      (r) => Number(r.participantId) === Number(deleted.participantId)
+    const targetReg = initialRegistrations[regIndex];
+    const part = initialParticipants.find(
+      (p) => Number(p.id) === Number(targetReg.participantId)
     );
-    if (!stillHasRegistrations) {
-      const pIdx = initialParticipants.findIndex(
-        (p) => Number(p.id) === Number(deleted.participantId)
-      );
-      if (pIdx !== -1) {
-        initialParticipants.splice(pIdx, 1);
+    const tr = initialTrainings.find((t) => Number(t.id) === Number(targetReg.trainingId));
+    const participantName = part?.name || targetReg.participant?.name || `Participante #${targetReg.participantId}`;
+    const trainingCode = tr?.code || `curso #${targetReg.trainingId}`;
+
+    // Borrado definitivo SOLO permitido para Super Admin y SOLO si ya está en Papelera
+    if (permanent) {
+      if (!isSuperAdmin(auth.user)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Solo un Super Admin puede eliminar definitivamente registros de la Papelera.",
+          },
+          { status: 403 }
+        );
       }
+      if (!targetReg.deletedAt) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Primero debes enviar el formulario a la Papelera antes de eliminarlo definitivamente.",
+          },
+          { status: 400 }
+        );
+      }
+
+      const [removed] = initialRegistrations.splice(regIndex, 1);
+      appendAuditLog({
+        action: "REGISTRATION_PERMANENT_DELETE",
+        entityType: "registration",
+        entityId: removed.id,
+        actorName: auth.user.name,
+        actorEmail: auth.user.email,
+        actorRole: auth.user.role,
+        summary: `Eliminó definitivamente de la Papelera inscripción #${removed.id} (${participantName}) en ${trainingCode}`,
+        details: {
+          registrationId: removed.id,
+          trainingId: removed.trainingId,
+          participantId: removed.participantId,
+          participantName,
+        },
+      });
+
+      await persistDataset({ reason: "pre-delete" });
+
+      return NextResponse.json({
+        success: true,
+        permanent: true,
+        message: `Formulario #${removed.id} eliminado definitivamente de la Papelera.`,
+        data: removed,
+      });
     }
 
-    await persistDataset();
+    // Comportamiento estándar seguro: SOFT-DELETE (Papelera de Reciclaje, 100% recuperable)
+    if (targetReg.deletedAt) {
+      return NextResponse.json({
+        success: true,
+        softDeleted: true,
+        message: "Este formulario ya se encuentra en la Papelera de Reciclaje.",
+        data: targetReg,
+      });
+    }
+
+    const nowIso = new Date().toISOString();
+    const softDeleted = {
+      ...targetReg,
+      deletedAt: nowIso,
+      deletedBy: auth.user.email,
+      deletedReason: reason || "Movido a Papelera desde el panel administrativo",
+      updatedAt: nowIso,
+    };
+    initialRegistrations[regIndex] = softDeleted;
+
+    appendAuditLog({
+      action: "REGISTRATION_SOFT_DELETE",
+      entityType: "registration",
+      entityId: softDeleted.id,
+      actorName: auth.user.name,
+      actorEmail: auth.user.email,
+      actorRole: auth.user.role,
+      summary: `Movió a Papelera inscripción #${softDeleted.id} de ${participantName} en ${trainingCode}`,
+      details: {
+        registrationId: softDeleted.id,
+        trainingId: softDeleted.trainingId,
+        trainingCode,
+        participantId: softDeleted.participantId,
+        participantName,
+        reason: softDeleted.deletedReason,
+      },
+    });
+
+    await persistDataset({ reason: "pre-delete" });
 
     return NextResponse.json({
       success: true,
-      message: "Formulario registrado eliminado correctamente",
-      data: deleted,
+      softDeleted: true,
+      message: "Formulario movido a la Papelera de Reciclaje (recuperable en cualquier momento).",
+      data: softDeleted,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

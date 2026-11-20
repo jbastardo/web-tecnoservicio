@@ -142,6 +142,21 @@ export default function InscripcionesAdminPage() {
   const [deletingReg, setDeletingReg] = useState<any | null>(null);
   const [isDeletingReg, setIsDeletingReg] = useState(false);
 
+  // Estado para Papelera de Reciclaje (Soft-Delete) y Bitácora de Auditoría
+  const [deletedCount, setDeletedCount] = useState(0);
+  const [showTrashModal, setShowTrashModal] = useState(false);
+  const [deletedRegs, setDeletedRegs] = useState<any[]>([]);
+  const [loadingTrash, setLoadingTrash] = useState(false);
+  const [restoringId, setRestoringId] = useState<number | null>(null);
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [auditBackups, setAuditBackups] = useState<{ daily: string[]; preDelete: string[]; rolling: string[] }>({
+    daily: [],
+    preDelete: [],
+    rolling: [],
+  });
+  const [loadingAudit, setLoadingAudit] = useState(false);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 4500);
@@ -162,7 +177,10 @@ export default function InscripcionesAdminPage() {
     fetch("/api/inscripciones")
       .then((r) => r.json())
       .then((d) => {
-        if (d.success) setRegistrations(d.data);
+        if (d.success) {
+          setRegistrations(d.data);
+          setDeletedCount(Number(d.deletedCount) || 0);
+        }
       })
       .catch((e) => console.error(e))
       .finally(() => setLoading(false));
@@ -173,6 +191,99 @@ export default function InscripcionesAdminPage() {
         if (d.success) setTrainings(d.data);
       })
       .catch((e) => console.error(e));
+  };
+
+  const openTrashModal = async () => {
+    setShowTrashModal(true);
+    setLoadingTrash(true);
+    try {
+      const res = await fetch("/api/inscripciones?onlyDeleted=true");
+      const data = await res.json();
+      if (data.success) {
+        setDeletedRegs(data.data || []);
+        setDeletedCount(Number(data.deletedCount) || (data.data || []).length);
+      } else {
+        showToast(data.error || "No se pudo cargar la Papelera.");
+      }
+    } catch {
+      showToast("Error de red al cargar la Papelera.");
+    } finally {
+      setLoadingTrash(false);
+    }
+  };
+
+  const handleRestoreRegistration = async (regId: number) => {
+    setRestoringId(regId);
+    try {
+      const res = await fetch("/api/inscripciones", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: regId, action: "restore" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDeletedRegs((prev) => prev.filter((r) => Number(r.id) !== Number(regId)));
+        setDeletedCount((c) => Math.max(0, c - 1));
+        if (data.data) {
+          setRegistrations((prev) => [data.data, ...prev]);
+        }
+        showToast(data.message || "Formulario restaurado con éxito.");
+      } else {
+        showToast(data.error || "No se pudo restaurar el formulario.");
+      }
+    } catch {
+      showToast("Error de red al restaurar el formulario.");
+    } finally {
+      setRestoringId(null);
+    }
+  };
+
+  const handlePermanentDelete = async (regId: number, participantName: string) => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `¿Eliminar DEFINITIVAMENTE la inscripción #${regId} (${participantName}) de la Papelera? Esta acción solo la puede ejecutar un Super Admin.`
+      )
+    ) {
+      return;
+    }
+    setRestoringId(regId);
+    try {
+      const res = await fetch(`/api/inscripciones?id=${regId}&permanent=true`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDeletedRegs((prev) => prev.filter((r) => Number(r.id) !== Number(regId)));
+        setDeletedCount((c) => Math.max(0, c - 1));
+        showToast(data.message || "Formulario eliminado definitivamente.");
+      } else {
+        showToast(data.error || "No se pudo eliminar definitivamente.");
+      }
+    } catch {
+      showToast("Error de red al eliminar definitivamente.");
+    } finally {
+      setRestoringId(null);
+    }
+  };
+
+  const openAuditModal = async () => {
+    setShowAuditModal(true);
+    setLoadingAudit(true);
+    try {
+      const res = await fetch("/api/admin/audit");
+      const data = await res.json();
+      if (data.success) {
+        setAuditLogs(data.data || []);
+        if (data.backups) setAuditBackups(data.backups);
+      } else {
+        showToast(data.error || "No se pudo cargar la bitácora.");
+      }
+    } catch {
+      showToast("Error de red al cargar la bitácora.");
+    } finally {
+      setLoadingAudit(false);
+    }
   };
 
   useEffect(() => {
@@ -336,10 +447,13 @@ export default function InscripcionesAdminPage() {
       const data = await res.json();
       if (data.success) {
         setRegistrations((prev) => prev.filter((r) => Number(r.id) !== Number(deletingReg.id)));
+        setDeletedCount((c) => c + 1);
         if (viewingDetailsReg && Number(viewingDetailsReg.id) === Number(deletingReg.id)) {
           setViewingDetailsReg(null);
         }
-        showToast("Formulario registrado eliminado con éxito");
+        showToast(
+          data.message || "Formulario enviado a la Papelera de Reciclaje (recuperable)."
+        );
         setDeletingReg(null);
       } else {
         showToast(data.error || "No se pudo eliminar el formulario.");
@@ -771,6 +885,31 @@ export default function InscripcionesAdminPage() {
             <span className="text-[11px] font-mono text-cyan-300 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-xl">
               {filtered.length} reg. {hasActiveFilters ? `(de ${registrations.length})` : ""}
             </span>
+
+            <button
+              type="button"
+              onClick={openTrashModal}
+              className="px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+              title="Ver formularios eliminados y restaurarlos en 1 clic"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Papelera</span>
+              {deletedCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-500/40 text-[10px] font-black">
+                  {deletedCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={openAuditModal}
+              className="px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+              title="Ver bitácora de auditoría y estado de respaldos automáticos"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Auditoría</span>
+            </button>
 
             <button
               type="button"
@@ -2532,6 +2671,184 @@ export default function InscripcionesAdminPage() {
                   <span>🖨️ Imprimir / Guardar Reporte PDF</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Papelera de Reciclaje (Soft-Delete + Restauración en 1 clic) */}
+      {showTrashModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
+              <div>
+                <h3 className="text-base font-black text-white flex items-center gap-2">
+                  <Trash2 className="w-5 h-5 text-amber-400" />
+                  <span>Papelera de Reciclaje ({deletedRegs.length})</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Ningún formulario eliminado se pierde. Puedes restaurarlo a su capacitación en 1 clic.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTrashModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 sm:p-5 overflow-y-auto flex-1">
+              {loadingTrash ? (
+                <div className="py-10 text-center text-xs text-slate-400">Cargando papelera...</div>
+              ) : deletedRegs.length === 0 ? (
+                <div className="py-12 text-center">
+                  <CheckCircle className="w-10 h-10 text-emerald-500/60 mx-auto mb-2" />
+                  <p className="text-sm font-bold text-slate-200">La Papelera está vacía</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Cuando alguien elimine un formulario, aparecerá aquí con opción de recuperación inmediata.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {deletedRegs.map((r) => (
+                    <div
+                      key={r.id}
+                      className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-mono text-[11px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded">
+                            #{r.id}
+                          </span>
+                          <span className="font-bold text-sm text-white truncate">
+                            {r.participant?.name || `Participante #${r.participantId}`}
+                          </span>
+                          <span className="text-xs text-slate-400 font-mono">
+                            {r.participant?.docNumber || ""}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300 truncate">
+                          Curso: <strong className="text-cyan-300">{r.training?.code || `#${r.trainingId}`}</strong> —{" "}
+                          {r.training?.name || r.originalFormName || "Capacitación"}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          Eliminado el <strong className="text-slate-200">{fmtLocalTime(r.deletedAt)}</strong> por{" "}
+                          <strong className="text-amber-200">{r.deletedBy || "Admin"}</strong>
+                          {r.deletedReason ? ` · ${r.deletedReason}` : ""}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          disabled={restoringId === r.id}
+                          onClick={() => handleRestoreRegistration(r.id)}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          <span>{restoringId === r.id ? "Restaurando..." : "Restaurar"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          disabled={restoringId === r.id}
+                          onClick={() =>
+                            handlePermanentDelete(r.id, r.participant?.name || `#${r.id}`)
+                          }
+                          className="px-2.5 py-1.5 rounded-lg bg-red-950/70 hover:bg-red-900 border border-red-800/60 disabled:opacity-50 text-red-300 text-xs font-bold transition cursor-pointer"
+                          title="Solo Super Admin: eliminar definitivamente"
+                        >
+                          Purgar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Bitácora de Auditoría y Respaldos */}
+      {showAuditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/70">
+              <div>
+                <h3 className="text-base font-black text-white flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-cyan-400" />
+                  <span>Bitácora de Auditoría & Protección de Respaldos</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Historial en hora local (America/Caracas, UTC-4) de eliminaciones, restauraciones y ediciones clave.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAuditModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="px-4 sm:px-5 py-3 bg-slate-950/50 border-b border-slate-800 grid grid-cols-3 gap-3 text-center">
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Respaldos Diarios (30d)</span>
+                <span className="text-lg font-black text-emerald-400">{auditBackups.daily.length}</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Pre-Eliminación (50 máx)</span>
+                <span className="text-lg font-black text-amber-400">{auditBackups.preDelete.length}</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Rotativos (c/10 min)</span>
+                <span className="text-lg font-black text-cyan-400">{auditBackups.rolling.length}</span>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-5 overflow-y-auto flex-1">
+              {loadingAudit ? (
+                <div className="py-10 text-center text-xs text-slate-400">Cargando bitácora...</div>
+              ) : auditLogs.length === 0 ? (
+                <div className="py-10 text-center text-xs text-slate-400">
+                  Aún no hay eventos registrados desde la activación de la auditoría.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {auditLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+                    >
+                      <div className="space-y-0.5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                              log.action?.includes("DELETE")
+                                ? "bg-red-500/20 text-red-300 border border-red-500/40"
+                                : log.action?.includes("RESTORE")
+                                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                                : "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
+                            }`}
+                          >
+                            {log.action}
+                          </span>
+                          <span className="font-semibold text-white">{log.summary}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400">
+                          Actor: <strong className="text-slate-200">{log.actorName}</strong> ({log.actorEmail} · {log.actorRole})
+                        </p>
+                      </div>
+                      <span className="text-[11px] font-mono text-slate-400 shrink-0">
+                        {fmtLocalTime(log.timestamp)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
