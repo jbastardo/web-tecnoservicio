@@ -493,6 +493,65 @@ export async function PATCH(request: Request) {
       referralSource,
     } = body;
 
+    // Acción especial en lote: Cerrar asistencia marcando pendientes (Confirmado / Inscrito) como "No Asistió"
+    if (action === "bulk_mark_noshow") {
+      if (!trainingId) {
+        return NextResponse.json(
+          { success: false, error: "ID de capacitación requerido para cierre de asistencia." },
+          { status: 400 }
+        );
+      }
+      const targetTrainingId = parseInt(trainingId);
+      const nowIso = new Date().toISOString();
+      const updatedIds: number[] = [];
+
+      for (let i = 0; i < initialRegistrations.length; i++) {
+        const reg = initialRegistrations[i];
+        if (
+          isActiveReg(reg) &&
+          Number(reg.trainingId) === targetTrainingId &&
+          (reg.status === "Confirmado" || reg.status === "Inscrito")
+        ) {
+          initialRegistrations[i] = {
+            ...reg,
+            status: "No Asistió",
+            checkInAt: null,
+            updatedAt: nowIso,
+          };
+          updatedIds.push(reg.id);
+        }
+      }
+
+      if (updatedIds.length > 0) {
+        const tr = initialTrainings.find((t) => Number(t.id) === targetTrainingId);
+        appendAuditLog({
+          action: "REGISTRATION_UPDATE",
+          entityType: "registration",
+          entityId: targetTrainingId,
+          actorName: auth.user.name,
+          actorEmail: auth.user.email,
+          actorRole: auth.user.role,
+          summary: `Cierre de asistencia en ${tr?.code || `curso #${targetTrainingId}`}: marcó ${updatedIds.length} pendiente(s) como "No Asistió"`,
+          details: {
+            trainingId: targetTrainingId,
+            updatedCount: updatedIds.length,
+            updatedIds,
+          },
+        });
+        await persistDataset();
+      }
+
+      return NextResponse.json({
+        success: true,
+        updatedCount: updatedIds.length,
+        updatedIds,
+        message:
+          updatedIds.length > 0
+            ? `Se marcaron ${updatedIds.length} participante(s) pendiente(s) como "No Asistió" en su historial.`
+            : "No había participantes pendientes por marcar como No Asistió.",
+      });
+    }
+
     if (!id) {
       return NextResponse.json(
         { success: false, error: "ID de inscripción requerido." },

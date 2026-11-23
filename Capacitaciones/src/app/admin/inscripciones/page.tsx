@@ -43,6 +43,11 @@ import {
   buildParticipantWhatsAppUrl,
   ONPROTEC_WHATSAPP_DISPLAY,
 } from "@/utils/formatUtils";
+import {
+  evaluateParticipantPriority,
+  matchesPriorityFilter,
+  PriorityFilter,
+} from "@/utils/attendancePriority";
 
 function toCaracasYMD(dateInput?: string | number | Date | null): string {
   if (!dateInput) return "";
@@ -86,6 +91,8 @@ export default function InscripcionesAdminPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [trainingFilter, setTrainingFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
+  const [sortByPriority, setSortByPriority] = useState(false);
   const [dateField, setDateField] = useState<"registration" | "event">("registration");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -506,7 +513,7 @@ export default function InscripcionesAdminPage() {
     showToast(`Validación guardada con éxito para ${modalReg.participant?.name || "participante"}.`);
   };
 
-  const filtered = registrations.filter((r) => {
+  const filteredRaw = registrations.filter((r) => {
     const pName = r.participant?.name?.toLowerCase() || "";
     const pDoc = (r.participant?.docNumber || "").toLowerCase();
     const tName = r.training?.name?.toLowerCase() || "";
@@ -517,6 +524,9 @@ export default function InscripcionesAdminPage() {
 
     const matchesStatus = statusFilter === "all" || r.status === statusFilter;
     const matchesTraining = trainingFilter === "all" || String(r.trainingId) === trainingFilter;
+
+    const priority = evaluateParticipantPriority(r.participant, r.id);
+    const matchesPriority = matchesPriorityFilter(priority, priorityFilter);
 
     let matchesDate = true;
     if (dateFrom || dateTo) {
@@ -533,17 +543,33 @@ export default function InscripcionesAdminPage() {
       }
     }
 
-    return matchesSearch && matchesStatus && matchesTraining && matchesDate;
+    return matchesSearch && matchesStatus && matchesTraining && matchesPriority && matchesDate;
   });
 
+  const filtered = sortByPriority
+    ? [...filteredRaw].sort((a, b) => {
+        const pa = evaluateParticipantPriority(a.participant, a.id);
+        const pb = evaluateParticipantPriority(b.participant, b.id);
+        if (pa.priorityRank !== pb.priorityRank) return pa.priorityRank - pb.priorityRank;
+        return Number(b.id) - Number(a.id);
+      })
+    : filteredRaw;
+
   const hasActiveFilters = Boolean(
-    search || statusFilter !== "all" || trainingFilter !== "all" || dateFrom || dateTo
+    search ||
+      statusFilter !== "all" ||
+      trainingFilter !== "all" ||
+      priorityFilter !== "all" ||
+      dateFrom ||
+      dateTo
   );
 
   const clearAllFilters = () => {
     setSearch("");
     setStatusFilter("all");
     setTrainingFilter("all");
+    setPriorityFilter("all");
+    setSortByPriority(false);
     setDateFrom("");
     setDateTo("");
   };
@@ -978,6 +1004,32 @@ export default function InscripcionesAdminPage() {
             <option value="Cancelado">Cancelado</option>
           </select>
 
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value as PriorityFilter)}
+            className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a] font-medium"
+            title="Filtrar pretendientes según cumplimiento previo y compras en OnProtec"
+          >
+            <option value="all">Todos los Perfiles</option>
+            <option value="new_prospect">🌟 Nuevos Prospectos (0 asist.)</option>
+            <option value="store_client">👑 Clientes Compradores</option>
+            <option value="reliable">✅ Cumplidores (0 faltas)</option>
+            <option value="noshow">⚠️ Incumplidos (Con No-Show)</option>
+          </select>
+
+          <button
+            type="button"
+            onClick={() => setSortByPriority((v) => !v)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+              sortByPriority
+                ? "bg-emerald-600 text-white keep-white border-emerald-500 shadow-sm"
+                : "bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-[#f4730a]"
+            }`}
+            title="Ordenar primero Clientes Compradores y Nuevos Prospectos sin faltas, dejando al final los incumplidos para ceder cupos"
+          >
+            🎯 {sortByPriority ? "Ordenado por Prioridad" : "Priorizar Cupos"}
+          </button>
+
           <div className="h-5 w-px bg-slate-300 dark:bg-slate-700 hidden xl:block" />
 
           {/* Filtro por Fecha */}
@@ -1119,19 +1171,32 @@ export default function InscripcionesAdminPage() {
                         <span className="text-[10px] text-slate-400 block font-mono mt-0.5">
                           Reg: {fmtLocalTime(r.formSubmittedAt || r.createdAt)}
                         </span>
-                        {r.participant?.participations && (
-                          <button
-                            type="button"
-                            onClick={() => setHistoryParticipant(r.participant)}
-                            className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#e07b29]/15 text-[#e07b29] border border-[#e07b29]/30 hover:bg-[#e07b29]/25 transition"
-                            title="Ver todas las capacitaciones donde ha participado este inscrito"
-                          >
-                            <span>
-                              📚 Participó en {r.participant.participations.length}{" "}
-                              {r.participant.participations.length === 1 ? "curso" : "cursos"}
-                            </span>
-                          </button>
-                        )}
+                        <div className="mt-1 flex flex-wrap items-center gap-1">
+                          {(() => {
+                            const prio = evaluateParticipantPriority(r.participant, r.id);
+                            return (
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${prio.badgeClass}`}
+                                title={prio.tooltip}
+                              >
+                                {prio.label}
+                              </span>
+                            );
+                          })()}
+                          {r.participant?.participations && (
+                            <button
+                              type="button"
+                              onClick={() => setHistoryParticipant(r.participant)}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#e07b29]/15 text-[#e07b29] border border-[#e07b29]/30 hover:bg-[#e07b29]/25 transition"
+                              title="Ver todas las capacitaciones donde ha participado este inscrito"
+                            >
+                              <span>
+                                📚 {r.participant.participations.length}{" "}
+                                {r.participant.participations.length === 1 ? "curso" : "cursos"}
+                              </span>
+                            </button>
+                          )}
+                        </div>
                       </td>
 
                       {/* Capacitación */}

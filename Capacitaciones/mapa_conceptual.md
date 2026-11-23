@@ -404,3 +404,20 @@ Para erradicar por completo la pérdida de capacitaciones, preguntas personaliza
 4. **Seguridad de Endpoints Administrativos (`src/lib/adminAuth.ts`):**
    * Validación obligatoria de la cookie de sesión `onprotec_admin_session` mediante `requireAdmin()` en `PATCH`/`DELETE /api/inscripciones`, `GET /api/inscripciones?onlyDeleted=true`, `PATCH`/`DELETE /api/participantes`, `DELETE /api/capacitaciones`, `GET /api/admin/audit` y `GET`/`POST /api/admin/backup`.
    * Restauración de respaldo completo (`POST /api/admin/backup`) y purga definitiva (`DELETE /api/inscripciones?permanent=true`) restringidas a **Super Admin** (`isSuperAdmin()`).
+
+---
+
+## 14. Control de Aforo Físico (18 Puestos) & Motor de Prioridad / Reputación de Asistencia (Noviembre 2026)
+
+1. **Separación Estricta entre Aforo Físico (18) y Convocatoria Gratuita (40) en `/admin/checkin`:**
+   * Los KPIs de sala (`Asistieron` y `Asientos Físicos Libres`) se calculan siempre sobre `physicalRoomCapacity = 18` puestos físicos (evitando mostrar falsos asientos libres basados en los 40 pre-inscritos de convocatoria gratuita), mostrando el conteo de convocatoria gratuita como indicador secundario.
+   * **Registro de Incumplidos (No Asistió) en 1 Clic y Cierre en Lote:** Botón individual `No Asistió` por participante en la tabla de check-in y acción masiva **`Cerrar Asistencia (Marcar pendientes como No Asistió)`** (`PATCH /api/inscripciones` con `action: "bulk_mark_noshow"`), registrando en la bitácora y en el historial permanente del participante quién confirmó/se inscribió y no asistió.
+
+2. **Motor de Reputación y Prioridad de Cupos (`src/utils/attendancePriority.ts`):**
+   * Clasifica automáticamente a cada participante según su historial real de asistencia y compras en tienda OnProtec en 6 niveles de prioridad:
+     1. **`👑 Cliente Comprador`** (prioridad máxima: cliente comprador fiel sin faltas).
+     2. **`🌟 Nuevo Prospecto`** (nunca ha asistido y 0 faltas: alta prioridad para captar nuevos clientes).
+     3. **`✅ Cumplidor`** (asistente recurrente sin inasistencias).
+     4. **`👑 Cliente · ⚠️ N falta(s)`** (comprador con inasistencia previa; reconfirmar antes de ceder).
+     5. **`⚠️ Incumplido (1 falta)`** y **`🚫 Reincidente (2+ faltas)`** (alerta visual con detalle de eventos faltados para ceder su cupo gratuito a un Nuevo Prospecto o Cliente Fiel).
+   * Visible mediante badges y filtros dedicados en `/admin/inscripciones` (incluyendo botón **`🎯 Priorizar Cupos`** para ordenar los 40 pretendientes antes de reconfirmar), `/admin/checkin` y `/admin/participantes` (pestaña `⚠️ Incumplidos`).

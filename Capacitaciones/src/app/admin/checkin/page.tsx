@@ -34,6 +34,7 @@ import {
   ONPROTEC_WHATSAPP_DISPLAY,
 } from "@/utils/formatUtils";
 import { OnprotecBrand } from "@/components/OnprotecBrand";
+import { evaluateParticipantPriority } from "@/utils/attendancePriority";
 
 export default function CheckinAdminPage() {
   const [trainings, setTrainings] = useState<any[]>([]);
@@ -41,7 +42,10 @@ export default function CheckinAdminPage() {
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterAttendance, setFilterAttendance] = useState<"all" | "pending" | "attended">("all");
+  const [filterAttendance, setFilterAttendance] = useState<
+    "all" | "pending" | "attended" | "noshow"
+  >("all");
+  const [closingAttendance, setClosingAttendance] = useState(false);
   const [kioskMode, setKioskMode] = useState(false);
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [responsableMesa, setResponsableMesa] = useState("Diana Barrero");
@@ -152,14 +156,28 @@ export default function CheckinAdminPage() {
       return (order[a.status] || 9) - (order[b.status] || 9);
     });
 
-  const maxCapacity = Number(currentTraining?.maxCapacity || 18);
+  const physicalCapacity = Number(currentTraining?.physicalRoomCapacity || 18);
+  const callCapacity = Number(
+    currentTraining?.maxCapacity || (currentTraining?.isFree ? 40 : physicalCapacity)
+  );
+  const isFreeTraining =
+    currentTraining?.isFree === true || Number(currentTraining?.price || 0) === 0;
   const attendedCount = eventRegistrations.filter((r) => r.status === "Asistió").length;
-  const confirmedCount = eventRegistrations.filter(
-    (r) => r.status === "Confirmado" || r.status === "Inscrito" || r.status === "Asistió"
+  const noShowCount = eventRegistrations.filter((r) => r.status === "No Asistió").length;
+  const pendingCount = eventRegistrations.filter(
+    (r) => r.status === "Confirmado" || r.status === "Inscrito"
   ).length;
-  const pendingCount = Math.max(0, confirmedCount - attendedCount);
+  const confirmedOrAttendedCount = attendedCount + pendingCount + noShowCount;
+  const freeSeats = Math.max(0, physicalCapacity - attendedCount);
+  const overCapacityCount = Math.max(0, attendedCount - physicalCapacity);
   const attendanceRate =
-    confirmedCount > 0 ? Math.round((attendedCount / confirmedCount) * 100) : 0;
+    confirmedOrAttendedCount > 0
+      ? Math.round((attendedCount / confirmedOrAttendedCount) * 100)
+      : 0;
+  const roomOccupancyRate =
+    physicalCapacity > 0
+      ? Math.min(100, Math.round((attendedCount / physicalCapacity) * 100))
+      : 0;
 
   // Filtrado en pantalla
   const filteredRegs = eventRegistrations.filter((r) => {
@@ -175,9 +193,91 @@ export default function CheckinAdminPage() {
     if (!matchesSearch) return false;
 
     if (filterAttendance === "attended") return r.status === "Asistió";
-    if (filterAttendance === "pending") return r.status !== "Asistió";
+    if (filterAttendance === "pending")
+      return r.status === "Confirmado" || r.status === "Inscrito";
+    if (filterAttendance === "noshow") return r.status === "No Asistió";
     return true;
   });
+
+  // Marcar / desmarcar No Asistió individual en 1 clic
+  const handleToggleNoShow = async (regId: number) => {
+    const reg = registrations.find((r) => r.id === regId);
+    if (!reg) return;
+
+    const nextStatus = reg.status === "No Asistió" ? "Confirmado" : "No Asistió";
+
+    setRegistrations((prev) =>
+      prev.map((r) =>
+        r.id === regId
+          ? {
+              ...r,
+              status: nextStatus,
+              checkInAt: null,
+            }
+          : r
+      )
+    );
+
+    showToast(
+      nextStatus === "No Asistió"
+        ? `⚠️ Marcado como No Asistió (incumplimiento registrado): ${reg.participant?.name || "Participante"}`
+        : `Devuelto a Confirmado: ${reg.participant?.name || "Participante"}`
+    );
+
+    try {
+      await fetch("/api/inscripciones", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: regId,
+          status: nextStatus,
+          checkInAt: null,
+        }),
+      });
+    } catch (err) {
+      console.error("Error persistiendo No Asistió:", err);
+    }
+  };
+
+  // Cierre de asistencia en lote: marcar todos los pendientes como No Asistió
+  const handleBulkMarkNoShow = async () => {
+    if (!currentTraining || pendingCount === 0) return;
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `¿Cerrar asistencia de "${currentTraining.name}"?\n\nLos ${pendingCount} participantes pendientes (Confirmado / Inscrito sin check-in) pasarán a estado "No Asistió" y quedarán registrados como incumplidos en su historial para futuras capacitaciones gratuitas.`
+      )
+    ) {
+      return;
+    }
+
+    setClosingAttendance(true);
+    try {
+      const res = await fetch("/api/inscripciones", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "bulk_mark_noshow",
+          trainingId: currentTraining.id,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchRegistrations();
+        showToast(
+          data.message ||
+            `Cierre completado: ${data.updatedCount} participante(s) marcados como No Asistió.`
+        );
+      } else {
+        showToast(data.error || "No se pudo cerrar la asistencia.");
+      }
+    } catch (err) {
+      console.error("Error cerrando asistencia:", err);
+      showToast("Error de red al cerrar asistencia.");
+    } finally {
+      setClosingAttendance(false);
+    }
+  };
 
   // Check-in rápido de 1 solo clic (conmutar asistencia)
   const handleToggleAttendance = async (regId: number) => {
@@ -463,8 +563,15 @@ export default function CheckinAdminPage() {
               </span>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-3xl font-black text-emerald-400">{attendedCount}</span>
-                <span className="text-xs text-slate-500 font-bold">/ {maxCapacity} cupos VIP</span>
+                <span className="text-xs text-slate-400 font-bold">
+                  / {physicalCapacity} puestos en sala
+                </span>
               </div>
+              {isFreeTraining && callCapacity > physicalCapacity && (
+                <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">
+                  Convocatoria gratuita: {eventRegistrations.length} / {callCapacity} pretendientes
+                </span>
+              )}
             </div>
             <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
               <CheckCircle2 className="w-6 h-6" />
@@ -479,8 +586,15 @@ export default function CheckinAdminPage() {
               </span>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-3xl font-black text-amber-400">{pendingCount}</span>
-                <span className="text-xs text-slate-500 font-bold">de {confirmedCount} confirmados</span>
+                <span className="text-xs text-slate-400 font-bold">
+                  de {confirmedOrAttendedCount} convocados
+                </span>
               </div>
+              {noShowCount > 0 && (
+                <span className="text-[10px] text-rose-400 font-bold block mt-0.5">
+                  ⚠️ {noShowCount} marcados como No Asistió
+                </span>
+              )}
             </div>
             <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <Clock className="w-6 h-6" />
@@ -494,11 +608,16 @@ export default function CheckinAdminPage() {
                 Asientos Físicos Libres
               </span>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-3xl font-black text-cyan-400">
-                  {Math.max(0, maxCapacity - attendedCount)}
+                <span className="text-3xl font-black text-cyan-400">{freeSeats}</span>
+                <span className="text-xs text-slate-400 font-bold">
+                  {overCapacityCount > 0
+                    ? `sobrecupo (+${overCapacityCount})`
+                    : `de ${physicalCapacity} sillas físicas`}
                 </span>
-                <span className="text-xs text-slate-500 font-bold">sillas desocupadas</span>
               </div>
+              <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">
+                {roomOccupancyRate}% de ocupación física de sala
+              </span>
             </div>
             <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
               <Users className="w-6 h-6" />
@@ -513,8 +632,11 @@ export default function CheckinAdminPage() {
               </span>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-3xl font-black text-[#f4730a]">{attendanceRate}%</span>
-                <span className="text-xs text-slate-500 font-bold">asistencia real</span>
+                <span className="text-xs text-slate-400 font-bold">asistencia real</span>
               </div>
+              <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">
+                {attendedCount} asistieron · {noShowCount} faltaron
+              </span>
             </div>
             <div className="w-12 h-12 rounded-xl bg-[#f4730a]/10 border border-[#f4730a]/30 flex items-center justify-center text-[#f4730a]">
               <Sparkles className="w-6 h-6" />
@@ -632,6 +754,34 @@ export default function CheckinAdminPage() {
             >
               Presentes en Sala (✓ {attendedCount})
             </button>
+            <button
+              type="button"
+              onClick={() => setFilterAttendance("noshow")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                filterAttendance === "noshow"
+                  ? "bg-rose-600 text-white keep-white shadow-sm"
+                  : "bg-slate-100 dark:bg-slate-950 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-800"
+              }`}
+            >
+              No Asistió ({noShowCount})
+            </button>
+
+            {pendingCount > 0 && (
+              <button
+                type="button"
+                disabled={closingAttendance}
+                onClick={handleBulkMarkNoShow}
+                className="px-3 py-1.5 rounded-xl text-xs font-black bg-rose-950/70 hover:bg-rose-900 text-rose-200 border border-rose-700/60 disabled:opacity-50 transition cursor-pointer flex items-center gap-1.5"
+                title="Al cerrar el evento, marca automáticamente a todos los pendientes sin check-in como No Asistió para registrar su incumplimiento"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                <span>
+                  {closingAttendance
+                    ? "Cerrando..."
+                    : `Cerrar Asistencia (${pendingCount} No Asistió)`}
+                </span>
+              </button>
+            )}
           </div>
 
           <div className="relative">
@@ -676,7 +826,9 @@ export default function CheckinAdminPage() {
               ) : (
                 filteredRegs.map((r, idx) => {
                   const isPresent = r.status === "Asistió";
+                  const isNoShow = r.status === "No Asistió";
                   const p = r.participant || {};
+                  const priority = evaluateParticipantPriority(p, r.id);
                   const rowNum = String(idx + 1).padStart(2, "0");
 
                   return (
@@ -685,6 +837,8 @@ export default function CheckinAdminPage() {
                       className={`transition ${
                         isPresent
                           ? "bg-emerald-50/80 hover:bg-emerald-100/70 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/30"
+                          : isNoShow
+                          ? "bg-rose-50/60 hover:bg-rose-100/60 dark:bg-rose-950/15 dark:hover:bg-rose-950/25"
                           : "hover:bg-slate-50 dark:hover:bg-slate-800/40"
                       }`}
                     >
@@ -713,6 +867,12 @@ export default function CheckinAdminPage() {
                         </div>
                         <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-mono">
                           {p.phone || "Sin teléfono"}
+                        </span>
+                        <span
+                          className={`mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${priority.badgeClass}`}
+                          title={priority.tooltip}
+                        >
+                          {priority.label}
                         </span>
                       </td>
 
@@ -785,6 +945,23 @@ export default function CheckinAdminPage() {
                                 <span>Dar Check</span>
                               </>
                             )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleNoShow(r.id)}
+                            className={`px-2.5 py-2 rounded-xl font-bold text-[11px] transition-all flex items-center justify-center gap-1 cursor-pointer border ${
+                              isNoShow
+                                ? "bg-rose-600 hover:bg-rose-700 text-white keep-white border-rose-500 shadow-sm"
+                                : "bg-slate-100 dark:bg-slate-900 hover:bg-rose-600/20 text-slate-600 dark:text-slate-400 hover:text-rose-300 border-slate-300 dark:border-slate-700"
+                            }`}
+                            title={
+                              isNoShow
+                                ? "Marcado como No Asistió (clic para revertir a Confirmado)"
+                                : "Marcar como No Asistió para registrar incumplimiento en su historial"
+                            }
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span>{isNoShow ? "Faltó" : "No Asistió"}</span>
                           </button>
                           <a
                             href={getCheckinWhatsAppUrl(r)}
@@ -892,10 +1069,10 @@ export default function CheckinAdminPage() {
 
                 <div className="text-right">
                   <span className="inline-block bg-black text-white text-xs font-black uppercase px-3 py-1 rounded">
-                    {confirmedCount} CONFIRMADOS
+                    {confirmedOrAttendedCount} CONVOCADOS
                   </span>
                   <p className="text-[10px] font-mono font-bold mt-1">
-                    AFORO MÁX: {maxCapacity} PUESTOS
+                    AFORO MÁX: {physicalCapacity} PUESTOS
                   </p>
                 </div>
               </div>
