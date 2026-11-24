@@ -345,6 +345,14 @@ export default function InscripcionesAdminPage() {
         body: JSON.stringify({ id, ...fields }),
       });
       const data = await res.json();
+      if (res.status === 401) {
+        showToast("⚠️ Tu sesión administrativa expiró. Recargando para iniciar sesión...");
+        try {
+          localStorage.removeItem("onprotec_admin_user");
+        } catch {}
+        setTimeout(() => window.location.reload(), 1500);
+        return null;
+      }
       if (data.success) {
         const updatedRecord = data.data;
         setRegistrations((prev) =>
@@ -363,15 +371,18 @@ export default function InscripcionesAdminPage() {
           setViewingDetailsReg((prev: any) => ({ ...prev, ...updatedRecord }));
         }
         return updatedRecord;
+      } else {
+        showToast(`⚠️ Error: ${data.error || "No se pudo guardar el cambio."}`);
       }
     } catch (err) {
       console.error("Error al actualizar inscripción:", err);
+      showToast("⚠️ Error de conexión al guardar cambios.");
     }
     return null;
   };
 
   // Toggle rápido de cobro (persiste en servidor)
-  const togglePaid = (r: any) => {
+  const togglePaid = async (r: any) => {
     const nextPaid = !r.isPaid;
     const nextStatus = nextPaid && r.status === "Inscrito" ? "Confirmado" : r.status;
     const nextPabiloStatus = nextPaid
@@ -380,14 +391,16 @@ export default function InscripcionesAdminPage() {
         : "manual"
       : "pending";
 
-    patchRegistration(r.id, {
+    const updated = await patchRegistration(r.id, {
       isPaid: nextPaid,
       status: nextStatus,
       pabiloStatus: nextPabiloStatus,
       paymentDate: nextPaid ? new Date().toISOString() : null,
       paymentNotes: nextPaid ? "Pago validado manualmente" : "Marcado como pendiente de pago",
     });
-    showToast(`Estado de pago actualizado para ${r.participant?.name || "participante"}`);
+    if (updated) {
+      showToast(`Estado de pago actualizado para ${r.participant?.name || "participante"}`);
+    }
   };
 
   const updateStatus = (id: number, status: string) => {
@@ -495,22 +508,37 @@ export default function InscripcionesAdminPage() {
     if (!modalReg) return;
     setSavingModal(true);
 
+    const resolvedPabiloStatus = modalForm.isPaid
+      ? modalForm.pabiloStatus === "pending"
+        ? "manual"
+        : modalForm.pabiloStatus
+      : modalForm.pabiloStatus === "manual"
+      ? "pending"
+      : modalForm.pabiloStatus;
+
+    const resolvedStatus =
+      modalForm.isPaid && modalForm.status === "Inscrito" ? "Confirmado" : modalForm.status;
+
     const updated = await patchRegistration(modalReg.id, {
       isPaid: modalForm.isPaid,
       amount: modalForm.amount,
       paymentMethod: modalForm.paymentMethod,
-      pabiloStatus: modalForm.pabiloStatus,
+      pabiloStatus: resolvedPabiloStatus,
       paymentReference: modalForm.paymentReference,
       paymentProofUrl: modalForm.paymentProofUrl,
-      status: modalForm.status,
+      status: resolvedStatus,
       paymentNotes: modalForm.paymentNotes,
       invoiceNumber: modalForm.invoiceNumber,
       paymentDate: modalForm.isPaid ? modalReg.paymentDate || new Date().toISOString() : null,
     });
 
     setSavingModal(false);
-    setModalReg(null);
-    showToast(`Validación guardada con éxito para ${modalReg.participant?.name || "participante"}.`);
+    if (updated) {
+      setModalReg(null);
+      showToast(
+        `Validación guardada con éxito para ${modalReg.participant?.name || "participante"}.`
+      );
+    }
   };
 
   const filteredRaw = registrations.filter((r) => {
@@ -1906,7 +1934,19 @@ export default function InscripcionesAdminPage() {
                   </label>
                   <select
                     value={modalForm.isPaid ? "true" : "false"}
-                    onChange={(e) => setModalForm({ ...modalForm, isPaid: e.target.value === "true" })}
+                    onChange={(e) => {
+                      const nextPaid = e.target.value === "true";
+                      setModalForm((prev) => ({
+                        ...prev,
+                        isPaid: nextPaid,
+                        pabiloStatus: nextPaid
+                          ? prev.pabiloStatus === "approved"
+                            ? "approved"
+                            : "manual"
+                          : "pending",
+                        status: nextPaid && prev.status === "Inscrito" ? "Confirmado" : prev.status,
+                      }));
+                    }}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
                   >
                     <option value="true">Sí (Cobrado)</option>
@@ -1939,8 +1979,22 @@ export default function InscripcionesAdminPage() {
                     onChange={(e) => setModalForm({ ...modalForm, paymentMethod: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
                   >
+                    {modalForm.paymentMethod &&
+                      ![
+                        "Binance (USDT)",
+                        "Zelle",
+                        "Efectivo en Tienda OnProtec",
+                        "Efectivo (Oficina Onprotec)",
+                        "Pago Móvil",
+                        "Transferencia Bancaria",
+                        "Pabilo Pay",
+                        "Sin especificar",
+                      ].includes(modalForm.paymentMethod) && (
+                        <option value={modalForm.paymentMethod}>{modalForm.paymentMethod}</option>
+                      )}
                     <option value="Binance (USDT)">Binance (USDT)</option>
                     <option value="Zelle">Zelle</option>
+                    <option value="Efectivo en Tienda OnProtec">Efectivo en Tienda OnProtec</option>
                     <option value="Efectivo (Oficina Onprotec)">Efectivo (Oficina)</option>
                     <option value="Pago Móvil">Pago Móvil</option>
                     <option value="Transferencia Bancaria">Transferencia Bancaria</option>

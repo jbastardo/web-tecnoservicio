@@ -55,6 +55,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           try {
             localStorage.setItem("onprotec_admin_user", JSON.stringify(d.user));
           } catch {}
+        } else {
+          // La cookie de sesión del servidor expiró o no existe: limpiar caché local para forzar re-login
+          setAuthUser(null);
+          try {
+            localStorage.removeItem("onprotec_admin_user");
+          } catch {}
         }
       })
       .catch(() => {})
