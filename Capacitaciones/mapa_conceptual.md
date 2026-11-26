@@ -385,3 +385,41 @@ Para erradicar por completo la pérdida de capacitaciones, preguntas personaliza
      * `/admin/capacitaciones`: Contador de aforo enlazado a `/admin/inscripciones?trainingId={id}` y acción directa a `/admin/checkin?trainingId={id}`.
      * `/admin/inscripciones` y `/admin/checkin`: Lectura automática de `?trainingId=` en URL para prefiltrar el evento seleccionado.
    * **Formulario Público Completo (`src/app/page.tsx`):** Soporte para los 5 tipos de pregunta del constructor (`text`, `textarea`, `select`, `radio`, `checkbox`), atributos `autocomplete` / `inputMode` para autofill nativo, botón flotante móvil inteligente (`IntersectionObserver` sobre `#formulario-oficial`) y cierre de todos los modales públicos y privados con tecla `Escape` o clic fuera del diálogo.
+
+---
+
+## 13. Blindaje Anti-Pérdida de Datos: Papelera (Soft-Delete), Auditoría & Backups Inteligentes (Noviembre 2026)
+
+1. **Eliminación Segura (Soft-Delete + Papelera de Reciclaje en 1 clic):**
+   * **`DELETE /api/inscripciones`, `DELETE /api/participantes` y `DELETE /api/capacitaciones`:** Ninguna inscripción ni participante se elimina físicamente con `splice()` por defecto. Ahora se marcan con `deletedAt`, `deletedBy` y `deletedReason`, quedando ocultos en las listas activas, métricas, aforo y controles anti-duplicado, pero 100% recuperables.
+   * **Restauración y Purga Controlada (`/admin/inscripciones`):** Botón **Papelera** en la cabecera de la matriz de inscripciones con modal dedicado que lista registros eliminados (quién y cuándo en hora `America/Caracas`), botón **Restaurar** (`PATCH /api/inscripciones` con `action: "restore"`) y opción **Purgar** (`?permanent=true`) restringida exclusivamente a **Super Admin** y únicamente sobre registros ya enviados a Papelera.
+
+2. **Bitácora de Auditoría (`auditLogs` & `GET /api/admin/audit`):**
+   * Registro persistente de hasta 1.000 eventos administrativos (`REGISTRATION_SOFT_DELETE`, `REGISTRATION_RESTORE`, `REGISTRATION_PERMANENT_DELETE`, `REGISTRATION_UPDATE`, `PARTICIPANT_SOFT_DELETE`, `TRAINING_DELETE`, `BACKUP_RESTORE`) con actor, rol, resumen y marca de tiempo mostrada en `America/Caracas` (UTC-4).
+   * Modal **Auditoría** en `/admin/inscripciones` que muestra el historial reciente y el conteo en tiempo real de respaldos diarios, pre-eliminación y rotativos.
+
+3. **Estrategia de Respaldos Multi-Nivel (`src/lib/serverStorage.ts`):**
+   * **Respaldos Diarios (`backups/daily/`):** 1 snapshot automático por día (fecha Caracas), con retención de **30 días**.
+   * **Respaldos Pre-Eliminación / Pre-Restauración (`backups/pre-delete/`):** Copia automática del archivo previo en disco *antes* de escribir cualquier operación destructiva o restauración, reteniendo hasta **50 copias** dedicadas que nunca son rotadas por clics rutinarios de WhatsApp o cambios de estado.
+   * **Respaldos Rotativos con Debounce (`backups/`):** Máximo 1 copia cada 10 minutos, reteniendo las últimas **25 versiones**.
+
+4. **Seguridad de Endpoints Administrativos (`src/lib/adminAuth.ts`):**
+   * Validación obligatoria de la cookie de sesión `onprotec_admin_session` mediante `requireAdmin()` en `PATCH`/`DELETE /api/inscripciones`, `GET /api/inscripciones?onlyDeleted=true`, `PATCH`/`DELETE /api/participantes`, `DELETE /api/capacitaciones`, `GET /api/admin/audit` y `GET`/`POST /api/admin/backup`.
+   * Restauración de respaldo completo (`POST /api/admin/backup`) y purga definitiva (`DELETE /api/inscripciones?permanent=true`) restringidas a **Super Admin** (`isSuperAdmin()`).
+
+---
+
+## 14. Control de Aforo Físico (18 Puestos) & Motor de Prioridad / Reputación de Asistencia (Noviembre 2026)
+
+1. **Separación Estricta entre Aforo Físico (18) y Convocatoria Gratuita (40) en `/admin/checkin`:**
+   * Los KPIs de sala (`Asistieron` y `Asientos Físicos Libres`) se calculan siempre sobre `physicalRoomCapacity = 18` puestos físicos (evitando mostrar falsos asientos libres basados en los 40 pre-inscritos de convocatoria gratuita), mostrando el conteo de convocatoria gratuita como indicador secundario.
+   * **Registro de Incumplidos (No Asistió) en 1 Clic y Cierre en Lote:** Botón individual `No Asistió` por participante en la tabla de check-in y acción masiva **`Cerrar Asistencia (Marcar pendientes como No Asistió)`** (`PATCH /api/inscripciones` con `action: "bulk_mark_noshow"`), registrando en la bitácora y en el historial permanente del participante quién confirmó/se inscribió y no asistió.
+
+2. **Motor de Reputación y Prioridad de Cupos (`src/utils/attendancePriority.ts`):**
+   * Clasifica automáticamente a cada participante según su historial real de asistencia y compras en tienda OnProtec en 6 niveles de prioridad:
+     1. **`👑 Cliente Comprador`** (prioridad máxima: cliente comprador fiel sin faltas).
+     2. **`🌟 Nuevo Prospecto`** (nunca ha asistido y 0 faltas: alta prioridad para captar nuevos clientes).
+     3. **`✅ Cumplidor`** (asistente recurrente sin inasistencias).
+     4. **`👑 Cliente · ⚠️ N falta(s)`** (comprador con inasistencia previa; reconfirmar antes de ceder).
+     5. **`⚠️ Incumplido (1 falta)`** y **`🚫 Reincidente (2+ faltas)`** (alerta visual con detalle de eventos faltados para ceder su cupo gratuito a un Nuevo Prospecto o Cliente Fiel).
+   * Visible mediante badges y filtros dedicados en `/admin/inscripciones` (incluyendo botón **`🎯 Priorizar Cupos`** para ordenar los 40 pretendientes antes de reconfirmar), `/admin/checkin` y `/admin/participantes` (pestaña `⚠️ Incumplidos`).

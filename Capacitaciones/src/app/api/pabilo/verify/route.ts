@@ -50,6 +50,7 @@ export async function POST(request: Request) {
     // 1. Verificar localmente si la referencia ya fue consumida por otra inscripción activa
     const alreadyUsedByRef = initialRegistrations.some(
       (r) =>
+        !r.deletedAt &&
         r.status !== "Cancelado" &&
         r.isPaid &&
         String(r.paymentReference || "").trim().toLowerCase() === cleanRef.toLowerCase()
@@ -85,6 +86,7 @@ export async function POST(request: Request) {
     // 3. Validar Anti-Replay por pabiloTransactionId único devuelto por Pabilo
     const alreadyUsedByPaymentId = initialRegistrations.some(
       (r) =>
+        !r.deletedAt &&
         r.status !== "Cancelado" &&
         r.pabiloTransactionId &&
         String(r.pabiloTransactionId).trim() === result.paymentId

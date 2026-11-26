@@ -6,7 +6,9 @@ import {
   defaultFormQuestions,
   defaultSurveyQuestions,
   persistDataset,
+  appendAuditLog,
 } from "@/lib/serverStorage";
+import { requireAdmin } from "@/lib/adminAuth";
 import { qrService } from "@/services/qrService";
 
 function enrichTraining(t: any) {
@@ -14,7 +16,9 @@ function enrichTraining(t: any) {
   const isFree = !isPaid;
   // Regla OnProtec: Cursos cobrados tienen aforo estricto de 18. Cursos gratuitos permiten hasta 40 pre-inscripciones para reconfirmar 18 físicos.
   const maxCap = isPaid ? 18 : Math.max(Number(t.maxCapacity) || 40, 40);
-  const regs = initialRegistrations.filter((r) => Number(r.trainingId) === Number(t.id));
+  const regs = initialRegistrations.filter(
+    (r) => !r.deletedAt && Number(r.trainingId) === Number(t.id)
+  );
   const confirmedCount = regs.filter((r) => r.status === "Confirmado").length;
   const registeredCount = regs.filter((r) => r.status === "Inscrito").length;
   const attendedCount = regs.filter((r) => r.status === "Asistió").length;
@@ -373,6 +377,9 @@ export async function DELETE(request: Request) {
       );
     }
 
+    const auth = await requireAdmin();
+    if (auth.errorResponse) return auth.errorResponse;
+
     const idNum = Number(idParam);
     const idx = initialTrainings.findIndex(
       (t) => Number(t.id) === idNum || t.code?.toLowerCase() === idParam.toLowerCase()
@@ -387,14 +394,26 @@ export async function DELETE(request: Request) {
 
     const deletedTraining = initialTrainings[idx];
     const trainingId = deletedTraining.id;
+    const nowIso = new Date().toISOString();
 
     // Eliminar capacitación de la memoria activa
     initialTrainings.splice(idx, 1);
 
-    // Cascada: Eliminar inscripciones vinculadas
-    for (let i = initialRegistrations.length - 1; i >= 0; i--) {
-      if (Number(initialRegistrations[i].trainingId) === Number(trainingId)) {
-        initialRegistrations.splice(i, 1);
+    // Soft-delete de inscripciones vinculadas (recuperables y con respaldo pre-eliminación)
+    let movedRegs = 0;
+    for (let i = 0; i < initialRegistrations.length; i++) {
+      if (
+        !initialRegistrations[i].deletedAt &&
+        Number(initialRegistrations[i].trainingId) === Number(trainingId)
+      ) {
+        initialRegistrations[i] = {
+          ...initialRegistrations[i],
+          deletedAt: nowIso,
+          deletedBy: auth.user.email,
+          deletedReason: `Capacitación ${deletedTraining.code} eliminada`,
+          updatedAt: nowIso,
+        };
+        movedRegs++;
       }
     }
 
@@ -405,8 +424,23 @@ export async function DELETE(request: Request) {
       }
     }
 
-    // Persistir cambios atómicamente en el volumen Docker
-    await persistDataset();
+    appendAuditLog({
+      action: "TRAINING_DELETE",
+      entityType: "training",
+      entityId: trainingId,
+      actorName: auth.user.name,
+      actorEmail: auth.user.email,
+      actorRole: auth.user.role,
+      summary: `Eliminó capacitación ${deletedTraining.code} (${deletedTraining.name}); ${movedRegs} inscripciones movidas a Papelera`,
+      details: {
+        trainingId,
+        code: deletedTraining.code,
+        movedRegistrations: movedRegs,
+      },
+    });
+
+    // Persistir cambios atómicamente con respaldo pre-eliminación
+    await persistDataset({ reason: "pre-delete" });
 
     return NextResponse.json({
       success: true,

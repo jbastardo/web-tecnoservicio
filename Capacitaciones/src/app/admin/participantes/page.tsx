@@ -25,13 +25,14 @@ import {
   buildParticipantWhatsAppUrl,
   ONPROTEC_WHATSAPP_DISPLAY,
 } from "@/utils/formatUtils";
+import { evaluateParticipantPriority } from "@/utils/attendancePriority";
 
 export default function ParticipantesAdminPage() {
   const [participants, setParticipants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<
-    "all" | "recurring" | "store_clients" | "prospects"
+    "all" | "recurring" | "store_clients" | "prospects" | "noshow"
   >("all");
   const [selectedParticipant, setSelectedParticipant] = useState<any | null>(null);
   const [toast, setToast] = useState("");
@@ -204,6 +205,9 @@ export default function ParticipantesAdminPage() {
   const recurringCount = participants.filter(
     (p) => (p.participations?.length || 0) > 1
   ).length;
+  const noShowParticipantsCount = participants.filter((p) =>
+    (p.participations || []).some((x: any) => x.status === "No Asistió")
+  ).length;
 
   const filtered = participants.filter((p) => {
     const q = search.toLowerCase();
@@ -228,6 +232,8 @@ export default function ParticipantesAdminPage() {
     if (filterType === "recurring") return (p.participations?.length || 0) > 1;
     if (filterType === "store_clients") return p.hasStorePurchases;
     if (filterType === "prospects") return !p.hasStorePurchases;
+    if (filterType === "noshow")
+      return (p.participations || []).some((x: any) => x.status === "No Asistió");
     return true;
   });
 
@@ -318,6 +324,16 @@ export default function ParticipantesAdminPage() {
             >
               Clientes Tienda
             </button>
+            <button
+              onClick={() => setFilterType("noshow")}
+              className={`px-3 py-1 rounded-lg font-bold transition ${
+                filterType === "noshow"
+                  ? "bg-rose-600 text-white shadow-sm keep-white"
+                  : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+              }`}
+            >
+              ⚠️ Incumplidos ({noShowParticipantsCount})
+            </button>
           </div>
 
           <button
@@ -362,12 +378,20 @@ export default function ParticipantesAdminPage() {
                 filtered.slice(0, 100).map((p) => {
                   const parts = p.participations || [];
                   const attended = parts.filter((x: any) => x.status === "Asistió").length;
+                  const noShows = parts.filter((x: any) => x.status === "No Asistió").length;
+                  const priority = evaluateParticipantPriority(p);
 
                   return (
                     <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                       <td className="py-3.5 px-4">
                         <span className="font-extrabold text-slate-900 dark:text-white text-sm block">
                           {p.name || "Sin Nombre"}
+                        </span>
+                        <span
+                          className={`mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${priority.badgeClass}`}
+                          title={priority.tooltip}
+                        >
+                          {priority.label}
                         </span>
                         <span className="text-[#0e5cd7] dark:text-cyan-400 font-mono text-xs font-bold block mt-0.5">
                           {p.phone || "Sin Teléfono"}
@@ -392,13 +416,18 @@ export default function ParticipantesAdminPage() {
 
                       {/* Columna Clave: A dónde ha participado cada inscrito */}
                       <td className="py-3.5 px-4 max-w-md">
-                        <div className="flex items-center gap-2 mb-1.5">
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-300 dark:bg-brand-500/20 dark:text-brand-300 dark:border-brand-500/30">
                             {parts.length} {parts.length === 1 ? "curso" : "cursos"}
                           </span>
                           <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold">
-                            ({attended} asistencias en sala)
+                            ({attended} asistencias)
                           </span>
+                          {noShows > 0 && (
+                            <span className="text-[10px] text-rose-700 dark:text-rose-400 font-black">
+                              · ⚠️ {noShows} falta{noShows === 1 ? "" : "s"}
+                            </span>
+                          )}
                         </div>
                         <div className="flex flex-wrap gap-1">
                           {parts.slice(0, 3).map((item: any) => (

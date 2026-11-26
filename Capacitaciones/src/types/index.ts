@@ -128,6 +128,8 @@ export interface Participant {
   referralSource?: string | null;
   allowsContact?: boolean;
   notes?: string | null;
+  deletedAt?: string | null;
+  deletedBy?: string | null;
   createdAt?: string;
   updatedAt?: string;
   // Historial de cursos donde ha participado
@@ -160,12 +162,35 @@ export interface Registration {
   reminderSentAt: string | null;
   surveySentAt: string | null;
   checkInAt: string | null;
+  deletedAt?: string | null;
+  deletedBy?: string | null;
+  deletedReason?: string | null;
   createdAt?: string;
   updatedAt?: string;
 
   // Relaciones pobladas (Joins)
   training?: Training;
   participant?: Participant;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string; // ISO string (formatear en America/Caracas UTC-4)
+  action:
+    | "REGISTRATION_SOFT_DELETE"
+    | "REGISTRATION_RESTORE"
+    | "REGISTRATION_PERMANENT_DELETE"
+    | "REGISTRATION_UPDATE"
+    | "PARTICIPANT_SOFT_DELETE"
+    | "TRAINING_DELETE"
+    | "BACKUP_RESTORE";
+  entityType: "registration" | "participant" | "training" | "backup";
+  entityId?: number | string | null;
+  actorName: string;
+  actorEmail: string;
+  actorRole: string;
+  summary: string;
+  details?: Record<string, any>;
 }
 
 export interface Survey {

@@ -4,7 +4,9 @@ import {
   initialRegistrations,
   initialTrainings,
   persistDataset,
+  appendAuditLog,
 } from "@/lib/serverStorage";
+import { requireAdmin } from "@/lib/adminAuth";
 
 export async function GET(request: Request) {
   try {
@@ -15,34 +17,38 @@ export async function GET(request: Request) {
     const trainingMap = new Map<number, any>();
     initialTrainings.forEach((t) => trainingMap.set(Number(t.id), t));
 
-    // Agrupar inscripciones por participante
+    // Agrupar inscripciones activas por participante (excluir papelera)
     const regsByParticipant = new Map<number, any[]>();
-    initialRegistrations.forEach((r) => {
-      const pid = Number(r.participantId);
-      if (!regsByParticipant.has(pid)) {
-        regsByParticipant.set(pid, []);
-      }
-      const tr = trainingMap.get(Number(r.trainingId)) || r.training;
-      regsByParticipant.get(pid)!.push({
-        registrationId: r.id,
-        trainingId: r.trainingId,
-        trainingCode: tr?.code || `CAP-2026-${String(r.trainingId).padStart(3, "0")}`,
-        trainingName: tr?.name || r.originalFormName || "Capacitación OnProtec",
-        trainingType: tr?.type || "Workshop",
-        brand: tr?.brand || "OnProtec",
-        instructor: tr?.instructor || "Especialista OnProtec",
-        eventDate: tr?.eventDate || r.formSubmittedAt || r.createdAt || new Date().toISOString(),
-        status: r.status,
-        isPaid: r.isPaid,
-        amount: r.amount,
-        currency: r.currency || "USD",
-        checkInAt: r.checkInAt || null,
-        customAnswers: r.customAnswers || {},
-        specialNotes: r.specialNotes || null,
+    initialRegistrations
+      .filter((r) => !r.deletedAt)
+      .forEach((r) => {
+        const pid = Number(r.participantId);
+        if (!regsByParticipant.has(pid)) {
+          regsByParticipant.set(pid, []);
+        }
+        const tr = trainingMap.get(Number(r.trainingId)) || r.training;
+        regsByParticipant.get(pid)!.push({
+          registrationId: r.id,
+          trainingId: r.trainingId,
+          trainingCode: tr?.code || `CAP-2026-${String(r.trainingId).padStart(3, "0")}`,
+          trainingName: tr?.name || r.originalFormName || "Capacitación OnProtec",
+          trainingType: tr?.type || "Workshop",
+          brand: tr?.brand || "OnProtec",
+          instructor: tr?.instructor || "Especialista OnProtec",
+          eventDate: tr?.eventDate || r.formSubmittedAt || r.createdAt || new Date().toISOString(),
+          status: r.status,
+          isPaid: r.isPaid,
+          amount: r.amount,
+          currency: r.currency || "USD",
+          checkInAt: r.checkInAt || null,
+          customAnswers: r.customAnswers || {},
+          specialNotes: r.specialNotes || null,
+        });
       });
-    });
 
-    const enriched = initialParticipants.map((p) => {
+    const enriched = initialParticipants
+      .filter((p) => !p.deletedAt)
+      .map((p) => {
       const participations = (regsByParticipant.get(Number(p.id)) || []).sort(
         (a, b) => new Date(b.eventDate || 0).getTime() - new Date(a.eventDate || 0).getTime()
       );
@@ -82,6 +88,9 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.errorResponse) return auth.errorResponse;
+
   try {
     const body = await request.json();
     const { id } = body;
@@ -139,6 +148,9 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const auth = await requireAdmin();
+  if (auth.errorResponse) return auth.errorResponse;
+
   try {
     const { searchParams } = new URL(request.url);
     let idParam = searchParams.get("id");
@@ -169,23 +181,55 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const [deletedParticipant] = initialParticipants.splice(idx, 1);
+    const nowIso = new Date().toISOString();
+    const targetParticipant = {
+      ...initialParticipants[idx],
+      deletedAt: nowIso,
+      deletedBy: auth.user.email,
+      updatedAt: nowIso,
+    };
+    initialParticipants[idx] = targetParticipant;
 
-    // Eliminar todas las inscripciones asociadas a este participante
-    let removedRegs = 0;
-    for (let i = initialRegistrations.length - 1; i >= 0; i--) {
-      if (Number(initialRegistrations[i].participantId) === Number(deletedParticipant.id)) {
-        initialRegistrations.splice(i, 1);
-        removedRegs++;
+    // Soft-delete de las inscripciones asociadas (recuperables desde Papelera)
+    let movedRegs = 0;
+    for (let i = 0; i < initialRegistrations.length; i++) {
+      if (
+        !initialRegistrations[i].deletedAt &&
+        Number(initialRegistrations[i].participantId) === Number(targetParticipant.id)
+      ) {
+        initialRegistrations[i] = {
+          ...initialRegistrations[i],
+          deletedAt: nowIso,
+          deletedBy: auth.user.email,
+          deletedReason: `Participante ${targetParticipant.name} enviado a Papelera`,
+          updatedAt: nowIso,
+        };
+        movedRegs++;
       }
     }
 
-    await persistDataset();
+    appendAuditLog({
+      action: "PARTICIPANT_SOFT_DELETE",
+      entityType: "participant",
+      entityId: targetParticipant.id,
+      actorName: auth.user.name,
+      actorEmail: auth.user.email,
+      actorRole: auth.user.role,
+      summary: `Movió a Papelera al participante ${targetParticipant.name} y sus ${movedRegs} inscripciones`,
+      details: {
+        participantId: targetParticipant.id,
+        participantName: targetParticipant.name,
+        movedRegistrations: movedRegs,
+      },
+    });
+
+    await persistDataset({ reason: "pre-delete" });
 
     return NextResponse.json({
       success: true,
-      message: `Participante ${deletedParticipant.name} y sus ${removedRegs} formularios registrados fueron eliminados correctamente.`,
-      data: deletedParticipant,
+      softDeleted: true,
+      message: `Participante ${targetParticipant.name} y sus ${movedRegs} formularios fueron movidos a la Papelera (recuperables).`,
+      data: targetParticipant,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
