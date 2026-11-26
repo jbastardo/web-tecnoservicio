@@ -34,7 +34,9 @@ import {
   Download,
   Printer,
   BarChart3,
+  PieChart,
 } from "lucide-react";
+import { RegistrationAnalyticsPanel } from "@/components/admin/RegistrationAnalyticsPanel";
 import {
   fmtLocalDate,
   fmtLocalTime,
@@ -91,6 +93,7 @@ export default function InscripcionesAdminPage() {
   const [dateTo, setDateTo] = useState("");
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportScope, setReportScope] = useState<"filtered" | "all">("filtered");
+  const [activeView, setActiveView] = useState<"list" | "analytics">("list");
   const [trainings, setTrainings] = useState<any[]>([]);
 
   // Estado para el Modal de Validación Manual de Pagos
@@ -767,8 +770,37 @@ export default function InscripcionesAdminPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="text-[11px] font-mono text-cyan-300 bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-xl">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Conmutador Widescreen: Listado vs Resumen Analítico por Capacitación */}
+            <div className="inline-flex items-center p-1 rounded-xl bg-slate-200/80 dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
+              <button
+                type="button"
+                onClick={() => setActiveView("list")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition cursor-pointer ${
+                  activeView === "list"
+                    ? "bg-[#2a285c] text-white shadow-sm keep-white"
+                    : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <ClipboardList className="w-3.5 h-3.5" />
+                <span>Listado ({filtered.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView("analytics")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition cursor-pointer ${
+                  activeView === "analytics"
+                    ? "bg-[#f4730a] text-white shadow-sm keep-white"
+                    : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+                title="Ver resumen analítico agregado de respuestas de formulario y encuesta por capacitación"
+              >
+                <PieChart className="w-3.5 h-3.5" />
+                <span>Resumen Analítico</span>
+              </button>
+            </div>
+
+            <span className="text-[11px] font-mono font-bold text-[#2a285c] dark:text-cyan-300 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-3 py-1.5 rounded-xl shadow-sm">
               {filtered.length} reg. {hasActiveFilters ? `(de ${registrations.length})` : ""}
             </span>
 
@@ -778,7 +810,7 @@ export default function InscripcionesAdminPage() {
                 setReportScope("filtered");
                 setShowReportModal(true);
               }}
-              className="px-3.5 py-2 bg-[#f4730a] hover:bg-[#ef7922] text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition shadow-md cursor-pointer"
+              className="px-3.5 py-2 bg-[#f4730a] hover:bg-[#ef7922] text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition shadow-md cursor-pointer keep-white"
               title="Abrir Centro de Reportes y Exportación Excel/PDF"
             >
               <BarChart3 className="w-4 h-4" />
@@ -788,7 +820,7 @@ export default function InscripcionesAdminPage() {
             <button
               type="button"
               onClick={fetchRegistrations}
-              className="p-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl text-xs transition cursor-pointer"
+              className="p-2 bg-white hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs transition cursor-pointer shadow-sm"
               title="Recargar"
             >
               <RefreshCw className="w-4 h-4" />
@@ -797,29 +829,36 @@ export default function InscripcionesAdminPage() {
         </div>
 
         {/* Barra Horizontal de Filtros (Búsqueda + Curso + Estado + Rango de Fechas Caracas) */}
+        {activeView === "list" && (
         <div className="bg-white dark:bg-slate-900/90 border border-slate-300 dark:border-slate-800 rounded-2xl p-3 flex flex-wrap items-center gap-2.5 shadow-sm">
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
               placeholder="Buscar participante, cédula o curso..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#f4730a] w-52"
+              className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-500 focus:outline-none focus:border-[#f4730a] w-52"
             />
           </div>
 
           <select
             value={trainingFilter}
             onChange={(e) => setTrainingFilter(e.target.value)}
-            className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a] max-w-[230px] truncate font-medium"
+            className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a] max-w-[230px] truncate font-semibold"
           >
-            <option value="all">Todas las Capacitaciones ({trainings.length})</option>
+            <option value="all" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">
+              Todas las Capacitaciones ({trainings.length})
+            </option>
             {trainings
               .slice()
               .sort((a, b) => new Date(b.eventDate || 0).getTime() - new Date(a.eventDate || 0).getTime())
               .map((t) => (
-                <option key={t.id} value={String(t.id)}>
+                <option
+                  key={t.id}
+                  value={String(t.id)}
+                  className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white"
+                >
                   [{fmtLocalDate(t.eventDate)}] {t.name}
                 </option>
               ))}
@@ -828,22 +867,22 @@ export default function InscripcionesAdminPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a] font-medium"
+            className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a] font-semibold"
           >
-            <option value="all">Todos los Estados</option>
-            <option value="Inscrito">Inscrito</option>
-            <option value="Confirmado">Confirmado</option>
-            <option value="Asistió">Asistió</option>
-            <option value="No Asistió">No Asistió</option>
-            <option value="Lista de Espera">Lista de Espera</option>
-            <option value="Cancelado">Cancelado</option>
+            <option value="all" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Todos los Estados</option>
+            <option value="Inscrito" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Inscrito</option>
+            <option value="Confirmado" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Confirmado</option>
+            <option value="Asistió" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Asistió</option>
+            <option value="No Asistió" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">No Asistió</option>
+            <option value="Lista de Espera" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Lista de Espera</option>
+            <option value="Cancelado" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Cancelado</option>
           </select>
 
           <div className="h-5 w-px bg-slate-300 dark:bg-slate-700 hidden xl:block" />
 
           {/* Filtro por Fecha */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-300">
               <Calendar className="w-3.5 h-3.5 text-[#f4730a]" />
               <select
                 value={dateField}
@@ -851,13 +890,13 @@ export default function InscripcionesAdminPage() {
                 className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a] font-semibold"
                 title="Criterio de fecha para el filtro"
               >
-                <option value="registration">Fecha Inscripción</option>
-                <option value="event">Fecha Evento</option>
+                <option value="registration" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Fecha Inscripción</option>
+                <option value="event" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Fecha Evento</option>
               </select>
             </div>
 
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
                 Desde:
               </span>
               <input
@@ -869,7 +908,7 @@ export default function InscripcionesAdminPage() {
             </div>
 
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
                 Hasta:
               </span>
               <input
@@ -889,7 +928,7 @@ export default function InscripcionesAdminPage() {
                   setDateFrom(today);
                   setDateTo(today);
                 }}
-                className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-[#f4730a] hover:text-white dark:bg-slate-800 dark:hover:bg-[#f4730a] text-slate-700 dark:text-slate-200 text-[11px] font-bold transition cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#f4730a] hover:text-white border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-[#f4730a] text-slate-800 dark:text-slate-200 text-[11px] font-bold transition cursor-pointer"
               >
                 Hoy
               </button>
@@ -899,7 +938,7 @@ export default function InscripcionesAdminPage() {
                   setDateFrom(getCaracasDateShift(-6));
                   setDateTo(toCaracasYMD(new Date()));
                 }}
-                className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-[#f4730a] hover:text-white dark:bg-slate-800 dark:hover:bg-[#f4730a] text-slate-700 dark:text-slate-200 text-[11px] font-bold transition cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#f4730a] hover:text-white border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-[#f4730a] text-slate-800 dark:text-slate-200 text-[11px] font-bold transition cursor-pointer"
               >
                 7 días
               </button>
@@ -910,7 +949,7 @@ export default function InscripcionesAdminPage() {
                   setDateFrom(today.slice(0, 8) + "01");
                   setDateTo(today);
                 }}
-                className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-[#f4730a] hover:text-white dark:bg-slate-800 dark:hover:bg-[#f4730a] text-slate-700 dark:text-slate-200 text-[11px] font-bold transition cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-[#f4730a] hover:text-white border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-[#f4730a] text-slate-800 dark:text-slate-200 text-[11px] font-bold transition cursor-pointer"
               >
                 Este mes
               </button>
@@ -919,7 +958,7 @@ export default function InscripcionesAdminPage() {
                 <button
                   type="button"
                   onClick={clearAllFilters}
-                  className="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-600 text-rose-600 dark:text-rose-300 hover:text-white border border-rose-500/30 text-[11px] font-bold transition cursor-pointer flex items-center gap-1"
+                  className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white dark:bg-rose-500/15 dark:text-rose-300 border border-rose-300 dark:border-rose-500/30 text-[11px] font-bold transition cursor-pointer flex items-center gap-1"
                   title="Limpiar todos los filtros"
                 >
                   <X className="w-3 h-3" />
@@ -929,13 +968,24 @@ export default function InscripcionesAdminPage() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
-      {/* Tabla Widescreen de Inscripciones */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+      {activeView === "analytics" ? (
+        <RegistrationAnalyticsPanel
+          trainings={trainings}
+          registrations={registrations}
+          selectedTrainingId={trainingFilter}
+          onSelectTrainingId={(tid) => setTrainingFilter(tid)}
+          onInspectRegistration={(reg) => setViewingDetailsReg(reg)}
+          onNotify={showToast}
+        />
+      ) : (
+      /* Tabla Widescreen de Inscripciones */
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-950/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800 font-semibold">
+          <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+            <thead className="bg-slate-100 dark:bg-slate-950/80 text-slate-700 dark:text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800 font-bold">
               <tr>
                 <th className="py-3.5 px-4">Participante</th>
                 <th className="py-3.5 px-4">Capacitación</th>
@@ -947,23 +997,23 @@ export default function InscripcionesAdminPage() {
                 <th className="py-3.5 px-4 text-right">Acción Manual</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/80 font-normal">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80 font-normal">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-500">
+                  <td colSpan={8} className="py-8 text-center text-slate-600 dark:text-slate-400">
                     Cargando inscripciones...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-500">
+                  <td colSpan={8} className="py-8 text-center text-slate-600 dark:text-slate-400">
                     No se encontraron registros coincidentes.
                   </td>
                 </tr>
               ) : (
                 filtered.slice(0, 100).map((r) => {
                   return (
-                    <tr key={r.id} className="hover:bg-slate-800/40 transition">
+                    <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
                       {/* Participante */}
                       <td className="py-3.5 px-4">
                         <button
@@ -974,17 +1024,17 @@ export default function InscripcionesAdminPage() {
                         >
                           {r.participant?.name || "Sin Nombre"}
                         </button>
-                        <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-mono">
+                        <span className="text-[11px] text-slate-600 dark:text-slate-400 block font-mono">
                           {r.participant?.docNumber || "S/D"} | {r.participant?.phone}
                         </span>
-                        <span className="text-[10px] text-slate-400 block font-mono mt-0.5">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-mono mt-0.5">
                           Reg: {fmtLocalTime(r.formSubmittedAt || r.createdAt)}
                         </span>
                         {r.participant?.participations && (
                           <button
                             type="button"
                             onClick={() => setHistoryParticipant(r.participant)}
-                            className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#e07b29]/15 text-[#e07b29] border border-[#e07b29]/30 hover:bg-[#e07b29]/25 transition"
+                            className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-50 text-[#c25e0a] border border-orange-300 hover:bg-orange-100 dark:bg-[#e07b29]/15 dark:text-[#e07b29] dark:border-[#e07b29]/30 dark:hover:bg-[#e07b29]/25 transition cursor-pointer"
                             title="Ver todas las capacitaciones donde ha participado este inscrito"
                           >
                             <span>
@@ -997,10 +1047,10 @@ export default function InscripcionesAdminPage() {
 
                       {/* Capacitación */}
                       <td className="py-3.5 px-4 max-w-xs">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate">
+                        <span className="font-semibold text-slate-900 dark:text-slate-200 block truncate">
                           {r.training?.name || "Capacitación"}
                         </span>
-                        <span className="text-[11px] text-slate-500">
+                        <span className="text-[11px] text-slate-600 dark:text-slate-400">
                           {fmtLocalDate(r.training?.eventDate)}
                         </span>
                       </td>
@@ -1014,18 +1064,18 @@ export default function InscripcionesAdminPage() {
                           <button
                             type="button"
                             onClick={() => togglePaid(r)}
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold border transition ${
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold border transition cursor-pointer ${
                               r.isPaid
-                                ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                                ? "bg-emerald-100 text-emerald-900 border-emerald-300 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40"
                                 : r.amount > 0
-                                ? "bg-red-500/20 text-red-300 border-red-500/40"
-                                : "bg-slate-800 text-slate-400 border-slate-700"
+                                ? "bg-rose-100 text-rose-900 border-rose-300 hover:bg-rose-200 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/40"
+                                : "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
                             }`}
                           >
                             {r.isPaid ? "Cobrado (Sí)" : r.amount > 0 ? "Por Cobrar (No)" : "Gratis"}
                           </button>
                         </div>
-                        <span className="text-[10px] text-slate-500 block mt-0.5 font-mono">
+                        <span className="text-[10px] text-slate-600 dark:text-slate-400 block mt-0.5 font-mono">
                           {r.paymentMethod || (r.amount > 0 ? "Sin especificar" : "Gratuito")}
                         </span>
                       </td>
@@ -1055,10 +1105,10 @@ export default function InscripcionesAdminPage() {
                             </span>
                           )
                         ) : (
-                          <span className="text-[11px] text-slate-500">No aplica (Gratis)</span>
+                          <span className="text-[11px] text-slate-600 dark:text-slate-400">No aplica (Gratis)</span>
                         )}
                         {r.paymentNotes && (
-                          <span className="block text-[10px] text-slate-500 dark:text-slate-400 italic mt-0.5 truncate max-w-[170px]" title={r.paymentNotes}>
+                          <span className="block text-[10px] text-slate-600 dark:text-slate-400 italic mt-0.5 truncate max-w-[170px]" title={r.paymentNotes}>
                             {r.paymentNotes}
                           </span>
                         )}
@@ -1077,9 +1127,9 @@ export default function InscripcionesAdminPage() {
                             📎 Ver Comprobante
                           </a>
                         ) : r.paymentReference ? (
-                          <span className="font-mono text-[11px] text-slate-700 dark:text-slate-400">{r.paymentReference}</span>
+                          <span className="font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-300">{r.paymentReference}</span>
                         ) : (
-                          <span className="text-[11px] text-slate-500">S/C</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">S/C</span>
                         )}
                       </td>
 
@@ -1090,7 +1140,7 @@ export default function InscripcionesAdminPage() {
                           defaultValue={r.invoiceNumber || ""}
                           placeholder="FAC-00123"
                           onBlur={(e) => updateInvoice(r.id, e.target.value)}
-                          className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white placeholder-slate-600 font-mono w-24 focus:border-brand-500"
+                          className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 font-mono w-24 focus:outline-none focus:border-[#f4730a]"
                         />
                       </td>
 
@@ -1099,24 +1149,24 @@ export default function InscripcionesAdminPage() {
                         <select
                           value={r.status}
                           onChange={(e) => updateStatus(r.id, e.target.value)}
-                          className={`rounded px-2 py-1 text-[11px] font-bold border focus:outline-none ${
+                          className={`rounded-lg px-2 py-1 text-[11px] font-bold border focus:outline-none cursor-pointer ${
                             r.status === "Confirmado"
-                              ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                              ? "bg-sky-100 text-sky-900 border-sky-300 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border-cyan-500/40"
                               : r.status === "Asistió"
-                              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                              ? "bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40"
                               : r.status === "Lista de Espera"
-                              ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                              ? "bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40"
                               : r.status === "No Asistió"
-                              ? "bg-red-500/20 text-red-300 border-red-500/40"
-                              : "bg-slate-800 text-slate-300 border-slate-700"
+                              ? "bg-rose-100 text-rose-900 border-rose-300 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/40"
+                              : "bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
                           }`}
                         >
-                          <option value="Inscrito">Inscrito</option>
-                          <option value="Confirmado">Confirmado</option>
-                          <option value="Asistió">Asistió</option>
-                          <option value="No Asistió">No Asistió</option>
-                          <option value="Lista de Espera">Lista de Espera</option>
-                          <option value="Cancelado">Cancelado</option>
+                          <option value="Inscrito" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Inscrito</option>
+                          <option value="Confirmado" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Confirmado</option>
+                          <option value="Asistió" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Asistió</option>
+                          <option value="No Asistió" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">No Asistió</option>
+                          <option value="Lista de Espera" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Lista de Espera</option>
+                          <option value="Cancelado" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Cancelado</option>
                         </select>
                       </td>
 
@@ -1126,17 +1176,17 @@ export default function InscripcionesAdminPage() {
                           <button
                             type="button"
                             onClick={() => setViewingDetailsReg(r)}
-                            className="px-2 py-1 bg-[#e07b29]/15 hover:bg-[#e07b29]/25 text-[#e07b29] rounded text-[11px] font-bold border border-[#e07b29]/40 flex items-center gap-1 transition cursor-pointer"
+                            className="px-2 py-1 bg-orange-50 hover:bg-[#e07b29] text-[#c25e0a] hover:text-white dark:bg-[#e07b29]/15 dark:hover:bg-[#e07b29]/30 dark:text-[#f59e0b] rounded text-[11px] font-bold border border-orange-300 dark:border-[#e07b29]/40 flex items-center gap-1 transition cursor-pointer"
                             title="Ver todos los datos enviados por el inscrito y respuestas del formulario"
                           >
-                            <Eye className="w-3 h-3 text-[#e07b29]" />
+                            <Eye className="w-3 h-3" />
                             <span>Ver</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => openEditModal(r)}
-                            className="px-2 py-1 bg-slate-800 hover:bg-[#f4730a] text-amber-300 hover:text-white rounded text-[11px] font-bold border border-slate-700 flex items-center gap-1 transition cursor-pointer"
+                            className="px-2 py-1 bg-amber-50 hover:bg-[#f4730a] text-amber-900 hover:text-white dark:bg-slate-800 dark:hover:bg-[#f4730a] dark:text-amber-300 dark:hover:text-white rounded text-[11px] font-bold border border-amber-300 dark:border-slate-700 flex items-center gap-1 transition cursor-pointer"
                             title="Editar todos los datos de este formulario registrado"
                           >
                             <Edit3 className="w-3 h-3" />
@@ -1146,10 +1196,10 @@ export default function InscripcionesAdminPage() {
                           <button
                             type="button"
                             onClick={() => openValidationModal(r)}
-                            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded text-[11px] font-semibold border border-slate-700 flex items-center gap-1 transition cursor-pointer"
+                            className="px-2 py-1 bg-sky-50 hover:bg-sky-600 text-sky-900 hover:text-white dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-cyan-300 rounded text-[11px] font-bold border border-sky-300 dark:border-slate-700 flex items-center gap-1 transition cursor-pointer"
                             title="Validar o modificar pago manualmente"
                           >
-                            <ShieldCheck className="w-3 h-3 text-cyan-400" />
+                            <ShieldCheck className="w-3 h-3" />
                             <span>Validar</span>
                           </button>
 
@@ -1163,7 +1213,7 @@ export default function InscripcionesAdminPage() {
                                 `Abriendo WhatsApp para ${r.participant?.name || "participante"}...`
                               );
                             }}
-                            className="px-2 py-1 bg-emerald-500/15 hover:bg-emerald-600 text-emerald-400 hover:text-white rounded text-[11px] font-bold border border-emerald-500/40 flex items-center gap-1 transition cursor-pointer"
+                            className="px-2 py-1 bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white dark:bg-emerald-500/15 dark:hover:bg-emerald-600 dark:text-emerald-400 dark:hover:text-white rounded text-[11px] font-bold border border-emerald-300 dark:border-emerald-500/40 flex items-center gap-1 transition cursor-pointer"
                             title={`Enviar mensaje por WhatsApp a ${r.participant?.name || "participante"} (${r.participant?.phone || ONPROTEC_WHATSAPP_DISPLAY})`}
                           >
                             <Send className="w-3 h-3" />
@@ -1173,7 +1223,7 @@ export default function InscripcionesAdminPage() {
                           <button
                             type="button"
                             onClick={() => setDeletingReg(r)}
-                            className="px-2 py-1 bg-red-500/15 hover:bg-red-600 text-red-400 hover:text-white rounded text-[11px] font-bold border border-red-500/40 flex items-center gap-1 transition cursor-pointer"
+                            className="px-2 py-1 bg-rose-50 hover:bg-red-600 text-rose-800 hover:text-white dark:bg-red-500/15 dark:hover:bg-red-600 dark:text-red-400 dark:hover:text-white rounded text-[11px] font-bold border border-rose-300 dark:border-red-500/40 flex items-center gap-1 transition cursor-pointer"
                             title="Borrar formulario registrado"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -1189,6 +1239,7 @@ export default function InscripcionesAdminPage() {
           </table>
         </div>
       </div>
+      )}
 
       {/* Modal de Historial de Participación del Inscrito */}
       {historyParticipant && (
@@ -1198,22 +1249,24 @@ export default function InscripcionesAdminPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setHistoryParticipant(null);
           }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
         >
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative">
             <button
               onClick={() => setHistoryParticipant(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              className="absolute top-4 right-4 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="pb-3 mb-4 border-b border-slate-800">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#e07b29]">
+            <div className="pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#c25e0a] dark:text-[#e07b29]">
                 Historial de Participación en OnProtec
               </span>
-              <h3 className="text-lg font-extrabold text-white">{historyParticipant.name}</h3>
-              <p className="text-xs text-slate-400">
+              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                {historyParticipant.name}
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 {historyParticipant.docNumber || "S/D"} · {historyParticipant.phone} ·{" "}
                 {historyParticipant.company || "Independiente"}
               </p>
@@ -1223,16 +1276,20 @@ export default function InscripcionesAdminPage() {
               {(historyParticipant.participations || []).map((part: any) => (
                 <div
                   key={part.registrationId}
-                  className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3 text-xs"
+                  className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-brand-300">
+                      <span className="font-mono font-bold text-[#0e5cd7] dark:text-brand-300">
                         {part.trainingCode}
                       </span>
-                      <span className="text-slate-400">{fmtLocalDate(part.eventDate)}</span>
+                      <span className="text-slate-600 dark:text-slate-400">
+                        {fmtLocalDate(part.eventDate)}
+                      </span>
                     </div>
-                    <p className="font-bold text-white mt-0.5">{part.trainingName}</p>
+                    <p className="font-bold text-slate-900 dark:text-white mt-0.5">
+                      {part.trainingName}
+                    </p>
                   </div>
                   <span
                     className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${
@@ -1262,19 +1319,19 @@ export default function InscripcionesAdminPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setViewingDetailsReg(null);
           }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn"
         >
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-4xl p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl w-full max-w-4xl p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setViewingDetailsReg(null)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition"
+              className="absolute top-5 right-5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               title="Cerrar Ficha"
             >
               <X className="w-5 h-5" />
             </button>
 
             {/* Cabecera de la Ficha */}
-            <div className="flex flex-wrap items-start justify-between gap-4 pb-5 mb-6 border-b border-slate-800">
+            <div className="flex flex-wrap items-start justify-between gap-4 pb-5 mb-6 border-b border-slate-200 dark:border-slate-800">
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-1.5">
                   <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#e07b29] text-white keep-white">
@@ -1297,12 +1354,12 @@ export default function InscripcionesAdminPage() {
                     {viewingDetailsReg.status}
                   </span>
                 </div>
-                <h2 className="text-2xl font-black text-white">
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white">
                   {viewingDetailsReg.participant?.name || "Sin Nombre"}
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                   Capacitación:{" "}
-                  <strong className="text-white">
+                  <strong className="text-slate-900 dark:text-white">
                     {viewingDetailsReg.training?.code} — {viewingDetailsReg.training?.name}
                   </strong>{" "}
                   ({fmtLocalDate(viewingDetailsReg.training?.eventDate)})
@@ -1320,7 +1377,7 @@ export default function InscripcionesAdminPage() {
                         reminderSentAt: new Date().toISOString(),
                       });
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-sm transition"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white keep-white text-xs font-extrabold shadow-sm transition"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>WhatsApp</span>
@@ -1333,55 +1390,55 @@ export default function InscripcionesAdminPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Columna Izquierda: Datos Personales & Empresa */}
               <div className="lg:col-span-6 space-y-4">
-                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3.5">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-[#e07b29] flex items-center gap-2">
+                <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-[#c25e0a] dark:text-[#e07b29] flex items-center gap-2">
                     <User className="w-4 h-4" />
                     Datos Personales & Contacto
                   </h3>
 
                   <div className="grid grid-cols-2 gap-3 text-xs">
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
                         Cédula / Documento
                       </span>
-                      <span className="font-mono font-bold text-white text-sm">
+                      <span className="font-mono font-bold text-slate-900 dark:text-white text-sm">
                         {viewingDetailsReg.participant?.docType || "V"}-
                         {viewingDetailsReg.participant?.docNumber || "S/D"}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
                         Teléfono / WhatsApp
                       </span>
-                      <span className="font-mono font-bold text-cyan-300 text-sm">
+                      <span className="font-mono font-bold text-sky-700 dark:text-cyan-300 text-sm">
                         {viewingDetailsReg.participant?.phone || "No registrado"}
                       </span>
                     </div>
 
                     <div className="col-span-2">
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
                         Correo Electrónico
                       </span>
                       <a
                         href={`mailto:${viewingDetailsReg.participant?.email}`}
-                        className="font-medium text-slate-200 hover:text-[#e07b29] transition block truncate"
+                        className="font-medium text-slate-800 dark:text-slate-200 hover:text-[#c25e0a] dark:hover:text-[#e07b29] transition block truncate"
                       >
                         {viewingDetailsReg.participant?.email || "No registrado"}
                       </a>
                     </div>
 
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
                         Ciudad / Región
                       </span>
-                      <span className="font-bold text-white">
+                      <span className="font-bold text-slate-900 dark:text-white">
                         {viewingDetailsReg.participant?.city || "Caracas"}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
                         Nº de Carnet Físico
                       </span>
                       <input
@@ -1394,42 +1451,42 @@ export default function InscripcionesAdminPage() {
                           setViewingDetailsReg((prev: any) => ({ ...prev, carnetNumber: val }));
                           showToast("Nº de Carnet físico guardado");
                         }}
-                        className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white font-mono w-24 focus:border-[#e07b29] outline-none"
+                        className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-900 dark:text-white font-mono w-24 focus:border-[#e07b29] outline-none"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3.5">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-sky-700 dark:text-cyan-400 flex items-center gap-2">
                     <Building className="w-4 h-4" />
                     Empresa & Perfil Técnico
                   </h3>
 
                   <div className="grid grid-cols-2 gap-3 text-xs">
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
                         Empresa / Integrador
                       </span>
-                      <span className="font-bold text-white text-sm">
+                      <span className="font-bold text-slate-900 dark:text-white text-sm">
                         {viewingDetailsReg.participant?.company || "Independiente"}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
                         Cargo / Rol
                       </span>
-                      <span className="font-bold text-slate-200">
+                      <span className="font-bold text-slate-800 dark:text-slate-200">
                         {viewingDetailsReg.participant?.cargo || "Técnico / Instalador"}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
                         Nivel de Experiencia
                       </span>
-                      <span className="font-semibold text-slate-300">
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">
                         {viewingDetailsReg.participant?.experienceLevel ||
                           viewingDetailsReg.experienceLevel ||
                           "No especificado"}
@@ -1437,10 +1494,10 @@ export default function InscripcionesAdminPage() {
                     </div>
 
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
                         ¿Cómo se enteró?
                       </span>
-                      <span className="font-semibold text-slate-300">
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">
                         {viewingDetailsReg.participant?.referralSource || "Redes / Web OnProtec"}
                       </span>
                     </div>
@@ -1451,13 +1508,13 @@ export default function InscripcionesAdminPage() {
               {/* Columna Derecha: Respuestas a Preguntas del Formulario + Pago */}
               <div className="lg:col-span-6 space-y-4">
                 {/* Preguntas Personalizadas del Formulario */}
-                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+                <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
                       <FileText className="w-4 h-4" />
                       Respuestas al Formulario de Inscripción
                     </h3>
-                    <span className="text-[10px] font-mono text-slate-500">
+                    <span className="text-[10px] font-mono text-slate-600 dark:text-slate-400">
                       {Object.keys(viewingDetailsReg.customAnswers || {}).length} respuestas
                     </span>
                   </div>
@@ -1476,12 +1533,12 @@ export default function InscripcionesAdminPage() {
                           return (
                             <div
                               key={idx}
-                              className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs"
+                              className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs"
                             >
-                              <span className="text-[10px] font-bold uppercase text-[#e07b29] block mb-0.5">
+                              <span className="text-[10px] font-bold uppercase text-[#c25e0a] dark:text-[#e07b29] block mb-0.5">
                                 {questionLabel}
                               </span>
-                              <span className="font-bold text-white leading-relaxed block">
+                              <span className="font-bold text-slate-900 dark:text-white leading-relaxed block">
                                 {typeof answer === "boolean"
                                   ? answer
                                     ? "Sí"
@@ -1494,7 +1551,7 @@ export default function InscripcionesAdminPage() {
                       )}
                     </div>
                   ) : (
-                    <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-center text-xs text-slate-500">
+                    <div className="p-4 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-600 dark:text-slate-400">
                       Formulario base completado (sin preguntas dinámicas adicionales registradas).
                     </div>
                   )}
@@ -1510,17 +1567,17 @@ export default function InscripcionesAdminPage() {
                 </div>
 
                 {/* Resumen de Pago & Facturación */}
-                <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3">
+                <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-sky-700 dark:text-cyan-400 flex items-center gap-2">
                       <CreditCard className="w-4 h-4" />
                       Inversión & Validación de Pago
                     </h3>
                     <span
-                      className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                      className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
                         viewingDetailsReg.isPaid
-                          ? "bg-emerald-500/20 text-emerald-300"
-                          : "bg-red-500/20 text-red-300"
+                          ? "bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40"
+                          : "bg-rose-100 text-rose-900 border-rose-300 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/40"
                       }`}
                     >
                       {viewingDetailsReg.isPaid ? "PAGO VALIDADO" : "PENDIENTE / POR COBRAR"}
@@ -1529,45 +1586,45 @@ export default function InscripcionesAdminPage() {
 
                   <div className="grid grid-cols-2 gap-3 text-xs">
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
                         Monto de Inscripción
                       </span>
-                      <span className="font-black text-white text-base">
+                      <span className="font-black text-slate-900 dark:text-white text-base">
                         {formatCurrency(viewingDetailsReg.amount, viewingDetailsReg.currency)}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
                         Método de Pago
                       </span>
-                      <span className="font-bold text-slate-200">
+                      <span className="font-bold text-slate-800 dark:text-slate-200">
                         {viewingDetailsReg.paymentMethod || "No especificado"}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
                         Referencia
                       </span>
-                      <span className="font-mono font-bold text-cyan-300">
+                      <span className="font-mono font-bold text-sky-700 dark:text-cyan-300">
                         {viewingDetailsReg.paymentReference || "S/R"}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[10px] font-bold uppercase text-slate-500 block">
+                      <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 block">
                         Factura / Nota
                       </span>
-                      <span className="font-mono font-bold text-slate-300">
+                      <span className="font-mono font-bold text-slate-700 dark:text-slate-300">
                         {viewingDetailsReg.invoiceNumber || "Sin facturar"}
                       </span>
                     </div>
 
                     {viewingDetailsReg.paymentProofUrl && (
-                      <div className="col-span-2 p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                      <div className="col-span-2 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold uppercase text-slate-400">
+                          <span className="text-[10px] font-bold uppercase text-slate-600 dark:text-slate-400">
                             Comprobante de Pago Adjunto
                           </span>
                           <a
@@ -1575,14 +1632,14 @@ export default function InscripcionesAdminPage() {
                             target="_blank"
                             rel="noreferrer"
                             download={viewingDetailsReg.paymentProofUrl.startsWith("data:") ? `comprobante-${viewingDetailsReg.code}.png` : undefined}
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-cyan-400 hover:underline"
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-700 dark:text-cyan-400 hover:underline"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                             <span>Abrir / Descargar</span>
                           </a>
                         </div>
                         {viewingDetailsReg.paymentProofUrl.startsWith("data:image/") ? (
-                          <div className="relative group max-w-xs rounded-lg overflow-hidden border border-slate-700 bg-black/40">
+                          <div className="relative group max-w-xs rounded-lg overflow-hidden border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-black/40">
                             <img
                               src={viewingDetailsReg.paymentProofUrl}
                               alt="Comprobante de pago"
@@ -1590,8 +1647,8 @@ export default function InscripcionesAdminPage() {
                             />
                           </div>
                         ) : (
-                          <div className="p-2 rounded bg-slate-900 text-xs text-slate-300 flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                          <div className="p-2 rounded bg-slate-100 dark:bg-slate-950 text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <FileText className="w-4 h-4 text-sky-700 dark:text-cyan-400 flex-shrink-0" />
                             <span className="truncate">{viewingDetailsReg.paymentProofUrl.slice(0, 60)}...</span>
                           </div>
                         )}
@@ -1623,7 +1680,7 @@ export default function InscripcionesAdminPage() {
                   onClick={() => {
                     openEditModal(viewingDetailsReg);
                   }}
-                  className="px-4 py-2.5 rounded-xl bg-[#f4730a] hover:bg-[#ef7922] text-white text-xs font-extrabold shadow-sm transition cursor-pointer inline-flex items-center gap-1.5"
+                  className="px-4 py-2.5 rounded-xl bg-[#f4730a] hover:bg-[#ef7922] text-white keep-white text-xs font-extrabold shadow-sm transition cursor-pointer inline-flex items-center gap-1.5"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Editar Datos</span>
@@ -1633,7 +1690,7 @@ export default function InscripcionesAdminPage() {
                   onClick={() => {
                     openValidationModal(viewingDetailsReg);
                   }}
-                  className="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-extrabold shadow-sm transition cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white keep-white text-xs font-extrabold shadow-sm transition cursor-pointer"
                 >
                   Editar Estado / Validar Pago
                 </button>
@@ -1642,7 +1699,7 @@ export default function InscripcionesAdminPage() {
                   onClick={() => {
                     setDeletingReg(viewingDetailsReg);
                   }}
-                  className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-extrabold shadow-sm transition cursor-pointer inline-flex items-center gap-1.5"
+                  className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white keep-white text-xs font-extrabold shadow-sm transition cursor-pointer inline-flex items-center gap-1.5"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Borrar</span>
@@ -1650,7 +1707,7 @@ export default function InscripcionesAdminPage() {
                 <button
                   type="button"
                   onClick={() => setViewingDetailsReg(null)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700 text-xs font-bold transition cursor-pointer"
                 >
                   Cerrar
                 </button>
@@ -1668,42 +1725,48 @@ export default function InscripcionesAdminPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalReg(null);
           }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn"
         >
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
             <button
               onClick={() => setModalReg(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              className="absolute top-4 right-4 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-800">
-              <ShieldCheck className="w-5 h-5 text-brand-400" />
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-slate-800">
+              <ShieldCheck className="w-5 h-5 text-[#0e5cd7] dark:text-brand-400" />
               <div>
-                <h3 className="text-base font-bold text-white">Validación Manual de Pago</h3>
-                <p className="text-xs text-slate-400">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Validación Manual de Pago
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   {modalReg.participant?.name} ({modalReg.participant?.docNumber || "S/D"})
                 </p>
               </div>
             </div>
 
             <form onSubmit={handleSaveModal} className="space-y-4">
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs text-slate-300">
-                <span className="font-bold text-white block mb-0.5 truncate">{modalReg.training?.name}</span>
-                <span className="text-slate-400">Precio evento: {formatCurrency(modalReg.training?.price || 0)}</span>
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300">
+                <span className="font-bold text-slate-900 dark:text-white block mb-0.5 truncate">
+                  {modalReg.training?.name}
+                </span>
+                <span className="text-slate-600 dark:text-slate-400">
+                  Precio evento: {formatCurrency(modalReg.training?.price || 0)}
+                </span>
               </div>
 
               {/* Estado de Pago */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     ¿Pago Recibido / Cobrado?
                   </label>
                   <select
                     value={modalForm.isPaid ? "true" : "false"}
                     onChange={(e) => setModalForm({ ...modalForm, isPaid: e.target.value === "true" })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
                   >
                     <option value="true">Sí (Cobrado)</option>
                     <option value="false">No (Pendiente / No Pagó)</option>
@@ -1711,7 +1774,7 @@ export default function InscripcionesAdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Monto (USD)
                   </label>
                   <input
@@ -1719,7 +1782,7 @@ export default function InscripcionesAdminPage() {
                     step="0.01"
                     value={modalForm.amount}
                     onChange={(e) => setModalForm({ ...modalForm, amount: parseFloat(e.target.value) || 0 })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 font-mono"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-brand-500 font-mono"
                   />
                 </div>
               </div>
@@ -1727,13 +1790,13 @@ export default function InscripcionesAdminPage() {
               {/* Método de Pago y Tipo de Validación */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Método de Pago
                   </label>
                   <select
                     value={modalForm.paymentMethod}
                     onChange={(e) => setModalForm({ ...modalForm, paymentMethod: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
                   >
                     <option value="Binance (USDT)">Binance (USDT)</option>
                     <option value="Zelle">Zelle</option>
@@ -1746,13 +1809,13 @@ export default function InscripcionesAdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Tipo de Validación
                   </label>
                   <select
                     value={modalForm.pabiloStatus}
                     onChange={(e) => setModalForm({ ...modalForm, pabiloStatus: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
                   >
                     <option value="manual">Validación Manual (Comprobante verificado)</option>
                     <option value="approved">Pabilo Pay (Automático)</option>
@@ -1765,7 +1828,7 @@ export default function InscripcionesAdminPage() {
               {/* Referencia y Factura */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Referencia de Pago / Comprobante
                   </label>
                   <input
@@ -1773,18 +1836,18 @@ export default function InscripcionesAdminPage() {
                     value={modalForm.paymentReference}
                     placeholder="Ej. REF-12345 o Hash"
                     onChange={(e) => setModalForm({ ...modalForm, paymentReference: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-brand-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-brand-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     Asistencia al Evento
                   </label>
                   <select
                     value={modalForm.status}
                     onChange={(e) => setModalForm({ ...modalForm, status: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-brand-500"
                   >
                     <option value="Asistió">Asistió</option>
                     <option value="No Asistió">No Asistió</option>
@@ -1798,7 +1861,7 @@ export default function InscripcionesAdminPage() {
 
               {/* Enlace Comprobante Drive */}
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Enlace de Comprobante / Google Drive
                 </label>
                 <div className="flex gap-2">
@@ -1807,14 +1870,14 @@ export default function InscripcionesAdminPage() {
                     value={modalForm.paymentProofUrl}
                     placeholder="https://drive.google.com/..."
                     onChange={(e) => setModalForm({ ...modalForm, paymentProofUrl: e.target.value })}
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 truncate"
+                    className="flex-1 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-brand-500 truncate"
                   />
                   {modalForm.paymentProofUrl && (
                     <a
                       href={modalForm.paymentProofUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-brand-300 rounded-xl text-xs flex items-center gap-1 border border-slate-700"
+                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-[#0e5cd7] border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-brand-300 dark:border-slate-700 rounded-xl text-xs flex items-center gap-1"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
@@ -1824,7 +1887,7 @@ export default function InscripcionesAdminPage() {
 
               {/* Notas de Auditoría */}
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Observaciones / Notas de Auditoría
                 </label>
                 <textarea
@@ -1832,23 +1895,23 @@ export default function InscripcionesAdminPage() {
                   value={modalForm.paymentNotes}
                   placeholder="Ej. Comprobante verificado en cuenta Zelle. Asistió y ocupó puesto 4."
                   onChange={(e) => setModalForm({ ...modalForm, paymentNotes: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 resize-none"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-brand-500 resize-none"
                 />
               </div>
 
               {/* Botones de Acción */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setModalReg(null)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700 text-xs font-semibold rounded-xl transition cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={savingModal}
-                  className="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 transition shadow-lg shadow-brand-600/30"
+                  className="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white keep-white text-xs font-bold rounded-xl flex items-center gap-2 transition shadow-lg shadow-brand-600/30 cursor-pointer"
                 >
                   {savingModal ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -1871,26 +1934,26 @@ export default function InscripcionesAdminPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setEditingReg(null);
           }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn"
         >
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-3xl p-6 sm:p-7 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl w-full max-w-3xl p-6 sm:p-7 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setEditingReg(null)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition"
+              className="absolute top-5 right-5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               title="Cerrar"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3 pb-4 mb-5 border-b border-slate-800">
-              <div className="w-10 h-10 rounded-xl bg-[#f4730a]/15 text-[#f4730a] flex items-center justify-center">
+            <div className="flex items-center gap-3 pb-4 mb-5 border-b border-slate-200 dark:border-slate-800">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-[#c25e0a] dark:bg-[#f4730a]/15 dark:text-[#f4730a] flex items-center justify-center">
                 <Edit3 className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#f4730a]">
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#c25e0a] dark:text-[#f4730a]">
                   EDICIÓN COMPLETA DE FORMULARIO REGISTRADO #{editingReg.id}
                 </span>
-                <h3 className="text-lg font-black text-white">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">
                   {editingReg.participant?.name || "Sin Nombre"}
                 </h3>
               </div>
@@ -1898,19 +1961,19 @@ export default function InscripcionesAdminPage() {
 
             <form onSubmit={handleSaveEdit} className="space-y-5">
               {/* Sección A: Capacitación y Estado */}
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-cyan-400">
+              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-sky-700 dark:text-cyan-400">
                   1. Capacitación & Control de Asistencia
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                       Capacitación Asignada
                     </label>
                     <select
                       value={editForm.trainingId}
                       onChange={(e) => setEditForm({ ...editForm, trainingId: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a]"
                     >
                       {trainings.map((t) => (
                         <option key={t.id} value={String(t.id)}>
@@ -1922,13 +1985,13 @@ export default function InscripcionesAdminPage() {
 
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                         Estado
                       </label>
                       <select
                         value={editForm.status}
                         onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a]"
                       >
                         <option value="Inscrito">Inscrito</option>
                         <option value="Confirmado">Confirmado</option>
@@ -1939,7 +2002,7 @@ export default function InscripcionesAdminPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                         Nº Carnet
                       </label>
                       <input
@@ -1947,11 +2010,11 @@ export default function InscripcionesAdminPage() {
                         value={editForm.carnetNumber}
                         onChange={(e) => setEditForm({ ...editForm, carnetNumber: e.target.value })}
                         placeholder="Ej. 09"
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#f4730a]"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-[#f4730a]"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                         Nº Factura
                       </label>
                       <input
@@ -1959,7 +2022,7 @@ export default function InscripcionesAdminPage() {
                         value={editForm.invoiceNumber}
                         onChange={(e) => setEditForm({ ...editForm, invoiceNumber: e.target.value })}
                         placeholder="FAC-001"
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#f4730a]"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-[#f4730a]"
                       />
                     </div>
                   </div>
@@ -1967,13 +2030,13 @@ export default function InscripcionesAdminPage() {
               </div>
 
               {/* Sección B: Datos Personales */}
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-[#f4730a]">
+              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-[#c25e0a] dark:text-[#f4730a]">
                   2. Datos del Participante
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                       Nombre y Apellido *
                     </label>
                     <input
@@ -1981,17 +2044,19 @@ export default function InscripcionesAdminPage() {
                       required
                       value={editForm.name}
                       onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a]"
                     />
                   </div>
 
                   <div className="grid grid-cols-12 gap-2">
                     <div className="col-span-4">
-                      <label className="block text-[11px] font-bold text-slate-300 mb-1">Tipo</label>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Tipo
+                      </label>
                       <select
                         value={editForm.docType}
                         onChange={(e) => setEditForm({ ...editForm, docType: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a]"
                       >
                         <option value="V">V-</option>
                         <option value="E">E-</option>
@@ -2000,7 +2065,7 @@ export default function InscripcionesAdminPage() {
                       </select>
                     </div>
                     <div className="col-span-8">
-                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                         Cédula / RIF *
                       </label>
                       <input
@@ -2008,13 +2073,13 @@ export default function InscripcionesAdminPage() {
                         required
                         value={editForm.docNumber}
                         onChange={(e) => setEditForm({ ...editForm, docNumber: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#f4730a]"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-[#f4730a]"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                       Teléfono / WhatsApp *
                     </label>
                     <input
@@ -2022,12 +2087,12 @@ export default function InscripcionesAdminPage() {
                       required
                       value={editForm.phone}
                       onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#f4730a]"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-[#f4730a]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                       Correo Electrónico *
                     </label>
                     <input
@@ -2035,43 +2100,43 @@ export default function InscripcionesAdminPage() {
                       required
                       value={editForm.email}
                       onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                       Empresa / Emprendimiento
                     </label>
                     <input
                       type="text"
                       value={editForm.company}
                       onChange={(e) => setEditForm({ ...editForm, company: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a]"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                         Cargo / Rol
                       </label>
                       <input
                         type="text"
                         value={editForm.cargo}
                         onChange={(e) => setEditForm({ ...editForm, cargo: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a]"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                         Ciudad
                       </label>
                       <input
                         type="text"
                         value={editForm.city}
                         onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a]"
                       />
                     </div>
                   </div>
@@ -2079,27 +2144,27 @@ export default function InscripcionesAdminPage() {
               </div>
 
               {/* Sección C: Respuestas Dinámicas y Cobro */}
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400">
+              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
                   3. Respuestas del Formulario & Pago
                 </h4>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                       ¿Cobrado?
                     </label>
                     <select
                       value={editForm.isPaid ? "true" : "false"}
                       onChange={(e) => setEditForm({ ...editForm, isPaid: e.target.value === "true" })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a]"
                     >
                       <option value="true">Sí (Cobrado)</option>
                       <option value="false">No (Pendiente)</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                       Monto ($)
                     </label>
                     <input
@@ -2109,22 +2174,22 @@ export default function InscripcionesAdminPage() {
                       onChange={(e) =>
                         setEditForm({ ...editForm, amount: parseFloat(e.target.value) || 0 })
                       }
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#f4730a]"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-[#f4730a]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                       Método de Pago
                     </label>
                     <input
                       type="text"
                       value={editForm.paymentMethod}
                       onChange={(e) => setEditForm({ ...editForm, paymentMethod: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                       Referencia
                     </label>
                     <input
@@ -2133,7 +2198,7 @@ export default function InscripcionesAdminPage() {
                       onChange={(e) =>
                         setEditForm({ ...editForm, paymentReference: e.target.value })
                       }
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#f4730a]"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-[#f4730a]"
                     />
                   </div>
                 </div>
@@ -2157,18 +2222,18 @@ export default function InscripcionesAdminPage() {
                   if (fields.length === 0) return null;
 
                   return (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-800">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-slate-800">
                       {fields.map((fq: any) => {
                         const rawVal = editForm.customAnswers?.[fq.id] ?? "";
                         const isBase64File =
                           typeof rawVal === "string" && rawVal.startsWith("data:");
                         return (
                           <div key={fq.id}>
-                            <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                            <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                               {fq.label}
                             </label>
                             {isBase64File ? (
-                              <span className="text-[11px] text-emerald-400 font-mono block py-1.5">
+                              <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-mono block py-1.5">
                                 Archivo adjunto en base64 (conservado)
                               </span>
                             ) : fq.type === "select" && Array.isArray(fq.options) ? (
@@ -2183,7 +2248,7 @@ export default function InscripcionesAdminPage() {
                                     },
                                   }))
                                 }
-                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a]"
                               >
                                 <option value="">Seleccionar...</option>
                                 {fq.options.map((opt: string, idx: number) => (
@@ -2205,7 +2270,7 @@ export default function InscripcionesAdminPage() {
                                     },
                                   }))
                                 }
-                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a]"
+                                className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a]"
                               />
                             )}
                           </div>
@@ -2216,30 +2281,30 @@ export default function InscripcionesAdminPage() {
                 })()}
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                     Notas Especiales / Expectativas
                   </label>
                   <textarea
                     rows={2}
                     value={editForm.specialNotes}
                     onChange={(e) => setEditForm({ ...editForm, specialNotes: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#f4730a] resize-none"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#f4730a] resize-none"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setEditingReg(null)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={savingEdit}
-                  className="px-5 py-2.5 bg-[#f4730a] hover:bg-[#ef7922] text-white text-xs font-black rounded-xl flex items-center gap-2 transition shadow-lg cursor-pointer"
+                  className="px-5 py-2.5 bg-[#f4730a] hover:bg-[#ef7922] text-white keep-white text-xs font-black rounded-xl flex items-center gap-2 transition shadow-lg cursor-pointer"
                 >
                   {savingEdit ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
@@ -2262,41 +2327,45 @@ export default function InscripcionesAdminPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget && !isDeletingReg) setDeletingReg(null);
           }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn"
         >
-          <div className="bg-slate-900 border-2 border-red-500/40 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border-2 border-rose-300 dark:border-red-500/40 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-red-500/15 text-red-400 flex items-center justify-center flex-shrink-0">
+              <div className="w-11 h-11 rounded-2xl bg-rose-100 text-rose-700 dark:bg-red-500/15 dark:text-red-400 flex items-center justify-center flex-shrink-0">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-black text-white">
+                <h3 className="text-base font-black text-slate-900 dark:text-white">
                   ¿Eliminar Formulario Registrado?
                 </h3>
-                <p className="text-xs text-slate-400">Registro #{deletingReg.id}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  Registro #{deletingReg.id}
+                </p>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs space-y-1">
-              <p className="font-bold text-white">{deletingReg.participant?.name || "Sin Nombre"}</p>
-              <p className="font-mono text-slate-400">
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs space-y-1">
+              <p className="font-bold text-slate-900 dark:text-white">
+                {deletingReg.participant?.name || "Sin Nombre"}
+              </p>
+              <p className="font-mono text-slate-600 dark:text-slate-400">
                 {deletingReg.participant?.docType || "V"}-{deletingReg.participant?.docNumber || "S/D"}
               </p>
-              <p className="text-cyan-300 font-semibold truncate">
+              <p className="text-sky-700 dark:text-cyan-300 font-semibold truncate">
                 {deletingReg.training?.code} • {deletingReg.training?.name}
               </p>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
               Esta acción eliminará permanentemente este registro del evento y liberará el cupo correspondiente. Si el participante no tiene otros cursos registrados, también se depurará su ficha para permitirle inscribirse nuevamente.
             </p>
 
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setDeletingReg(null)}
                 disabled={isDeletingReg}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700 text-xs font-bold rounded-xl transition cursor-pointer"
               >
                 Cancelar
               </button>
@@ -2304,7 +2373,7 @@ export default function InscripcionesAdminPage() {
                 type="button"
                 onClick={handleDeleteRegistration}
                 disabled={isDeletingReg}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-black rounded-xl flex items-center gap-1.5 transition shadow-lg cursor-pointer"
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white keep-white text-xs font-black rounded-xl flex items-center gap-1.5 transition shadow-lg cursor-pointer"
               >
                 {isDeletingReg ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -2326,17 +2395,17 @@ export default function InscripcionesAdminPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowReportModal(false);
           }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
         >
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
             {/* Cabecera del Modal */}
-            <div className="p-5 sm:p-6 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-950/70">
+            <div className="p-5 sm:p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 dark:bg-slate-950/70">
               <div>
-                <span className="text-[11px] font-black uppercase tracking-wider text-[#f4730a]">
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#c25e0a] dark:text-[#f4730a]">
                   ONPROTEC SALA VIP • ANALÍTICA & CONCILIACIÓN
                 </span>
-                <h3 className="text-xl font-black text-white flex items-center gap-2 mt-0.5">
-                  <BarChart3 className="w-5 h-5 text-[#f4730a]" />
+                <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2 mt-0.5">
+                  <BarChart3 className="w-5 h-5 text-[#c25e0a] dark:text-[#f4730a]" />
                   <span>Centro de Reportes de Inscripciones</span>
                 </h3>
               </div>
@@ -2347,8 +2416,8 @@ export default function InscripcionesAdminPage() {
                   onClick={() => setReportScope("filtered")}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
                     reportScope === "filtered"
-                      ? "bg-[#f4730a] text-white border-[#f4730a]"
-                      : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
+                      ? "bg-[#f4730a] text-white keep-white border-[#f4730a]"
+                      : "bg-white text-slate-700 border-slate-300 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
                   }`}
                 >
                   Vista Filtrada ({filtered.length})
@@ -2358,8 +2427,8 @@ export default function InscripcionesAdminPage() {
                   onClick={() => setReportScope("all")}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
                     reportScope === "all"
-                      ? "bg-[#f4730a] text-white border-[#f4730a]"
-                      : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
+                      ? "bg-[#f4730a] text-white keep-white border-[#f4730a]"
+                      : "bg-white text-slate-700 border-slate-300 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700"
                   }`}
                 >
                   Total Histórico ({registrations.length})
@@ -2367,7 +2436,7 @@ export default function InscripcionesAdminPage() {
                 <button
                   type="button"
                   onClick={() => setShowReportModal(false)}
-                  className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition cursor-pointer"
+                  className="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition cursor-pointer"
                   title="Cerrar"
                 >
                   <X className="w-5 h-5" />
@@ -2379,9 +2448,9 @@ export default function InscripcionesAdminPage() {
             <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
               {/* Filtro activo visual */}
               {reportScope === "filtered" && (
-                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 flex flex-wrap items-center justify-between gap-2">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 flex flex-wrap items-center justify-between gap-2">
                   <span>
-                    <strong className="text-cyan-300">Criterio activo:</strong>{" "}
+                    <strong className="text-sky-700 dark:text-cyan-300">Criterio activo:</strong>{" "}
                     {dateFrom || dateTo
                       ? `${dateField === "registration" ? "Fecha Inscripción" : "Fecha Evento"}: ${dateFrom || "..."} a ${dateTo || "..."}`
                       : "Todas las fechas"}
@@ -2390,7 +2459,7 @@ export default function InscripcionesAdminPage() {
                       : " • Todos los cursos"}
                     {statusFilter !== "all" ? ` • Estado: ${statusFilter}` : ""}
                   </span>
-                  <span className="font-mono text-[11px] text-slate-400">
+                  <span className="font-mono text-[11px] text-slate-600 dark:text-slate-400">
                     Generado en UTC-4 (Caracas)
                   </span>
                 </div>
@@ -2398,69 +2467,79 @@ export default function InscripcionesAdminPage() {
 
               {/* Tarjetas KPI Horizontales */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400">
                     Total Inscripciones
                   </span>
-                  <p className="text-2xl font-black text-white mt-1">{reportStats.total}</p>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Confirm.: <strong className="text-cyan-300">{reportStats.confirmedCount}</strong> • Asist.:{" "}
-                    <strong className="text-emerald-300">{reportStats.attendedCount}</strong>
+                  <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+                    {reportStats.total}
+                  </p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
+                    Confirm.:{" "}
+                    <strong className="text-sky-700 dark:text-cyan-300">
+                      {reportStats.confirmedCount}
+                    </strong>{" "}
+                    • Asist.:{" "}
+                    <strong className="text-emerald-700 dark:text-emerald-300">
+                      {reportStats.attendedCount}
+                    </strong>
                   </p>
                   <p className="text-[10px] text-slate-500 mt-0.5">
                     Inscritos: {reportStats.inscritoCount} • Espera: {reportStats.waitlistCount} • No Asistió: {reportStats.noShowCount}
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400">
                     Recaudación Confirmada
                   </span>
-                  <p className="text-2xl font-black text-emerald-400 mt-1">
+                  <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400 mt-1">
                     ${reportStats.collectedUsd.toFixed(2)}
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
                     Pagos conciliados y cobrados (USD)
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400">
                     Por Cobrar / Pendiente
                   </span>
-                  <p className="text-2xl font-black text-amber-400 mt-1">
+                  <p className="text-2xl font-black text-amber-700 dark:text-amber-400 mt-1">
                     ${reportStats.pendingUsd.toFixed(2)}
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
                     Saldo pendiente de registros activos
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-400">
                     Validación Pabilo vs Manual
                   </span>
-                  <p className="text-2xl font-black text-cyan-300 mt-1">
+                  <p className="text-2xl font-black text-sky-700 dark:text-cyan-300 mt-1">
                     {reportStats.pabiloApprovedCount}{" "}
-                    <span className="text-sm font-bold text-slate-500">/</span>{" "}
-                    <span className="text-emerald-300">{reportStats.manualApprovedCount}</span>
+                    <span className="text-sm font-bold text-slate-400 dark:text-slate-500">/</span>{" "}
+                    <span className="text-emerald-700 dark:text-emerald-300">
+                      {reportStats.manualApprovedCount}
+                    </span>
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1">
                     Binance Pabilo Auto vs Validados Manual
                   </p>
                 </div>
               </div>
 
               {/* Tabla Resumen por Capacitación */}
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden">
-                <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">
+              <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
                     Desglose por Capacitación ({reportStats.courseBreakdown.length})
                   </h4>
                 </div>
                 <div className="overflow-x-auto max-h-60">
-                  <table className="w-full text-left text-xs text-slate-300">
-                    <thead className="bg-slate-900 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+                  <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+                    <thead className="bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-400 uppercase text-[10px] border-b border-slate-200 dark:border-slate-800">
                       <tr>
                         <th className="py-2.5 px-4">Capacitación</th>
                         <th className="py-2.5 px-4">Fecha Evento</th>
@@ -2470,7 +2549,7 @@ export default function InscripcionesAdminPage() {
                         <th className="py-2.5 px-4 text-right">Recaudado USD</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/70">
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800/70">
                       {reportStats.courseBreakdown.length === 0 ? (
                         <tr>
                           <td colSpan={6} className="py-6 text-center text-slate-500">
@@ -2479,22 +2558,29 @@ export default function InscripcionesAdminPage() {
                         </tr>
                       ) : (
                         reportStats.courseBreakdown.map((c) => (
-                          <tr key={c.trainingId} className="hover:bg-slate-900/60">
-                            <td className="py-2.5 px-4 font-semibold text-white">
-                              <span className="font-mono text-[#f4730a] mr-1.5">{c.code}</span>
+                          <tr
+                            key={c.trainingId}
+                            className="hover:bg-slate-50 dark:hover:bg-slate-900/60"
+                          >
+                            <td className="py-2.5 px-4 font-semibold text-slate-900 dark:text-white">
+                              <span className="font-mono text-[#c25e0a] dark:text-[#f4730a] mr-1.5">
+                                {c.code}
+                              </span>
                               {c.name}
                             </td>
-                            <td className="py-2.5 px-4 text-slate-400">
+                            <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400">
                               {c.eventDate ? fmtLocalDate(c.eventDate) : "N/D"}
                             </td>
-                            <td className="py-2.5 px-4 text-center font-bold">{c.total}</td>
-                            <td className="py-2.5 px-4 text-center text-cyan-300 font-bold">
+                            <td className="py-2.5 px-4 text-center font-bold text-slate-900 dark:text-white">
+                              {c.total}
+                            </td>
+                            <td className="py-2.5 px-4 text-center text-sky-700 dark:text-cyan-300 font-bold">
                               {c.confirmedOrAttended}
                             </td>
-                            <td className="py-2.5 px-4 text-center text-emerald-300 font-bold">
+                            <td className="py-2.5 px-4 text-center text-emerald-700 dark:text-emerald-300 font-bold">
                               {c.paidCount}
                             </td>
-                            <td className="py-2.5 px-4 text-right font-mono font-black text-emerald-400">
+                            <td className="py-2.5 px-4 text-right font-mono font-black text-emerald-700 dark:text-emerald-400">
                               ${c.collectedUsd.toFixed(2)}
                             </td>
                           </tr>
@@ -2507,16 +2593,18 @@ export default function InscripcionesAdminPage() {
             </div>
 
             {/* Pie del Modal con Botones de Exportación */}
-            <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-950/80 flex flex-wrap items-center justify-between gap-3">
-              <span className="text-[11px] text-slate-400">
-                Exportando <strong className="text-white">{reportRows.length}</strong> registros según alcance seleccionado.
+            <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 flex flex-wrap items-center justify-between gap-3">
+              <span className="text-[11px] text-slate-600 dark:text-slate-400">
+                Exportando{" "}
+                <strong className="text-slate-900 dark:text-white">{reportRows.length}</strong>{" "}
+                registros según alcance seleccionado.
               </span>
               <div className="flex flex-wrap items-center gap-2.5">
                 <button
                   type="button"
                   onClick={handleExportCsv}
                   disabled={reportRows.length === 0}
-                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-black flex items-center gap-2 transition shadow-md cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white keep-white text-xs font-black flex items-center gap-2 transition shadow-md cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
                   <span>📥 Exportar Excel / CSV Detallado (.csv)</span>
@@ -2526,7 +2614,7 @@ export default function InscripcionesAdminPage() {
                   type="button"
                   onClick={handlePrintReport}
                   disabled={reportRows.length === 0}
-                  className="px-4 py-2.5 rounded-xl bg-[#2a285c] hover:bg-[#3a377c] disabled:opacity-50 text-white text-xs font-black flex items-center gap-2 transition shadow-md cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-[#2a285c] hover:bg-[#3a377c] disabled:opacity-50 text-white keep-white text-xs font-black flex items-center gap-2 transition shadow-md cursor-pointer"
                 >
                   <Printer className="w-4 h-4" />
                   <span>🖨️ Imprimir / Guardar Reporte PDF</span>
